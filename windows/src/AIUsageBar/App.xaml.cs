@@ -10,6 +10,7 @@ public partial class App : System.Windows.Application
     private Mutex? singleInstance;
     private UsageStore? store;
     private TrayController? tray;
+    private Updater? updater;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -41,8 +42,10 @@ public partial class App : System.Windows.Application
         Theme.Apply();
 
         store = new UsageStore(settings, [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new GeminiProvider(), new GrokBotProvider(new DpapiUnprotector())]);
-        tray = new TrayController(store);
+        updater = new Updater(Updater.RunningVersion);
+        tray = new TrayController(store, updater);
         store.Start();
+        updater.Start();
 
         // Light/dark switches, accent color changes, DPI changes.
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
@@ -63,7 +66,7 @@ public partial class App : System.Windows.Application
             TaskbarStyle = args.Contains("--ring-only") ? TaskbarStyle.RingOnly : TaskbarStyle.RingAndPercent,
         };
         store = new UsageStore(demo, CliCommand.FixtureSnapshots(args));
-        tray = new TrayController(store);
+        tray = new TrayController(store, new Updater(current: null));
     }
 
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e) =>
@@ -80,7 +83,11 @@ public partial class App : System.Windows.Application
     {
         if (e.Mode == PowerModes.Resume && store is not null)
         {
-            Dispatcher.InvokeAsync(() => store.RefreshAsync(force: true));
+            Dispatcher.InvokeAsync(() =>
+            {
+                _ = store.RefreshAsync(force: true);
+                updater?.CheckIfStale();
+            });
         }
     }
 

@@ -48,7 +48,9 @@ internal static class Theme
         Set("ErrorBackground", 0x26FF8C00);
         Set("WarningBrush", 0xFFFF8C00);
         Set("CriticalBrush", 0xFFE81123);
-        resources["AccentBrush"] = Freeze(new SolidColorBrush(AccentColor(dark)));
+        var accent = AccentColor(dark);
+        resources["AccentBrush"] = Freeze(new SolidColorBrush(accent));
+        resources["UpdateBackground"] = Freeze(new SolidColorBrush(Color.FromArgb(0x26, accent.R, accent.G, accent.B)));
     }
 
     /// <summary>Windows' accent color (DWM stores it as 0xAABBGGRR).</summary>

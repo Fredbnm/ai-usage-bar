@@ -16,6 +16,7 @@
             <SolidColorBrush x:Key="ErrorBackground" Color="#26FF8C00" />
             <SolidColorBrush x:Key="WarningBrush" Color="#FF8C00" />
             <SolidColorBrush x:Key="AccentBrush" Color="#0067C0" />
+            <SolidColorBrush x:Key="UpdateBackground" Color="#260067C0" />
             <SolidColorBrush x:Key="NeutralBarBrush" Color="#808080" />
 
             <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>

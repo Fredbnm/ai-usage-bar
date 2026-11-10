@@ -30,6 +30,29 @@ jobs:
           # Fixed name so "releases/latest/download/AIUsageBar-macOS.dmg" always works.
           cp dist/AIUsageBar-*.dmg dist/AIUsageBar-macOS.dmg
 
+      # Pretends to be an old version and lets the app update itself from the latest
+      # published release, the way a user's copy would.
+      - name: Self-update from the latest release
+        continue-on-error: true
+        run: |
+          dir="$RUNNER_TEMP/update-test"
+          app="$dir/AI Usage Bar.app"
+          rm -rf "$dir" && mkdir -p "$dir"
+          ditto "dist/AI Usage Bar.app" "$app"
+          plutil -replace CFBundleShortVersionString -string 0.0.1 "$app/Contents/Info.plist"
+          codesign --force --sign - "$app"
+          "$app/Contents/MacOS/AIUsageBar" --install-update --no-relaunch
+          latest=$(curl -fsSL -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" \
+            | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].lstrip("v"))')
+          for _ in $(seq 1 60); do
+            version=$(defaults read "$app/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || true)
+            if [[ "$version" == "$latest" ]]; then echo "Replaced by the latest release ($latest)"; exit 0; fi
+            sleep 2
+          done
+          echo "The app was not replaced (still $version, expected $latest)"
+          exit 1
+
       - uses: actions/upload-artifact@v4
         with:
           name: AIUsageBar-macOS

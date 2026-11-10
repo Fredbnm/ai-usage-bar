@@ -23,8 +23,9 @@ internal sealed class PopupViewModel
     public required Visibility TabStripVisibility { get; init; }
     public required AgentsViewModel Agents { get; init; }
     public required Visibility AgentsVisibility { get; init; }
+    public required UpdateBannerViewModel Update { get; init; }
 
-    public static PopupViewModel Build(UsageStore store)
+    public static PopupViewModel Build(UsageStore store, Updater updater)
     {
         var loading = store.IsLoading;
         var current = store.CurrentTab;
@@ -35,6 +36,7 @@ internal sealed class PopupViewModel
             AgentsTab = TabViewModel.AgentsTab(store, current),
             TabStripVisibility = store.ShowTabStrip ? Visibility.Visible : Visibility.Collapsed,
             Agents = AgentsViewModel.Build(store),
+            Update = UpdateBannerViewModel.Build(updater),
             AgentsVisibility = onAgents ? Visibility.Visible : Visibility.Collapsed,
             Title = T("Uso de IA", "AI Usage"),
             UpdatedText = store.LastUpdated is { } updated ? UsageFormat.Updated(updated) : T("Ainda sem dados", "No data yet"),
@@ -141,6 +143,67 @@ internal sealed record TabViewModel(
     }
 
     internal static Brush Resource(string key) => (Brush)System.Windows.Application.Current.Resources[key];
+}
+
+/// <summary>"New version" strip under the header: the update button, its progress, or the result of a manual check.</summary>
+internal sealed record UpdateBannerViewModel(
+    Visibility Visibility,
+    string Icon,
+    Brush IconBrush,
+    Brush Background,
+    string Title,
+    FontWeight TitleWeight,
+    string Subtitle,
+    Visibility SubtitleVisibility,
+    string ButtonText,
+    string ButtonTip,
+    Visibility ButtonVisibility,
+    ICommand Command)
+{
+    private const string DownloadIcon = "\uE896";
+    private const string BusyIcon = "\uE895";
+    private const string DoneIcon = "\uE73E";
+    private const string WarningIcon = "\uE7BA";
+
+    public static UpdateBannerViewModel Build(Updater updater)
+    {
+        var version = updater.Available?.Version.ToString() ?? "";
+        var current = updater.CurrentText;
+        var accent = TabViewModel.Resource("AccentBrush");
+        var background = TabViewModel.Resource(updater.Phase == UpdatePhase.Failed ? "ErrorBackground" : "UpdateBackground");
+        var install = new RelayCommand(async () => await updater.InstallAsync());
+
+        UpdateBannerViewModel Line(string icon, Brush brush, string title) => new(
+            updater.ShowsBanner ? Visibility.Visible : Visibility.Collapsed, icon, brush, background, title, FontWeights.Normal,
+            "", Visibility.Collapsed, "", "", Visibility.Collapsed, install);
+
+        return updater.Phase switch
+        {
+            UpdatePhase.Checking => Line(BusyIcon, accent, T("Procurando atualizações…", "Checking for updates…")),
+            UpdatePhase.Downloading => Line(BusyIcon, accent,
+                T($"Baixando a versão {version}… {updater.Progress:P0}", $"Downloading version {version}… {updater.Progress:P0}")),
+            UpdatePhase.Installing => Line(BusyIcon, accent, T("Instalando… o medidor reabre sozinho.", "Installing… the meter reopens by itself.")),
+            UpdatePhase.UpToDate => Line(DoneIcon, LimitViewModel.SeverityBrush(Severity.Normal),
+                T($"Você já tem a versão mais recente ({current}).", $"You're on the latest version ({current}).")),
+            UpdatePhase.Failed => Line(WarningIcon, TabViewModel.Resource("WarningBrush"), updater.Failure ?? "") with
+            {
+                ButtonText = T("Abrir página", "Open page"),
+                ButtonVisibility = updater.Available is null ? Visibility.Collapsed : Visibility.Visible,
+                Command = new RelayCommand(updater.OpenReleasePage),
+            },
+            _ => Line(DownloadIcon, accent, T($"Nova versão {version}", $"New version {version}")) with
+            {
+                TitleWeight = FontWeights.SemiBold,
+                Subtitle = T($"Você está com a {current}", $"You have {current}"),
+                SubtitleVisibility = Visibility.Visible,
+                ButtonText = updater.CanInstallInPlace ? T("Atualizar", "Update") : T("Baixar", "Download"),
+                ButtonTip = updater.CanInstallInPlace
+                    ? T("Baixa, instala e reabre o medidor", "Downloads, installs and reopens the meter")
+                    : T("Abre a página de download", "Opens the download page"),
+                ButtonVisibility = Visibility.Visible,
+            },
+        };
+    }
 }
 
 /// <summary>The Agents tab: every supported agent, whether it is connected, and first-run help.</summary>

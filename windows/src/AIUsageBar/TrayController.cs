@@ -19,10 +19,10 @@ internal sealed class TrayController : IDisposable
     private readonly Dictionary<ProviderId, TrayIconImage> images = [];
     private Forms.NotifyIcon? placeholder;
 
-    public TrayController(UsageStore store)
+    public TrayController(UsageStore store, Updater updater)
     {
         this.store = store;
-        popup = new PopupWindow(store);
+        popup = new PopupWindow(store, updater);
         widget = new TaskbarWidgetWindow(store, id => popup.Toggle(id));
         store.Changed += Refresh;
         Refresh();

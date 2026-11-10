@@ -14,13 +14,16 @@ namespace AIUsageBar;
 public partial class PopupWindow : Window
 {
     private readonly UsageStore store;
+    private readonly Updater updater;
     private readonly DispatcherTimer clock = new() { Interval = TimeSpan.FromSeconds(30) };
     private DateTime lastHidden = DateTime.MinValue;
 
-    internal PopupWindow(UsageStore store)
+    internal PopupWindow(UsageStore store, Updater updater)
     {
         InitializeComponent();
         this.store = store;
+        this.updater = updater;
+        updater.Changed += Refresh;
         Deactivated += (_, _) => HidePopup();
         // Keeps "Updated 2 min ago" and reset countdowns current while open.
         clock.Tick += (_, _) => Refresh();
@@ -33,7 +36,7 @@ public partial class PopupWindow : Window
     {
         if (!IsVisible) return;
         var height = ActualHeight;
-        DataContext = PopupViewModel.Build(store);
+        DataContext = PopupViewModel.Build(store, updater);
         // Another tab can be taller or shorter: keep the popup against the taskbar.
         UpdateLayout();
         if (Math.Abs(ActualHeight - height) > 0.5) PlaceNear(anchor);
@@ -75,7 +78,7 @@ public partial class PopupWindow : Window
 
     public void ShowNearCursor()
     {
-        DataContext = PopupViewModel.Build(store);
+        DataContext = PopupViewModel.Build(store, updater);
 
         // Show off-screen first so the height is known, then place it.
         Left = -10_000;
@@ -88,6 +91,7 @@ public partial class PopupWindow : Window
         Activate();
         clock.Start();
         _ = store.RefreshIfStaleAsync();
+        updater.CheckIfStale();
     }
 
     /// <summary>Next to the taskbar, wherever it is docked, centred on the click.</summary>
@@ -175,6 +179,12 @@ public partial class PopupWindow : Window
             () => StartupRegistration.SetEnabled(!startup)));
         menu.Items.Add(new Separator());
 
+        var checkUpdates = new MenuItem { Header = T("Procurar atualizações", "Check for updates") };
+        checkUpdates.Click += async (_, _) => await updater.CheckAsync(manual: true);
+        menu.Items.Add(checkUpdates);
+        menu.Items.Add(new MenuItem { Header = T($"Versão {updater.CurrentText}", $"Version {updater.CurrentText}"), IsEnabled = false });
+        menu.Items.Add(new Separator());
+
         var quit = new MenuItem { Header = T("Sair do medidor", "Quit") };
         quit.Click += (_, _) => System.Windows.Application.Current.Shutdown();
         menu.Items.Add(quit);
@@ -192,7 +202,7 @@ public partial class PopupWindow : Window
     /// <summary>Renders the popup off-screen to a PNG (used by <c>--snapshot</c> and CI).</summary>
     public void RenderToPng(string path, double scale = 2)
     {
-        DataContext = PopupViewModel.Build(store);
+        DataContext = PopupViewModel.Build(store, updater);
         ShowActivated = false;
         Left = -10_000;
         Top = -10_000;
