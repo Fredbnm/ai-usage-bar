@@ -38,21 +38,6 @@ public struct BreakdownItem: Identifiable, Equatable, Sendable {
     public var percent: Double
 }
 
-/// Which number the menu bar shows next to the icon.
-public enum MenuBarMetric: String, CaseIterable, Identifiable, Sendable {
-    case session, weekly, highest
-
-    public var id: String { rawValue }
-
-    public var label: String {
-        switch self {
-        case .session: "Sessão atual"
-        case .weekly: "Semanal (todos os modelos)"
-        case .highest: "O mais alto entre todos"
-        }
-    }
-}
-
 extension UsageResponse {
     /// Limits in display order. Prefers the `limits` array; falls back to
     /// the older per-window fields if the array is missing.
@@ -92,19 +77,6 @@ extension UsageResponse {
             .filter { $0.percent > 0 }
             .sorted { $0.percent > $1.percent }
             .map { BreakdownItem(id: $0.key, name: Self.breakdownName(key: $0.key, displayName: $0.displayName), percent: $0.percent) }
-    }
-
-    public func menuBarPercent(_ metric: MenuBarMetric) -> Double? {
-        let items = items
-        switch metric {
-        case .session:
-            return items.first { $0.group == .session }?.percent ?? items.map(\.percent).max()
-        case .weekly:
-            return (items.first { $0.kind == "weekly_all" } ?? items.first { $0.group == .weekly })?.percent
-                ?? items.map(\.percent).max()
-        case .highest:
-            return items.map(\.percent).max()
-        }
     }
 
     static func title(kind: String, scopeName: String?) -> String {

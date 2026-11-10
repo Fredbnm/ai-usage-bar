@@ -11,10 +11,10 @@ struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            if let error = store.error {
-                ErrorBanner(error: error)
+            ForEach(store.visibleProviders, id: \.self) { id in
+                Divider()
+                ProviderSection(provider: id, state: store.state(for: id))
             }
-            content
             Divider()
             footer
         }
@@ -25,13 +25,8 @@ struct PopoverView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text("Uso do Claude")
-                        .font(.system(size: 14, weight: .semibold))
-                    if let plan = store.planName {
-                        PlanBadge(text: plan)
-                    }
-                }
+                Text("Uso de IA")
+                    .font(.system(size: 15, weight: .semibold))
                 TimelineView(.periodic(from: .now, by: 30)) { context in
                     Text(store.lastUpdated.map { UsageFormat.updated($0, now: context.date) } ?? "Ainda sem dados")
                         .font(.caption)
@@ -53,38 +48,14 @@ struct PopoverView: View {
         }
     }
 
-    @ViewBuilder
-    private var content: some View {
-        if let usage = store.usage {
-            VStack(alignment: .leading, spacing: 14) {
-                ForEach(usage.items) { LimitRow(item: $0) }
-            }
-            let rows = usage.breakdownItems
-            if !rows.isEmpty {
-                Divider()
-                BreakdownSection(rows: rows)
-            }
-        } else if store.error == nil {
-            HStack(spacing: 8) {
-                Spacer()
-                ProgressView().controlSize(.small)
-                Text("Carregando…").foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.vertical, 12)
-        }
-    }
-
     private var footer: some View {
         HStack {
-            Link(destination: URL(string: "https://claude.ai/settings/usage")!) {
-                Label("Ver no claude.ai", systemImage: "arrow.up.right.square")
-            }
-            .font(.callout)
             Spacer()
             Menu {
-                Picker("Número na barra", selection: $store.metric) {
-                    ForEach(MenuBarMetric.allCases) { Text($0.label).tag($0) }
+                Picker("Número na barra", selection: $store.menuBarSelection) {
+                    ForEach(store.menuBarOptions, id: \.id) { option in
+                        Text(option.label).tag(option.id)
+                    }
                 }
                 Toggle("Abrir ao iniciar o Mac", isOn: launchAtLoginBinding)
                 Divider()
@@ -111,6 +82,53 @@ struct PopoverView: View {
                 launchAtLogin = LaunchAtLogin.isEnabled
             }
         )
+    }
+}
+
+private struct ProviderSection: View {
+    let provider: ProviderID
+    let state: UsageStore.ProviderState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Text(provider.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                if let plan = state.snapshot?.planName {
+                    PlanBadge(text: plan)
+                }
+                Spacer()
+                Button {
+                    provider.open()
+                } label: {
+                    Image(systemName: "arrow.up.right.square")
+                }
+                .buttonStyle(.borderless)
+                .help(provider.openHelp)
+            }
+
+            if let error = state.error {
+                ErrorBanner(text: error.message(for: provider))
+            }
+
+            if let snapshot = state.snapshot {
+                ForEach(snapshot.items) { LimitRow(item: $0) }
+                ForEach(snapshot.notes, id: \.self) { note in
+                    Label(note, systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                if !snapshot.breakdown.isEmpty {
+                    BreakdownSection(rows: snapshot.breakdown)
+                        .padding(.top, 2)
+                }
+            } else if state.error == nil {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Carregando…").foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 }
 
@@ -186,13 +204,13 @@ private struct UsageBar: View {
 }
 
 private struct ErrorBanner: View {
-    let error: UsageError
+    let text: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
-            Text(error.message)
+            Text(text)
                 .font(.callout)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -208,6 +226,7 @@ private struct PlanBadge: View {
     var body: some View {
         Text(text)
             .font(.system(size: 10, weight: .semibold))
+            .lineLimit(1)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(Color.primary.opacity(0.08), in: Capsule())
@@ -220,6 +239,29 @@ extension Severity {
         case .normal: .accentColor
         case .warning: .orange
         case .critical: .red
+        }
+    }
+}
+
+extension ProviderID {
+    var openHelp: String {
+        switch self {
+        case .claude: "Ver uso no claude.ai"
+        case .grokBot: "Abrir o Grok Bot"
+        }
+    }
+
+    @MainActor
+    func open() {
+        switch self {
+        case .claude:
+            NSWorkspace.shared.open(URL(string: "https://claude.ai/settings/usage")!)
+        case .grokBot:
+            if FileManager.default.fileExists(atPath: GrokBotProvider.appURL.path) {
+                NSWorkspace.shared.open(GrokBotProvider.appURL)
+            } else if let url = URL(string: "grokbot://") {
+                NSWorkspace.shared.open(url)
+            }
         }
     }
 }

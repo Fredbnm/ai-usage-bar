@@ -45,11 +45,27 @@ final class UsageCoreTests: XCTestCase {
         XCTAssertNotNil(items[0].resetsAt)
     }
 
-    func testMenuBarMetrics() throws {
-        let response = try decodeSample()
-        XCTAssertEqual(response.menuBarPercent(.session), 42)
-        XCTAssertEqual(response.menuBarPercent(.weekly), 30)
-        XCTAssertEqual(response.menuBarPercent(.highest), 91)
+    func testMenuBarSelection() throws {
+        let claude = try XCTUnwrap(ClaudeProvider.snapshot(fromResponse: Data(sample.utf8), plan: "Max 5x"))
+        let grok = ProviderSnapshot(provider: .grokBot, planName: nil, items: [
+            LimitItem(id: "g", kind: "weekly", title: "Semanal", percent: 95, severity: .critical, resetsAt: nil, group: .weekly),
+        ])
+        let snapshots = [claude, grok]
+
+        XCTAssertEqual(MenuBarSelection.highest.percent(in: snapshots), 95)
+        XCTAssertEqual(MenuBarSelection(rawValue: "claude:session").percent(in: snapshots), 42)
+        XCTAssertEqual(MenuBarSelection(rawValue: "grokBot:weekly").percent(in: snapshots), 95)
+        // A choice whose data is missing falls back to the highest value.
+        XCTAssertEqual(MenuBarSelection(rawValue: "claude:nonexistent").percent(in: snapshots), 95)
+        // Values saved by version 0.1.
+        XCTAssertEqual(MenuBarSelection(rawValue: "session"), .item(.claude, kind: "session"))
+        XCTAssertEqual(MenuBarSelection(rawValue: "weekly"), .item(.claude, kind: "weekly_all"))
+        XCTAssertEqual(MenuBarSelection(rawValue: "garbage"), .highest)
+
+        let labels = MenuBarSelection.options(for: snapshots).map(\.label)
+        XCTAssertEqual(labels.first, "O mais alto entre todos")
+        XCTAssertTrue(labels.contains("Grok Bot · Semanal"))
+        XCTAssertTrue(labels.contains("Claude · Semanal · Fable"))
     }
 
     func testBreakdownSkipsZeroAndTranslates() throws {

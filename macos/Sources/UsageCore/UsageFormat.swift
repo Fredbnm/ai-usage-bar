@@ -4,8 +4,10 @@ import Foundation
 public enum UsageFormat {
     public static let locale = Locale(identifier: "pt_BR")
 
+    /// "42%"; "<1%" for usage that is above zero but would round to 0.
     public static func percent(_ value: Double) -> String {
-        "\(Int(value.rounded()))%"
+        if value > 0, value < 0.5 { return "<1%" }
+        return "\(Int(value.rounded()))%"
     }
 
     /// "1 h 16 min", "45 min", "2 d 4 h".
@@ -43,6 +45,11 @@ public enum UsageFormat {
         if elapsed < 3600 { return "Atualizado há \(Int(elapsed / 60)) min" }
         if elapsed < 86_400 { return "Atualizado há \(Int(elapsed / 3600)) h" }
         return "Atualizado em \(string(date, format: "dd/MM HH:mm", calendar: calendar))"
+    }
+
+    /// "12/11".
+    public static func shortDate(_ date: Date, calendar: Calendar = .current) -> String {
+        string(date, format: "dd/MM", calendar: calendar)
     }
 
     private static func string(_ date: Date, format: String, calendar: Calendar) -> String {

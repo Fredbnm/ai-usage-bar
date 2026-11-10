@@ -5,9 +5,10 @@ import UsageCore
 /// Headless modes for debugging and for checking the UI without clicking
 /// the menu bar:
 ///
-///     ClaudeUsageBar --dump
-///     ClaudeUsageBar --snapshot out.png [--fixture usage.json] [--dark]
+///     ClaudeUsageBar --dump [--raw]
+///     ClaudeUsageBar --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark]
 ///
+/// `--raw` also prints each service's usage response (no tokens).
 /// `--snapshot` also writes `out-menubar.png` with the status item image.
 struct CLICommand {
     enum Mode {
@@ -17,7 +18,9 @@ struct CLICommand {
 
     let mode: Mode
     let fixturePath: String?
+    let grokFixturePath: String?
     let dark: Bool
+    let raw: Bool
 
     init?(arguments: [String]) {
         func value(after flag: String) -> String? {
@@ -32,20 +35,29 @@ struct CLICommand {
             return nil
         }
         fixturePath = value(after: "--fixture")
+        grokFixturePath = value(after: "--grok-fixture")
         dark = arguments.contains("--dark")
+        raw = arguments.contains("--raw")
     }
 
     @MainActor
     func run() async {
         let store: UsageStore
-        if let fixturePath {
-            guard let data = FileManager.default.contents(atPath: fixturePath),
-                  let response = try? UsageResponse.decode(data)
-            else {
-                fail("Não consegui ler a fixture \(fixturePath)")
-                return
+        if fixturePath != nil || grokFixturePath != nil {
+            var snapshots: [ProviderSnapshot] = []
+            if let fixturePath {
+                guard let data = FileManager.default.contents(atPath: fixturePath),
+                      let snapshot = ClaudeProvider.snapshot(fromResponse: data, plan: "Max 5x")
+                else { return fail("Não consegui ler a fixture \(fixturePath)") }
+                snapshots.append(snapshot)
             }
-            store = UsageStore(preview: response, plan: "Max 5x")
+            if let grokFixturePath {
+                guard let data = FileManager.default.contents(atPath: grokFixturePath),
+                      let snapshot = GrokBotProvider.snapshot(fromResponse: data)
+                else { return fail("Não consegui ler a fixture \(grokFixturePath)") }
+                snapshots.append(snapshot)
+            }
+            store = UsageStore(preview: snapshots)
         } else {
             store = UsageStore()
             await store.refresh(force: true)
@@ -54,6 +66,12 @@ struct CLICommand {
         switch mode {
         case .dump:
             print(store.dumpText)
+            if raw {
+                for id in store.visibleProviders {
+                    print("\n== Resposta bruta · \(id.displayName)")
+                    print(store.rawResponse(for: id) ?? "(sem resposta salva)")
+                }
+            }
         case .snapshot(let output):
             await snapshot(store: store, to: output)
         }
@@ -88,7 +106,7 @@ struct CLICommand {
         }
         write(png, to: path)
 
-        let icon = MenuBarIcon.image(percent: store.usage?.menuBarPercent(store.metric), showsAlert: store.error != nil)
+        let icon = MenuBarIcon.image(percent: store.menuBarPercent, showsAlert: store.hasError)
         let iconPath = (path as NSString).deletingPathExtension + "-menubar.png"
         if let iconPNG = pngData(icon, scale: 4, background: dark ? .black : .white, tint: dark ? .white : .black) {
             write(iconPNG, to: iconPath)

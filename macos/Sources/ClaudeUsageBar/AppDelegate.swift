@@ -74,8 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem() {
         guard let store, let button = statusItem?.button else { return }
-        let percent = store.usage?.menuBarPercent(store.metric)
-        button.image = MenuBarIcon.image(percent: percent, showsAlert: store.error != nil)
+        button.image = MenuBarIcon.image(percent: store.menuBarPercent, showsAlert: store.hasError)
         button.toolTip = store.tooltip
     }
 }

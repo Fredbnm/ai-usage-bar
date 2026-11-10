@@ -1,10 +1,10 @@
 # Dados de uso: contrato para os apps
 
-Este documento descreve tudo o que um app de qualquer sistema precisa para mostrar o uso do plano Claude. O app de macOS (`macos/Sources/UsageCore`) é a implementação de referência.
+Este documento descreve tudo o que um app de qualquer sistema precisa para mostrar o uso de cada serviço: **Claude** (seções 1–3) e **Grok Bot** (seção 5). O app de macOS (`macos/Sources/UsageCore`) é a implementação de referência; cada serviço é um `UsageProvider` ali.
 
-> ⚠️ **Não é uma API pública.** É o mesmo endpoint que o Claude Code chama no comando `/usage`. Ele pode mudar sem aviso, então decodifique tudo de forma tolerante (campos opcionais, ignorar o que não conhece, pular itens inválidos de listas).
+> ⚠️ **Nenhum destes endpoints é público.** São os que o próprio Claude Code (`/usage`) e o próprio Grok Bot (tela de Uso) chamam. Podem mudar sem aviso, então decodifique tudo de forma tolerante (campos opcionais, ignorar o que não conhece, pular itens inválidos de listas).
 
-## 1. Login (token OAuth do Claude Code)
+## 1. Claude: login (token OAuth do Claude Code)
 
 O app não tem login próprio: ele reaproveita o login do Claude Code, só para leitura.
 
@@ -31,7 +31,7 @@ Conteúdo (só os campos usados):
 - **Nunca renove o token** com o `refreshToken`. A renovação troca o refresh token, e o Claude Code ficaria deslogado. Se o token expirou, mostre o último dado salvo e peça para o usuário abrir o Claude Code.
 - Nunca grave o token em log, cache ou arquivo.
 
-## 2. Requisição
+## 2. Claude: requisição
 
 ```
 GET https://api.anthropic.com/api/oauth/usage
@@ -49,7 +49,7 @@ Accept: application/json
 
 Frequência usada no Mac: a cada 3 minutos, ao abrir o pop-up (se o último dado tiver mais de 60 s) e quando o computador acorda.
 
-## 3. Resposta
+## 3. Claude: resposta
 
 Exemplo completo com números fictícios: [`sample-usage.json`](sample-usage.json). A resposta real tem dezenas de outros campos (a maioria `null`), que podem ser ignorados.
 
@@ -94,10 +94,67 @@ Se `limits` não vier, monte a lista a partir de `five_hour`, `seven_day`, `seve
 
 ## 4. Número na barra
 
-O usuário escolhe o que aparece ao lado do ícone:
+O usuário escolhe o que aparece ao lado do ícone. A escolha é salva como texto:
 
-| Opção | Valor |
+| Valor salvo | Número mostrado |
 |---|---|
-| Sessão atual (padrão) | `percent` do item `session` |
-| Semanal | `percent` do item `weekly_all` |
-| O mais alto | maior `percent` entre todos os itens |
+| `highest` (padrão) | maior `percent` entre todos os limites de todos os serviços |
+| `<serviço>:<kind>`, ex. `claude:session`, `grokBot:weekly` | `percent` daquele limite; sem dados, cai para o mais alto |
+
+A versão 0.1 salvava `session` e `weekly`, que equivalem a `claude:session` e `claude:weekly_all`.
+
+## 5. Grok Bot
+
+O Grok Bot (`/Applications/Grok Bot.app`, bundle `com.anysphere.sand`) é um app Electron que roda sobre a infraestrutura do Cursor. Formato verificado na versão 0.79.3.
+
+### Login
+
+| Sistema | Onde fica |
+|---|---|
+| macOS | `~/Library/Application Support/Grok Bot/sand-secrets.json`, com valores criptografados pelo `safeStorage` do Electron. A chave fica no Keychain: serviço `Grok Bot Safe Storage`, conta `Grok Bot Key`. |
+| Windows / Linux | *Não verificado.* O Electron usa DPAPI no Windows e libsecret/kwallet no Linux, e o arquivo deve estar na pasta `userData` do app. |
+
+Estrutura do arquivo (só os campos usados):
+
+```json
+{
+  "version": 1,
+  "cursor-accounts": "{\"active\":\"<escopo>\",\"accounts\":{\"<escopo>\":{\"cursor-access-token\":\"<base64>\"}}}"
+}
+```
+
+- `cursor-accounts` é um JSON **dentro de uma string**. Pegue `accounts[active]["cursor-access-token"]`.
+- Arquivos antigos guardam `cursor-access-token` direto na raiz, às vezes como `scoped:v1:<64 hex>:<base64>`. Valores `plaintext:v1:<base64>` não são criptografados.
+- Descriptografia no macOS (`OSCrypt` do Chromium): o blob em base64 começa com `v10`. O resto é AES-128-CBC com PKCS#7, chave = PBKDF2-HMAC-SHA1(senha do Keychain, `saltysalt`, 1003 iterações, 16 bytes) e IV de 16 espaços (`0x20`).
+- O token é um JWT. O campo `exp` diz quando expira; não use o refresh token.
+- Ao ler a chave, o macOS mostra um pedido de permissão. Leia uma vez por execução e guarde a chave **só em memória**.
+
+### Requisição (Connect RPC em JSON)
+
+```
+POST https://api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus
+Authorization: Bearer <token>
+Content-Type: application/json
+Connect-Protocol-Version: 1
+x-ghost-mode: true
+
+{}
+```
+
+Os status HTTP valem como na seção 2.
+
+### Resposta
+
+Exemplo com números fictícios: [`sample-grok-usage.json`](sample-grok-usage.json). É JSON proto3, então os campos vêm em camelCase, valores padrão (`false`, `0`) são omitidos e inteiros de 64 bits chegam como string.
+
+| Campo | Uso |
+|---|---|
+| `usagePercent` | Uso **semanal**, de 0 a 100 (`0.3` = 0,3%). Ausente se não há limite individual. |
+| `nextResetTimestampUtc` | Quando o limite semanal reinicia (RFC 3339). |
+| `hasAvailableUsage` | `false` = limite esgotado; mostre como crítico. |
+| `usesPooledEnterpriseAllowance` | `true` = cota da equipe; não mostre porcentagem. |
+| `availableBankedResetCount` | Resets guardados que o usuário pode usar (string). |
+| `grokPlanLabel`, `cursorPlanName` | Nome do plano. `grokPlanLabel` costuma ser o genérico "Grok Bot Plan"; nesse caso use `cursorPlanName` ("Premium"). |
+| `onDemandSettings.enabled` | Uso sob demanda ligado. |
+
+Existe também `DashboardService/GetGrokBotUsageBreakdown`, que divide o uso por dia, origem e bot, em partes por milhão do limite semanal (`weeklyLimitPpm`), do ciclo de cobrança (`billingCyclePpm`) ou em centavos (`billedCents`). O app ainda não usa essa chamada.

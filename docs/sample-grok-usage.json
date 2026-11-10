@@ -1,0 +1,14 @@
+{
+  "currentPeriodStart": "2026-11-07T04:47:36.822Z",
+  "nextResetTimestampUtc": "2026-11-14T04:47:36.822Z",
+  "usagePercent": 37.2,
+  "hasAvailableUsage": true,
+  "hasNonZeroIncludedLimit": true,
+  "availableBankedResetCount": "1",
+  "onDemandSettings": { "visible": true, "eligible": true, "dashboardUrl": "https://cursor.com/dashboard/spending" },
+  "grokPlanLabel": "Grok Bot Plan",
+  "cursorPlanName": "Premium",
+  "isUnified": true,
+  "billingBrand": "SAND_BILLING_BRAND_GROK",
+  "prepaidAvailableCents": "0"
+}
