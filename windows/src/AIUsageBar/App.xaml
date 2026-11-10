@@ -63,6 +63,31 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <!-- One tab per agent: name, fullest limit, underline when selected.
+                 Not focusable like the other popup buttons; arrows / Ctrl+Tab switch tabs. -->
+            <Style x:Key="TabButton" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Chrome" CornerRadius="4,4,0,0" Background="Transparent" Padding="4,5,4,0">
+                                <StackPanel>
+                                    <ContentPresenter HorizontalAlignment="Center" />
+                                    <Border Height="2" Margin="0,5,0,0" Background="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" />
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HoverBackground}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

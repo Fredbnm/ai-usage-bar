@@ -24,14 +24,23 @@ public partial class PopupWindow : Window
         Deactivated += (_, _) => HidePopup();
         // Keeps "Updated 2 min ago" and reset countdowns current while open.
         clock.Tick += (_, _) => Refresh();
+        PreviewKeyDown += OnPreviewKeyDown;
     }
+
+    private System.Drawing.Point anchor;
 
     public void Refresh()
     {
-        if (IsVisible) DataContext = PopupViewModel.Build(store);
+        if (!IsVisible) return;
+        var height = ActualHeight;
+        DataContext = PopupViewModel.Build(store);
+        // Another tab can be taller or shorter: keep the popup against the taskbar.
+        UpdateLayout();
+        if (Math.Abs(ActualHeight - height) > 0.5) PlaceNear(anchor);
     }
 
-    public void Toggle()
+    /// <summary>Opens, or closes if already open. A provider's own tray icon opens on its tab.</summary>
+    public void Toggle(ProviderId? provider = null)
     {
         if (IsVisible)
         {
@@ -40,7 +49,28 @@ public partial class PopupWindow : Window
         }
         // A click on the tray icon first deactivates (hides) the popup; don't reopen it.
         if (DateTime.Now - lastHidden < TimeSpan.FromMilliseconds(300)) return;
+        if (provider is { } id && store.VisibleProviders.Contains(id) && store.Settings.OnboardingDismissed)
+        {
+            store.SelectProvider(id);
+        }
         ShowNearCursor();
+    }
+
+    /// <summary>Left/Right arrows and Ctrl+Tab move between tabs.</summary>
+    private void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        var direction = e.Key switch
+        {
+            System.Windows.Input.Key.Right => 1,
+            System.Windows.Input.Key.Left => -1,
+            System.Windows.Input.Key.Tab when System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control) =>
+                System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Shift) ? -1 : 1,
+            _ => 0,
+        };
+        if (direction == 0 || !store.ShowTabStrip) return;
+        string[] keys = [.. store.VisibleProviders.Select(id => id.Key()), PopupTabs.AgentsKey];
+        store.SelectTab(PopupTabs.Step(keys, store.CurrentTab, direction));
+        e.Handled = true;
     }
 
     public void ShowNearCursor()
@@ -52,7 +82,8 @@ public partial class PopupWindow : Window
         Top = -10_000;
         Show();
         UpdateLayout();
-        PlaceNear(Forms.Cursor.Position);
+        anchor = Forms.Cursor.Position;
+        PlaceNear(anchor);
 
         Activate();
         clock.Start();
@@ -112,6 +143,10 @@ public partial class PopupWindow : Window
             style.Items.Add(Check(option.Label(), settings.Style == option, () => store.SetStyle(option)));
         }
         menu.Items.Add(style);
+
+        var agents = new MenuItem { Header = T("Configurar agentes…", "Set up agents…") };
+        agents.Click += (_, _) => store.ShowAgents();
+        menu.Items.Add(agents);
 
         foreach (var id in store.VisibleProviders)
         {

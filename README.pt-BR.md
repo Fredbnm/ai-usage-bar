@@ -2,9 +2,9 @@
 
 [English](README.md) · **Português** · **[Site e downloads](https://matheusvelloso.github.io/ai-usage-bar/)**
 
-> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
+> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pelo GitHub/Microsoft, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, GitHub Copilot, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
 
-Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com um ícone minimalista (a estrelinha do Claude, o bonequinho do Grok Bot) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço:
+Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com um ícone minimalista (a estrelinha do Claude, o bonequinho do Grok Bot) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio, para você ver tudo de relance:
 
 **Claude**
 - **Sessão atual** (janela de 5 h): quanto já foi usado e quando reinicia
@@ -12,11 +12,19 @@ Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na b
 - **Semanal por modelo** (ex.: Fable), quando o seu plano tem esse limite separado
 - **Onde foi o uso da semana**: Claude Code, Chat, Cowork…
 
+**GitHub Copilot**
+- **Requisições premium** do mês: quanto já foi usado e quando a cota reinicia
+- Chat e completações de código nos planos em que são limitados (ex.: Copilot Free)
+
 **Grok Bot**
 - **Semanal**: quanto já foi usado e quando reinicia
 - Resets guardados disponíveis e uso sob demanda, quando houver
 
-Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage` do Claude Code e da tela de Uso do Grok Bot. O Grok Bot só aparece se estiver instalado e logado neste Mac.
+Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage` do Claude Code, das configurações do Copilot no GitHub e da tela de Uso do Grok Bot. O Copilot e o Grok Bot só aparecem se estiverem logados neste computador.
+
+### Conectando seus agentes
+
+A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes compatíveis: ✓ conectado, ou uma dica de como entrar (no Copilot: entre no GitHub Copilot no VS Code ou rode `gh auth login`). Ela abre sozinha na primeira vez que o app é iniciado. O app nunca pede login: ele reaproveita os logins que suas ferramentas já têm, então basta entrar em outro lugar e a aba aparece em poucos minutos. Desmarque **Mostrar** para esconder um agente que você não quer acompanhar.
 
 <p align="center">
   <img src="docs/screenshot-light.png" width="320" alt="Pop-up no tema claro">
@@ -36,6 +44,7 @@ Em ⚙︎ no pop-up:
 | Serviço | Opções |
 |---|---|
 | Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo) · **Não mostrar** |
+| GitHub Copilot | **Mensal** (padrão) · **Não mostrar** |
 | Grok Bot | **Semanal** (padrão) · **Não mostrar** |
 
 Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
@@ -44,7 +53,7 @@ Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escur
 
 **Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
 
-Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado, aparece a inicial do serviço.
+Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado (o Copilot não tem app próprio), aparece a inicial do serviço.
 
 <p align="center">
   <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
@@ -58,7 +67,7 @@ Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (
 | Windows 10/11 (x64) | 🧪 Novo: app nativo (C#/WPF), instalador e `.exe` portátil. Compilado e testado pelo CI, ainda não num PC de verdade | [`windows/`](windows/) |
 | Linux | Planejado | — |
 
-Cada sistema tem um app nativo e um instalador próprios. Tudo de que um novo port precisa está em [`docs/usage-api.md`](docs/usage-api.md): de onde vem cada login, quais endpoints chamar e como ler as respostas. Use [`docs/sample-usage.json`](docs/sample-usage.json) e [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) como dados de teste.
+Cada sistema tem um app nativo e um instalador próprios. Tudo de que um novo port precisa está em [`docs/usage-api.md`](docs/usage-api.md): de onde vem cada login, quais endpoints chamar e como ler as respostas. Use [`docs/sample-usage.json`](docs/sample-usage.json), [`docs/sample-copilot-usage.json`](docs/sample-copilot-usage.json) e [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) como dados de teste.
 
 ## Baixar
 
@@ -77,7 +86,7 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 3. Se você usa o Grok Bot, o macOS pergunta se o app pode acessar **"Grok Bot Safe Storage"** no Keychain. Escolha **Permitir sempre** (veja [Como funciona](#como-funciona)).
 4. Para abrir junto com o Mac: ⚙︎ no pop-up → **Abrir ao iniciar o Mac**.
 
-**Requisitos:** o Claude Code logado neste Mac (pelo app do Claude ou pelo `claude` no terminal). Para o Grok Bot, o app Grok Bot instalado e logado.
+**Requisitos:** o Claude Code logado neste Mac (pelo app do Claude ou pelo `claude` no terminal). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o `gh` CLI. Para o Grok Bot, o app Grok Bot instalado e logado.
 
 ## Instalar no Windows
 
@@ -124,15 +133,17 @@ Cada serviço é um "provedor" (`UsageProvider`) que lê o login de um app já i
 | Serviço | Login reaproveitado | Endpoint |
 |---|---|---|
 | Claude | Keychain, item `Claude Code-credentials`, lido via `/usr/bin/security` | `GET api.anthropic.com/api/oauth/usage` |
+| GitHub Copilot | O token que o plugin do Copilot no editor guarda em `~/.config/github-copilot/apps.json` (ou `hosts.json`), depois `GH_TOKEN` / `GITHUB_TOKEN`, depois `gh auth token` | `GET api.github.com/copilot_internal/user` |
 | Grok Bot | `~/Library/Application Support/Grok Bot/sand-secrets.json`, criptografado pelo Electron com a chave do item **Grok Bot Safe Storage** do Keychain | `POST api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus` |
 
-No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json` e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os dois apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
+No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json`, o do Copilot de `%LOCALAPPDATA%\github-copilot\apps.json` e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
 
 Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um token para outro lugar além do próprio serviço. O cache guarda apenas as respostas de uso.
 
 ## Limitações
 
 - **Os endpoints não são públicos.** São os que o próprio Claude Code e o próprio Grok Bot usam, e podem mudar sem aviso. O app ignora campos desconhecidos; se o formato mudar de vez, ele avisa que precisa de atualização.
+- **O endpoint do Copilot não é oficial e ainda não foi verificado com uma conta real.** O `copilot_internal/user` é o que os próprios plugins de editor do GitHub chamam; seus campos são conhecidos por ferramentas de terceiros, não pela documentação do GitHub. Nem todo tipo de token do GitHub é aceito por ele (o token do plugin de editor é o mais seguro). Licenças gerenciadas por uma organização podem não informar cota premium.
 - **Os logins expiram.** Claude Code e Grok Bot renovam os próprios tokens quando são usados. Se um deles ficar horas parado, o medidor mostra o último valor e pede para abrir aquele app uma vez.
 - **Grok Bot e Keychain:** o macOS libera a chave do Grok Bot para *esta build* do app. Como o app é assinado só localmente (ad-hoc), cada versão nova pede o "Permitir sempre" de novo. Com um certificado Developer ID isso deixa de acontecer.
 - **Sem assinatura da Apple nem da Microsoft ainda**, por isso o passo do botão direito → Abrir no macOS e o aviso do SmartScreen no Windows.
@@ -145,7 +156,9 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --dump                 # imprime o uso atual em texto
 "$APP" --dump --raw           # … e as respostas brutas (sem tokens)
 "$APP" --snapshot pop.png     # renderiza o pop-up e, em pop-menubar.png, todas as combinações da barra
-"$APP" --snapshot pop.png --fixture docs/sample-usage.json --grok-fixture docs/sample-grok-usage.json --dark
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --grok-fixture docs/sample-grok-usage.json --dark
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # uma aba específica
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # a aba Agentes da primeira vez
 ```
 
 ## Estrutura
@@ -154,9 +167,10 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 docs/
   usage-api.md            contrato de dados para todos os ports
   sample-usage.json       resposta de exemplo do Claude (números fictícios)
+  sample-copilot-usage.json  resposta de exemplo do Copilot (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   sample-grok-usage.json  resposta de exemplo do Grok Bot (números fictícios)
 macos/
-  Sources/UsageCore/      provedores (Claude, Grok Bot), logins, clientes HTTP, textos em PT/EN (testado)
+  Sources/UsageCore/      provedores (Claude, Copilot, Grok Bot), logins, clientes HTTP, lógica das abas, textos em PT/EN (testado)
   Sources/AIUsageBar/     ícone na barra (AppKit) + pop-up (SwiftUI)
   Tests/                  testes da camada de dados
   Support/                Info.plist e ícone

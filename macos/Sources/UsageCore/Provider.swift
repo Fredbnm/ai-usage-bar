@@ -3,12 +3,23 @@ import Foundation
 /// A service whose plan usage the app shows.
 public enum ProviderID: String, CaseIterable, Codable, Sendable {
     case claude
+    case copilot
     case grokBot
 
     public var displayName: String {
         switch self {
         case .claude: "Claude"
+        case .copilot: "GitHub Copilot"
         case .grokBot: "Grok Bot"
+        }
+    }
+
+    /// Label on the popover's tab.
+    public var shortName: String {
+        switch self {
+        case .claude: "Claude"
+        case .copilot: "Copilot"
+        case .grokBot: "Grok"
         }
     }
 
@@ -16,9 +27,35 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
     public var loginSource: String {
         switch self {
         case .claude: "Claude Code"
+        case .copilot: "GitHub Copilot"
         case .grokBot: "Grok Bot"
         }
     }
+
+    /// What the menu bar draws when there is no app icon to borrow. "Co", not
+    /// "C": Copilot would otherwise look like Claude.
+    public var initial: String {
+        self == .copilot ? "Co" : String(displayName.prefix(1))
+    }
+
+    /// How to connect this service, shown in the Agents tab when no login is found.
+    public var setupHint: String {
+        switch self {
+        case .claude:
+            tr("Entre com o comando claude no terminal ou pelo app do Claude.",
+               "Sign in with the claude command in Terminal or in the Claude app.")
+        case .copilot:
+            tr("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
+               "Sign in to GitHub Copilot in VS Code, or run gh auth login.")
+        case .grokBot:
+            tr("Instale o Grok Bot, abra-o e entre na sua conta.", "Install Grok Bot, open it and sign in.")
+        }
+    }
+}
+
+/// Whether a service's login was found on this Mac.
+public enum SetupStatus: Equatable, Sendable {
+    case connected, needsLogin
 }
 
 /// Extra facts shown under a service's limits.
@@ -74,8 +111,15 @@ public protocol UsageProvider: Sendable {
     /// Whether the service looks set up on this machine. Services that are
     /// not available are hidden instead of showing an error.
     func isAvailable() -> Bool
+    /// For the Agents tab: whether the login is there. Defaults to
+    /// `isAvailable()`; Claude overrides it because it is always shown.
+    func detect() -> SetupStatus
     func fetch() async throws -> ProviderFetchResult
     func snapshot(fromCache data: Data) -> ProviderSnapshot?
+}
+
+extension UsageProvider {
+    public func detect() -> SetupStatus { isAvailable() ? .connected : .needsLogin }
 }
 
 /// What gets persisted between launches: the plan name (which comes from

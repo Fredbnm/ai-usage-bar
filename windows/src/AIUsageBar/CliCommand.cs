@@ -8,7 +8,7 @@ namespace AIUsageBar;
 /// Headless modes for debugging and CI:
 /// <code>
 /// AIUsageBar.exe --dump [--raw]
-/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark] [--lang en|pt]
+/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--copilot-fixture copilot.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run]
 /// </code>
 /// <c>--snapshot</c> also writes <c>out-tray.png</c> with every tray icon combination.
 /// The app is a GUI program, so run it with <c>Start-Process -Wait</c> (or from cmd) to see the output.
@@ -45,7 +45,7 @@ internal sealed class CliCommand
 
     private async Task<int> DumpAsync()
     {
-        IUsageProvider[] providers = [new ClaudeProvider(), new GrokBotProvider(new DpapiUnprotector())];
+        IUsageProvider[] providers = [new ClaudeProvider(), new CopilotProvider(), new GrokBotProvider(new DpapiUnprotector())];
         foreach (var provider in providers.Where(p => p.IsAvailable()))
         {
             Console.WriteLine($"== {provider.Id.DisplayName()}");
@@ -78,13 +78,19 @@ internal sealed class CliCommand
         {
             snapshots.Add(claudeSnapshot);
         }
+        if (Option("--copilot-fixture") is { } copilot && CopilotUsage.Snapshot(File.ReadAllBytes(copilot)) is { } copilotSnapshot)
+        {
+            snapshots.Add(copilotSnapshot);
+        }
         if (Option("--grok-fixture") is { } grok && GrokUsage.Snapshot(File.ReadAllBytes(grok)) is { } grokSnapshot)
         {
             snapshots.Add(grokSnapshot);
         }
 
         Theme.Apply(forceDark: args.Contains("--dark"));
-        var store = new UsageStore(new AppSettings { LanguageValue = Localization.Current }, snapshots);
+        var settings = new AppSettings { LanguageValue = Localization.Current, OnboardingDismissed = !args.Contains("--first-run") };
+        var store = new UsageStore(settings, snapshots);
+        if (Option("--tab") is { } tab) store.PreviewTab(tab);
         var window = new PopupWindow(store);
         window.RenderToPng(output);
         window.Close();

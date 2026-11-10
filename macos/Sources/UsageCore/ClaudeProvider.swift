@@ -9,6 +9,11 @@ public struct ClaudeProvider: UsageProvider {
     /// login is reported instead of hidden.
     public func isAvailable() -> Bool { true }
 
+    /// Keychain (`security`) or `~/.claude/.credentials.json`; spawns a process.
+    public func detect() -> SetupStatus {
+        CredentialsStore.readKeychain() != nil || CredentialsStore.readFile() != nil ? .connected : .needsLogin
+    }
+
     public func fetch() async throws -> ProviderFetchResult {
         let credentials: ClaudeCredentials
         do {

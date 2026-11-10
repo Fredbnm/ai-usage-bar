@@ -15,6 +15,12 @@ final class UsageStore: ObservableObject {
     /// Services shown in the popover, in display order.
     @Published private(set) var visibleProviders: [ProviderID] = []
     @Published private(set) var menuBarDisplays: [ProviderID: MenuBarDisplay] = [:]
+    /// The first-run "Agents" tab was closed with Done.
+    @Published private(set) var onboardingDismissed: Bool
+    /// Agents the user switched off in the Agents tab (raw values).
+    @Published private(set) var hiddenProviders: Set<String>
+    /// The tab asked for; `currentTab` resolves it against what is connected.
+    @Published private var requestedTab: String?
     @Published var menuBarStyle: MenuBarStyle {
         didSet { defaults.set(menuBarStyle.rawValue, forKey: Keys.menuBarStyle) }
     }
@@ -45,12 +51,25 @@ final class UsageStore: ObservableObject {
         static let menuBarStyle = "menuBar.style"
         static let colorAlerts = "menuBar.colorAlerts"
         static let language = "language"
+        static let onboardingDismissed = "onboardingDismissed"
+        static let selectedProvider = "selectedProvider"
+        static let hiddenProviders = "hiddenProviders"
     }
 
-    init(providers: [any UsageProvider] = [ClaudeProvider(), GrokBotProvider()], defaults: UserDefaults = .standard) {
+    init(
+        providers: [any UsageProvider] = [ClaudeProvider(), CopilotProvider(), GrokBotProvider()],
+        defaults: UserDefaults = .standard
+    ) {
         self.providers = providers
         self.defaults = defaults
         Self.migrateFromClaudeUsage(into: defaults)
+        // Settings saved by an older version: this is not a first run.
+        let hadSettings = defaults.object(forKey: Keys.language) != nil
+            || defaults.object(forKey: Keys.cache(.claude)) != nil
+            || defaults.object(forKey: Keys.menuBar(.claude)) != nil
+        onboardingDismissed = defaults.object(forKey: Keys.onboardingDismissed) as? Bool ?? hadSettings
+        hiddenProviders = Set(defaults.stringArray(forKey: Keys.hiddenProviders) ?? [])
+        requestedTab = defaults.string(forKey: Keys.selectedProvider)
         menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
         colorAlerts = defaults.object(forKey: Keys.colorAlerts) as? Bool ?? true
         if let saved = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
@@ -77,6 +96,9 @@ final class UsageStore: ObservableObject {
     init(preview snapshots: [ProviderSnapshot], updated: Date = Date()) {
         providers = []
         defaults = .standard
+        onboardingDismissed = true
+        hiddenProviders = []
+        requestedTab = nil
         menuBarStyle = .default
         colorAlerts = true
         language = AppLanguage.current
@@ -99,6 +121,69 @@ final class UsageStore: ObservableObject {
         let prefixes = ["menuBar", "cache.", "cachedAt.", "language"]
         for (key, value) in legacy.dictionaryRepresentation() where prefixes.contains(where: key.hasPrefix) {
             defaults.set(value, forKey: key)
+        }
+    }
+
+    // MARK: Tabs and onboarding
+
+    struct AgentRow: Identifiable {
+        var id: ProviderID
+        var status: SetupStatus
+        var isHidden: Bool
+        var plan: String?
+    }
+
+    /// The tab the popover shows: a provider's raw value or `PopupTabs.agentsKey`.
+    var currentTab: String {
+        PopupTabs.resolve(requested: requestedTab, connected: visibleProviders, onboardingDone: onboardingDismissed)
+    }
+
+    var showTabStrip: Bool { PopupTabs.showStrip(connectedCount: visibleProviders.count) }
+
+    var currentProvider: ProviderID? { ProviderID(rawValue: currentTab) }
+
+    /// Keys of the tabs in order, the Agents tab last.
+    var tabKeys: [String] { visibleProviders.map(\.rawValue) + [PopupTabs.agentsKey] }
+
+    func selectTab(_ key: String) {
+        requestedTab = key
+        if key != PopupTabs.agentsKey { defaults.set(key, forKey: Keys.selectedProvider) }
+    }
+
+    /// Moves to the next/previous tab (arrow keys).
+    func stepTab(_ direction: Int) {
+        guard showTabStrip else { return }
+        selectTab(PopupTabs.step(keys: tabKeys, current: currentTab, direction: direction))
+    }
+
+    /// Picks a tab without saving anything: used by `--snapshot --tab`.
+    func previewTab(_ key: String) { requestedTab = key }
+
+    /// "Set up agents…": opens the Agents tab, also with a single agent.
+    func showAgents() { selectTab(PopupTabs.agentsKey) }
+
+    func dismissOnboarding() {
+        onboardingDismissed = true
+        defaults.set(true, forKey: Keys.onboardingDismissed)
+        requestedTab = visibleProviders.first?.rawValue
+    }
+
+    /// Previews the first-run state without saving it.
+    func previewFirstRun() { onboardingDismissed = false }
+
+    func setProviderHidden(_ id: ProviderID, _ hidden: Bool) {
+        if hidden { hiddenProviders.insert(id.rawValue) } else { hiddenProviders.remove(id.rawValue) }
+        defaults.set(Array(hiddenProviders), forKey: Keys.hiddenProviders)
+        updateVisibleProviders()
+        Task { await refresh(force: true) }
+    }
+
+    /// One row per supported agent, connected or not, for the Agents tab.
+    var agentRows: [AgentRow] {
+        ProviderID.allCases.map { id in
+            let status = providers.first { $0.id == id }?.detect()
+                ?? (state(for: id).snapshot == nil ? .needsLogin : .connected)
+            return AgentRow(id: id, status: status, isHidden: hiddenProviders.contains(id.rawValue), plan: state(for: id).snapshot?.planName)
         }
     }
 
@@ -236,7 +321,7 @@ final class UsageStore: ObservableObject {
     }
 
     private func updateVisibleProviders() {
-        let visible = providers.filter { $0.isAvailable() }.map(\.id)
+        let visible = providers.filter { !hiddenProviders.contains($0.id.rawValue) && $0.isAvailable() }.map(\.id)
         if visible != visibleProviders { visibleProviders = visible }
     }
 

@@ -43,8 +43,10 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force screens | Out-Null
           $exe = Resolve-Path publish/win-x64/AIUsageBar.exe
-          $fixtures = @('--fixture', (Resolve-Path ../docs/sample-usage.json), '--grok-fixture', (Resolve-Path ../docs/sample-grok-usage.json))
-          foreach ($variant in @(@('light', 'en', @()), @('dark', 'en', @('--dark')), @('light-pt', 'pt', @()))) {
+          $fixtures = @('--fixture', (Resolve-Path ../docs/sample-usage.json), '--grok-fixture', (Resolve-Path ../docs/sample-grok-usage.json), '--copilot-fixture', (Resolve-Path ../docs/sample-copilot-usage.json))
+          foreach ($variant in @(
+              @('light', 'en', @()), @('dark', 'en', @('--dark')), @('light-pt', 'pt', @()),
+              @('copilot-tab', 'en', @('--tab', 'copilot')), @('agents-first-run', 'en', @('--first-run')))) {
             $out = Join-Path (Resolve-Path screens) "popup-$($variant[0]).png"
             $arguments = @('--snapshot', $out, '--lang', $variant[1]) + $fixtures + $variant[2]
             $process = Start-Process -FilePath $exe -ArgumentList $arguments -Wait -PassThru

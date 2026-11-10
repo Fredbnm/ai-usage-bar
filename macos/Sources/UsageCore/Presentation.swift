@@ -115,6 +115,12 @@ extension UsageResponse {
             return tr("Semanal · todos os modelos", "Weekly · all models")
         case "weekly":
             return tr("Semanal", "Weekly")
+        case "premium_requests":
+            return tr("Requisições premium · mês", "Premium requests · month")
+        case "chat":
+            return "Chat"
+        case "completions":
+            return tr("Sugestões de código", "Code completions")
         case "weekly_scoped":
             return tr("Semanal", "Weekly") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         default:

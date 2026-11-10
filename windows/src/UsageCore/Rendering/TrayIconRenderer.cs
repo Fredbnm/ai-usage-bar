@@ -59,7 +59,7 @@ public static class TrayIconRenderer
         }
         else
         {
-            DrawNumber(canvas, provider.DisplayName()[..1], inner, foreground);
+            DrawNumber(canvas, provider.Initial(), inner, foreground);
         }
         return bitmap;
     }

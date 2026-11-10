@@ -11,9 +11,15 @@ struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
-            ForEach(store.visibleProviders, id: \.self) { id in
-                Divider()
+            // One agent needs no strip: the popover looks as it always did.
+            if store.showTabStrip {
+                TabStrip(store: store)
+            }
+            Divider()
+            if let id = store.currentProvider {
                 ProviderSection(provider: id, state: store.state(for: id))
+            } else {
+                AgentsSection(store: store)
             }
             Divider()
             footer
@@ -21,6 +27,18 @@ struct PopoverView: View {
         .padding(16)
         .frame(width: 320)
         .id(store.language)
+        .background(tabKeyboardShortcuts)
+    }
+
+    /// Left/Right arrows move between tabs.
+    private var tabKeyboardShortcuts: some View {
+        HStack {
+            Button("") { store.stepTab(-1) }.keyboardShortcut(.leftArrow, modifiers: [])
+            Button("") { store.stepTab(1) }.keyboardShortcut(.rightArrow, modifiers: [])
+        }
+        .frame(width: 0, height: 0)
+        .opacity(0)
+        .accessibilityHidden(true)
     }
 
     private var header: some View {
@@ -58,6 +76,7 @@ struct PopoverView: View {
                         Text(style.label).tag(style)
                     }
                 }
+                Button(tr("Configurar agentes…", "Set up agents…")) { store.showAgents() }
                 ForEach(store.visibleProviders, id: \.self) { id in
                     Picker(id.displayName + tr(" na barra", " in menu bar"), selection: menuBarBinding(for: id)) {
                         ForEach(id.menuBarDisplayOptions) { option in
@@ -150,6 +169,129 @@ private struct ProviderSection: View {
                     ProgressView().controlSize(.small)
                     Text(tr("Carregando…", "Loading…")).foregroundStyle(.secondary)
                 }
+            }
+        }
+    }
+}
+
+/// One tab per agent (name + its fullest limit) and the Agents tab.
+private struct TabStrip: View {
+    @ObservedObject var store: UsageStore
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(store.visibleProviders, id: \.self) { id in
+                let state = store.state(for: id)
+                let summary = TabSummary.make(snapshot: state.snapshot, hasError: state.error != nil)
+                tab(
+                    key: id.rawValue,
+                    label: Text(id.shortName)
+                        + Text(" " + (summary.isWarning && summary.text != "!" ? summary.text + " ⚠" : summary.text))
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundColor(summary.text == "–" ? Color.secondary : (summary.isWarning ? Severity.warning : summary.severity).color),
+                    spoken: tabDescription(id, summary)
+                )
+            }
+            tab(
+                key: PopupTabs.agentsKey,
+                label: Text(Image(systemName: "plus")).foregroundColor(Color.secondary),
+                spoken: tr("Agentes e conexões", "Agents and connections")
+            )
+        }
+    }
+
+    private func tab(key: String, label: Text, spoken: String) -> some View {
+        let selected = store.currentTab == key
+        return Button {
+            store.selectTab(key)
+        } label: {
+            VStack(spacing: 5) {
+                label
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .lineLimit(1)
+                Rectangle()
+                    .fill(selected ? Color.accentColor : Color.clear)
+                    .frame(height: 2)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(spoken)
+        .accessibilityLabel(spoken)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private func tabDescription(_ id: ProviderID, _ summary: TabSummary) -> String {
+        let status = summary.text == "!" || summary.text == "–"
+            ? tr("sem dados", "no data")
+            : tr("\(summary.text) usado", "\(summary.text) used")
+        return "\(id.displayName), \(status)"
+    }
+}
+
+/// Every supported agent, whether it is connected, and first-run help.
+private struct AgentsSection: View {
+    @ObservedObject var store: UsageStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(tr("AGENTES DE IA", "AI AGENTS"))
+                .font(.system(size: 10, weight: .semibold))
+                .kerning(0.4)
+                .foregroundStyle(.secondary)
+            if !store.onboardingDismissed {
+                Text(tr(
+                    "Aqui estão os agentes que o medidor sabe ler. Os que já têm login neste Mac aparecem sozinhos; para os outros, siga a dica.",
+                    "These are the agents the meter can read. The ones already signed in on this Mac show up on their own; for the others, follow the hint."
+                ))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            ForEach(store.agentRows) { row in
+                AgentRowView(row: row) { store.setProviderHidden(row.id, !row.isHidden) }
+            }
+            HStack {
+                Spacer()
+                // After the first run the same button goes back, which matters
+                // with one agent, where there is no tab strip to leave by.
+                Button(store.onboardingDismissed ? tr("Voltar", "Back") : tr("Concluir", "Done")) {
+                    store.dismissOnboarding()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+}
+
+private struct AgentRowView: View {
+    let row: UsageStore.AgentRow
+    let toggle: () -> Void
+
+    var body: some View {
+        let connected = row.status == .connected
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: connected ? "checkmark" : "exclamationmark.triangle.fill")
+                .foregroundStyle(connected ? Severity.normal.color : Severity.warning.color)
+                .frame(width: 14)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.id.displayName).font(.system(size: 13, weight: .semibold))
+                Text(connected
+                    ? tr("Conectado", "Connected") + (row.plan.map { " · \($0)" } ?? "")
+                    : tr("Login não encontrado", "No login found"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if !connected {
+                    Text(row.id.setupHint)
+                        .font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer()
+            if connected {
+                Toggle(tr("Mostrar", "Show"), isOn: Binding(get: { !row.isHidden }, set: { _ in toggle() }))
+                    .toggleStyle(.checkbox)
             }
         }
     }
@@ -270,6 +412,7 @@ extension ProviderID {
     var openHelp: String {
         switch self {
         case .claude: tr("Ver uso no claude.ai", "View usage on claude.ai")
+        case .copilot: tr("Gerenciar o Copilot no github.com", "Manage Copilot on github.com")
         case .grokBot: tr("Abrir o Grok Bot", "Open Grok Bot")
         }
     }
@@ -279,6 +422,8 @@ extension ProviderID {
         switch self {
         case .claude:
             NSWorkspace.shared.open(URL(string: "https://claude.ai/settings/usage")!)
+        case .copilot:
+            NSWorkspace.shared.open(URL(string: "https://github.com/settings/copilot")!)
         case .grokBot:
             if FileManager.default.fileExists(atPath: GrokBotProvider.appURL.path) {
                 NSWorkspace.shared.open(GrokBotProvider.appURL)

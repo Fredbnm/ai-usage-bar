@@ -45,7 +45,7 @@ internal sealed class TrayController : IDisposable
         {
             if (!icons.TryGetValue(id, out var icon))
             {
-                icon = CreateIcon();
+                icon = CreateIcon(id);
                 icons[id] = icon;
             }
             var glyph = store.Settings.Style == TrayStyle.Icon ? InstalledApps.Glyph(id) : null;
@@ -78,12 +78,12 @@ internal sealed class TrayController : IDisposable
         popup.Refresh();
     }
 
-    private Forms.NotifyIcon CreateIcon()
+    private Forms.NotifyIcon CreateIcon(ProviderId? provider = null)
     {
         var icon = new Forms.NotifyIcon();
         icon.MouseClick += (_, e) =>
         {
-            if (e.Button == Forms.MouseButtons.Left) popup.Toggle();
+            if (e.Button == Forms.MouseButtons.Left) popup.Toggle(provider);
         };
         return icon;
     }

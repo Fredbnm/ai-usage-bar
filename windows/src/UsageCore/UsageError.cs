@@ -31,6 +31,9 @@ public sealed class UsageException(UsageErrorKind kind, int statusCode = 0, Exce
             UsageErrorKind.NotLoggedIn when provider == ProviderId.Claude => T(
                 "Não achei o login do Claude Code neste PC. Entre com o comando claude no terminal ou pelo app do Claude.",
                 "No Claude Code login found on this PC. Sign in with the claude command in a terminal or in the Claude app."),
+            UsageErrorKind.NotLoggedIn when provider == ProviderId.Copilot => T(
+                "Não achei o login do GitHub Copilot. Entre no Copilot no VS Code ou rode gh auth login.",
+                "No GitHub Copilot login found. Sign in to Copilot in VS Code, or run gh auth login."),
             UsageErrorKind.NotLoggedIn => T(
                 "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta.",
                 "No Grok Bot login found. Open Grok Bot and sign in."),

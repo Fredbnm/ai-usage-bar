@@ -24,7 +24,8 @@ enum ProviderGlyph {
     static func glyph(for provider: ProviderID) -> Glyph? {
         if let cached = cache[provider] { return cached }
         if missing.contains(provider) { return nil }
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: provider.appBundleIdentifier),
+        guard let bundleIdentifier = provider.appBundleIdentifier,
+              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier),
               let glyph = GlyphExtractor.whiteArtwork(of: NSWorkspace.shared.icon(forFile: url.path))
         else {
             missing.insert(provider)

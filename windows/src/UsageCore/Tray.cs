@@ -20,18 +20,14 @@ public enum TrayDisplay { Session, Weekly, Hidden }
 
 public static class TrayOptions
 {
-    public static IReadOnlyList<TrayDisplay> For(ProviderId provider) => provider == ProviderId.Claude
-        ? [TrayDisplay.Session, TrayDisplay.Weekly, TrayDisplay.Hidden]
-        : [TrayDisplay.Weekly, TrayDisplay.Hidden];
+    public static IReadOnlyList<TrayDisplay> For(ProviderId provider) => provider.Descriptor().TrayOptions;
 
-    public static TrayDisplay Default(ProviderId provider) =>
-        provider == ProviderId.Claude ? TrayDisplay.Session : TrayDisplay.Weekly;
+    public static TrayDisplay Default(ProviderId provider) => provider.Descriptor().DefaultTray;
 
     public static string Label(this TrayDisplay display, ProviderId provider) => display switch
     {
         TrayDisplay.Session => T("Sessão atual", "Current session"),
-        TrayDisplay.Weekly when provider == ProviderId.Claude => T("Semanal (todos os modelos)", "Weekly (all models)"),
-        TrayDisplay.Weekly => T("Semanal", "Weekly"),
+        TrayDisplay.Weekly => provider.Descriptor().WeeklyLabel(),
         _ => T("Não mostrar", "Hide"),
     };
 

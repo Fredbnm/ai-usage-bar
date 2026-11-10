@@ -65,6 +65,8 @@ internal static class InstalledApps
     /// <summary>The app's executable (or icon file), from the uninstall entries or known folders.</summary>
     public static string? IconSource(ProviderId provider)
     {
+        // Copilot lives inside editors: no app of its own to take an icon from.
+        if (provider == ProviderId.Copilot) return null;
         foreach (var hive in new[] { Registry.CurrentUser, Registry.LocalMachine })
         foreach (var path in UninstallKeys)
         {
@@ -125,9 +127,9 @@ internal static class InstalledApps
     {
         try
         {
-            if (provider == ProviderId.Claude)
+            if (provider.Descriptor().HelpUrl is { } url)
             {
-                Shell("https://claude.ai/settings/usage");
+                Shell(url.AbsoluteUri);
             }
             else if (IconSource(ProviderId.GrokBot) is { } exe && exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {

@@ -19,6 +19,11 @@ public enum UsageError: Error, Equatable, Sendable {
                     "Não achei o login do Claude Code neste Mac. Entre com o comando claude no terminal ou pelo app do Claude.",
                     "No Claude Code login found on this Mac. Sign in with the claude command in Terminal or in the Claude app."
                 )
+            case .copilot:
+                return tr(
+                    "Não achei o login do GitHub Copilot. Entre no Copilot no VS Code ou rode gh auth login.",
+                    "No GitHub Copilot login found. Sign in to Copilot in VS Code, or run gh auth login."
+                )
             case .grokBot:
                 return tr(
                     "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta.",
