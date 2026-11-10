@@ -136,7 +136,10 @@ internal sealed class CliCommand
 
     private async Task<int> InstallUpdateAsync()
     {
-        var updater = new Updater(AppVersion.Parse(Option("--as-version")) ?? Updater.RunningVersion);
+        var updater = new Updater(AppVersion.Parse(Option("--as-version")) ?? Updater.RunningVersion)
+        {
+            ApiToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN"),
+        };
         await updater.CheckAsync(manual: true);
         if (updater.Available is not { } release)
         {

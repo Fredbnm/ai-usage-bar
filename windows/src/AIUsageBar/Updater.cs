@@ -67,6 +67,9 @@ internal sealed class Updater
 
     public string CurrentText => Current?.ToString() ?? "dev";
 
+    /// <summary>Only set by <c>--install-update</c> on CI; see <see cref="AppUpdates.FetchLatestAsync"/>.</summary>
+    public string? ApiToken { get; init; }
+
     public bool ShowsBanner => Available is not null || Phase != UpdatePhase.Idle;
 
     /// <summary>Whether the button installs the update itself (otherwise it opens the download page).</summary>
@@ -105,7 +108,7 @@ internal sealed class Updater
         if (manual) Set(UpdatePhase.Checking);
         try
         {
-            var release = await AppUpdates.FetchLatestAsync();
+            var release = await AppUpdates.FetchLatestAsync(ApiToken);
             lastCheck = DateTimeOffset.Now;
             var asset = Kind == InstallKind.Portable ? AppUpdates.PortableAsset : AppUpdates.SetupAsset;
             Available = AppUpdates.Update(release, current, asset);

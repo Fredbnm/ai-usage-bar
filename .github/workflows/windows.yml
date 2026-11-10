@@ -83,6 +83,9 @@ jobs:
       # installed by Setup. Passes when the exe on disk matches the release's exe.
       - name: Self-update from the latest release
         continue-on-error: true
+        env:
+          # The app asks GitHub anonymously; shared CI machines often run out of that limit.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           $latest = Join-Path $env:RUNNER_TEMP 'latest.exe'
           Invoke-WebRequest "https://github.com/$env:GITHUB_REPOSITORY/releases/latest/download/AIUsageBar-Windows-Portable.exe" -OutFile $latest

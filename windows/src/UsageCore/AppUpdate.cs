@@ -111,10 +111,15 @@ public static class AppUpdates
     public static AppRelease? Update(AppRelease release, AppVersion current, string asset) =>
         release.Version > current && release.Asset(asset) is not null ? release : null;
 
-    public static async Task<AppRelease> FetchLatestAsync(CancellationToken cancellation = default)
+    /// <summary>
+    /// <paramref name="token"/> is only for CI (<c>--install-update</c> with <c>GITHUB_TOKEN</c> set), whose shared
+    /// machines run out of GitHub's anonymous rate limit; the app itself always asks anonymously.
+    /// </summary>
+    public static async Task<AppRelease> FetchLatestAsync(string? token = null, CancellationToken cancellation = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, LatestEndpoint);
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        if (!string.IsNullOrEmpty(token)) request.Headers.Authorization = new("Bearer", token);
         return Parse(await Http.SendAsync(request, cancellation).ConfigureAwait(false));
     }
 

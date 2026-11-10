@@ -130,7 +130,7 @@ struct CLICommand {
             return fail("Run this from inside the app bundle (AI Usage Bar.app/Contents/MacOS/AIUsageBar).")
         }
         do {
-            let release = try await AppUpdates.fetchLatest()
+            let release = try await AppUpdates.fetchLatest(token: ProcessInfo.processInfo.environment["GITHUB_TOKEN"])
             print("Running \(current); latest release is \(release.version).")
             guard let update = AppUpdates.update(from: release, current: current, asset: AppUpdates.macAsset),
                   let asset = update.asset(named: AppUpdates.macAsset)

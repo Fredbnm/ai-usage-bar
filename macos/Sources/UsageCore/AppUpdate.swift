@@ -100,10 +100,13 @@ public enum AppUpdates {
         release.version > current && release.asset(named: asset) != nil ? release : nil
     }
 
-    public static func fetchLatest() async throws -> AppRelease {
+    /// `token` is only for CI (`--install-update` with `GITHUB_TOKEN` set), whose shared machines
+    /// run out of GitHub's anonymous rate limit; the app itself always asks anonymously.
+    public static func fetchLatest(token: String? = nil) async throws -> AppRelease {
         var request = URLRequest(url: latestEndpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 20)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("ai-usage-bar", forHTTPHeaderField: "User-Agent")
+        if let token, !token.isEmpty { request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
         return try parse(try await HTTP.send(request))
     }
 

@@ -34,6 +34,9 @@ jobs:
       # published release, the way a user's copy would.
       - name: Self-update from the latest release
         continue-on-error: true
+        env:
+          # The app asks GitHub anonymously; shared CI machines often run out of that limit.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           dir="$RUNNER_TEMP/update-test"
           app="$dir/AI Usage Bar.app"
@@ -42,7 +45,7 @@ jobs:
           plutil -replace CFBundleShortVersionString -string 0.0.1 "$app/Contents/Info.plist"
           codesign --force --sign - "$app"
           "$app/Contents/MacOS/AIUsageBar" --install-update --no-relaunch
-          latest=$(curl -fsSL -H "Authorization: Bearer ${{ github.token }}" \
+          latest=$(curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" \
             | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"].lstrip("v"))')
           for _ in $(seq 1 60); do
