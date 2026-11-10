@@ -36,6 +36,35 @@ enum ProviderGlyph {
     }
 }
 
+/// The small icon beside an agent's name on its tab: the same glyph the menu
+/// bar uses, as a template image so SwiftUI tints it with the text color. With
+/// no app to borrow from (Copilot) it is the agent's initial in a thin circle.
+@MainActor
+enum TabIcon {
+    private static var cache: [ProviderID: NSImage] = [:]
+
+    static func image(for provider: ProviderID, side: CGFloat = 16) -> NSImage {
+        if let cached = cache[provider] { return cached }
+        let glyph = ProviderGlyph.glyph(for: provider)
+        let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { rect in
+            if glyph == nil {
+                let stroke: CGFloat = 1
+                let ring = NSBezierPath(ovalIn: rect.insetBy(dx: stroke / 2, dy: stroke / 2))
+                ring.lineWidth = stroke
+                NSColor.black.withAlphaComponent(0.75).setStroke()
+                ring.stroke()
+            }
+            MenuBarIcon.drawGlyph(glyph, provider: provider, in: rect.insetBy(dx: 1, dy: 1), color: .black, letterSize: side * 0.5)
+            return true
+        }
+        image.isTemplate = true
+        // The Glyph is read once and the image does not change with it, but a
+        // missing app can appear later: only cache when there is artwork.
+        if glyph != nil { cache[provider] = image }
+        return image
+    }
+}
+
 enum GlyphExtractor {
     /// Keeps the white artwork of an icon as an alpha mask:
     /// 1. "whiteness" = darkest RGB channel, so orange and black tiles drop out;

@@ -19,6 +19,7 @@ internal sealed class PopupViewModel
     /// <summary>Only the selected agent: the popup shows one agent at a time.</summary>
     public required IReadOnlyList<ProviderViewModel> Providers { get; init; }
     public required IReadOnlyList<TabViewModel> Tabs { get; init; }
+    public required TabViewModel AgentsTab { get; init; }
     public required Visibility TabStripVisibility { get; init; }
     public required AgentsViewModel Agents { get; init; }
     public required Visibility AgentsVisibility { get; init; }
@@ -31,6 +32,7 @@ internal sealed class PopupViewModel
         return new PopupViewModel
         {
             Tabs = TabViewModel.Build(store, current),
+            AgentsTab = TabViewModel.AgentsTab(store, current),
             TabStripVisibility = store.ShowTabStrip ? Visibility.Visible : Visibility.Collapsed,
             Agents = AgentsViewModel.Build(store),
             AgentsVisibility = onAgents ? Visibility.Visible : Visibility.Collapsed,
@@ -48,10 +50,13 @@ internal sealed class PopupViewModel
     }
 }
 
-/// <summary>One tab in the strip: the agent's name and its fullest limit.</summary>
+/// <summary>One tab in the strip: the agent's icon, name and its fullest limit.</summary>
 internal sealed record TabViewModel(
     string Key,
+    ImageSource? Icon,
+    double IconOpacity,
     string Name,
+    Visibility NameVisibility,
     string StatusText,
     Brush StatusBrush,
     Brush UnderlineBrush,
@@ -59,9 +64,14 @@ internal sealed record TabViewModel(
     string AutomationName,
     ICommand SelectCommand)
 {
+    /// <summary>With this many agents or more, only the selected tab keeps its name, so the strip never overflows.</summary>
+    private const int NamesFitUpTo = 3;
+
     public static IReadOnlyList<TabViewModel> Build(UsageStore store, string current)
     {
         var tabs = new List<TabViewModel>();
+        var iconColor = ((SolidColorBrush)Resource("PrimaryText")).Color;
+        var showAllNames = store.VisibleProviders.Count <= NamesFitUpTo;
         foreach (var id in store.VisibleProviders)
         {
             var state = store.State(id);
@@ -72,7 +82,10 @@ internal sealed record TabViewModel(
                 : T($"{summary.Text} usado", $"{summary.Text} used");
             tabs.Add(new TabViewModel(
                 id.Key(),
+                TabIcons.Get(id, iconColor),
+                isCurrent ? 1 : 0.65,
                 id.Descriptor().ShortName,
+                showAllNames || isCurrent ? Visibility.Visible : Visibility.Collapsed,
                 summary.IsWarning && summary.Text != "!" ? summary.Text + " ⚠" : summary.Text,
                 summary.Text == "–" ? Resource("SecondaryText") : LimitViewModel.SeverityBrush(summary.IsWarning ? Severity.Warning : summary.Severity),
                 isCurrent ? Resource("AccentBrush") : Brushes.Transparent,
@@ -80,18 +93,25 @@ internal sealed record TabViewModel(
                 $"{id.DisplayName()}, {spoken}",
                 new RelayCommand(() => store.SelectTab(id.Key()))));
         }
+        return tabs;
+    }
 
+    /// <summary>The trailing "＋" tab that opens the Agents tab; narrower than the agent tabs.</summary>
+    public static TabViewModel AgentsTab(UsageStore store, string current)
+    {
         var onAgents = current == PopupTabs.AgentsKey;
-        tabs.Add(new TabViewModel(
+        return new TabViewModel(
             PopupTabs.AgentsKey,
+            null,
+            1,
             "＋",
+            Visibility.Visible,
             "",
             Resource("SecondaryText"),
             onAgents ? Resource("AccentBrush") : Brushes.Transparent,
             onAgents ? FontWeights.SemiBold : FontWeights.Normal,
             T("Agentes e conexões", "Agents and connections"),
-            new RelayCommand(() => store.SelectTab(PopupTabs.AgentsKey))));
-        return tabs;
+            new RelayCommand(() => store.SelectTab(PopupTabs.AgentsKey)));
     }
 
     internal static Brush Resource(string key) => (Brush)System.Windows.Application.Current.Resources[key];

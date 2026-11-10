@@ -174,41 +174,66 @@ private struct ProviderSection: View {
     }
 }
 
-/// One tab per agent (name + its fullest limit) and the Agents tab.
+/// One tab per agent (icon, name and its fullest limit) and the Agents tab.
 private struct TabStrip: View {
     @ObservedObject var store: UsageStore
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(store.visibleProviders, id: \.self) { id in
-                let state = store.state(for: id)
-                let summary = TabSummary.make(snapshot: state.snapshot, hasError: state.error != nil)
-                tab(
-                    key: id.rawValue,
-                    label: Text(id.shortName)
-                        + Text(" " + (summary.isWarning && summary.text != "!" ? summary.text + " ⚠" : summary.text))
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .foregroundColor(summary.text == "–" ? Color.secondary : (summary.isWarning ? Severity.warning : summary.severity).color),
-                    spoken: tabDescription(id, summary)
-                )
+                agentTab(id)
             }
-            tab(
-                key: PopupTabs.agentsKey,
-                label: Text(Image(systemName: "plus")).foregroundColor(Color.secondary),
-                spoken: tr("Agentes e conexões", "Agents and connections")
-            )
+            // "+" keeps a narrow slot of its own; the agent tabs share the rest.
+            button(key: PopupTabs.agentsKey, spoken: tr("Agentes e conexões", "Agents and connections")) {
+                Image(systemName: "plus").foregroundStyle(.secondary)
+            }
+            .frame(width: 30)
         }
     }
 
-    private func tab(key: String, label: Text, spoken: String) -> some View {
+    private func agentTab(_ id: ProviderID) -> some View {
+        let state = store.state(for: id)
+        let summary = TabSummary.make(snapshot: state.snapshot, hasError: state.error != nil)
+        let selected = store.currentTab == id.rawValue
+        let status = summary.isWarning && summary.text != "!" ? summary.text + " ⚠" : summary.text
+        let statusColor: Color = summary.text == "–"
+            ? .secondary
+            : (summary.isWarning ? Severity.warning : summary.severity).color
+
+        let icon = Image(nsImage: TabIcon.image(for: id))
+            .renderingMode(.template)
+            .resizable()
+            .frame(width: 16, height: 16)
+            .foregroundStyle(.primary)
+            .opacity(selected ? 1 : 0.65)
+        let statusText = Text(status)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(statusColor)
+
+        return button(key: id.rawValue, spoken: tabDescription(id, summary)) {
+            // Icon + name + number when they fit; the name is the first thing to go.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 4) {
+                    icon
+                    Text(id.shortName).font(.system(size: 12.5, weight: selected ? .semibold : .regular))
+                    statusText
+                }
+                HStack(spacing: 4) {
+                    icon
+                    statusText
+                }
+            }
+            .lineLimit(1)
+        }
+    }
+
+    private func button<Label: View>(key: String, spoken: String, @ViewBuilder label: () -> Label) -> some View {
         let selected = store.currentTab == key
         return Button {
             store.selectTab(key)
         } label: {
             VStack(spacing: 5) {
-                label
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
-                    .lineLimit(1)
+                label()
                 Rectangle()
                     .fill(selected ? Color.accentColor : Color.clear)
                     .frame(height: 2)

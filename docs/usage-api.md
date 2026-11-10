@@ -224,7 +224,8 @@ If no quota can be read (organization-managed seats may not report one) the resp
 
 Once there is more than one agent the popup shows **one agent at a time**:
 
-- **Strip:** shown only when two or more agents are connected, so a single agent looks exactly as before. One tab per connected agent (`ProviderID.shortName`: "Claude", "Copilot", "Grok") plus a trailing **＋** tab.
+- **Strip:** shown only when two or more agents are connected, so a single agent looks exactly as before. One tab per connected agent (`ProviderID.shortName`: "Claude", "Copilot", "Grok") plus a trailing **＋** tab, which keeps a narrow slot while the agent tabs share the rest equally.
+- **Tab icon:** 16 pt, beside the name, the same glyph as the tray / menu bar (white artwork cut out of the installed app's icon), drawn in the theme's text color at reduced opacity when not selected. With no app to borrow from (Copilot) it is the agent's initial ("Co") in a thin circle. When the name does not fit, it goes first (icon and number stay): Windows hides the name of unselected tabs with four or more agents; macOS drops it whenever the tab is too narrow.
 - **Tab summary:** the agent's *fullest* limit as a percentage, in the severity color; `!` (warning) when the agent failed and has nothing to show, `–` while loading, and `⚠` after the number when it has data but the last refresh failed. Spoken label: "Claude, 83% used" / "no data".
 - **Which tab shows (`resolve`):** nothing connected, or onboarding not done → Agents. Otherwise the requested tab if it is still connected (or Agents if asked), else the first connected agent. The last agent tab is saved (`SelectedProvider` / `selectedProvider`).
 - **Keys:** Left/Right arrows move between tabs, wrapping (also Ctrl+Tab on Windows). On Windows, a provider's own tray icon opens the popup on its tab.

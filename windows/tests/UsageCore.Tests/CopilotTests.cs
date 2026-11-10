@@ -195,6 +195,21 @@ public class CopilotTests : IDisposable
     }
 
     [Fact]
+    public void TabIconsAreDrawnInTheGivenColor()
+    {
+        foreach (var id in Enum.GetValues<ProviderId>())
+        {
+            using var icon = AIUsageBar.Core.Rendering.TabIconRenderer.Render(id, null, SkiaSharp.SKColors.White, 32);
+            Assert.Equal(32, icon.Width);
+            var opaque = Enumerable.Range(0, 32 * 32).Count(i => icon.GetPixel(i % 32, i / 32).Alpha > 0);
+            Assert.InRange(opaque, 20, 32 * 32 - 1);   // something drawn, not a filled square
+            Assert.Equal(0, icon.GetPixel(0, 0).Alpha); // transparent corners
+            Assert.All(Enumerable.Range(0, 32 * 32).Select(i => icon.GetPixel(i % 32, i / 32)).Where(p => p.Alpha > 200),
+                p => Assert.True(p.Red > 200 && p.Green > 200 && p.Blue > 200));
+        }
+    }
+
+    [Fact]
     public void EveryProviderHasADescriptor()
     {
         foreach (var id in Enum.GetValues<ProviderId>())

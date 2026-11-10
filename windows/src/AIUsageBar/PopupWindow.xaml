@@ -38,27 +38,37 @@
             </Grid>
 
             <!-- Tab strip: one tab per agent plus the Agents tab. Hidden with a single agent. -->
-            <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False" Margin="0,8,0,0"
-                          Visibility="{Binding TabStripVisibility}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Rows="1" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource TabButton}" Command="{Binding SelectCommand}"
-                                Tag="{Binding UnderlineBrush}" AutomationProperties.Name="{Binding AutomationName}"
-                                ToolTip="{Binding AutomationName}">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding Name}" FontWeight="{Binding NameWeight}" />
-                                <TextBlock Margin="5,0,0,0" FontSize="11.5" FontWeight="SemiBold"
-                                           Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" />
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <DockPanel Margin="0,8,0,0" Visibility="{Binding TabStripVisibility}">
+                <!-- "＋" keeps a narrow slot of its own; the agent tabs share the rest equally. -->
+                <Button DockPanel.Dock="Right" Width="30" Style="{StaticResource TabButton}"
+                        DataContext="{Binding AgentsTab}" Command="{Binding SelectCommand}" Tag="{Binding UnderlineBrush}"
+                        AutomationProperties.Name="{Binding AutomationName}" ToolTip="{Binding AutomationName}">
+                    <TextBlock Text="{Binding Name}" FontWeight="{Binding NameWeight}" Foreground="{Binding StatusBrush}" />
+                </Button>
+                <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource TabButton}" Command="{Binding SelectCommand}"
+                                    Tag="{Binding UnderlineBrush}" AutomationProperties.Name="{Binding AutomationName}"
+                                    ToolTip="{Binding AutomationName}">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Image Width="16" Height="16" Source="{Binding Icon}" Opacity="{Binding IconOpacity}"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <TextBlock Margin="4,0,0,0" FontSize="12.5" Text="{Binding Name}" FontWeight="{Binding NameWeight}"
+                                               Visibility="{Binding NameVisibility}" />
+                                    <TextBlock Margin="3,0,0,0" FontSize="11" FontWeight="SemiBold"
+                                               Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
 
             <!-- Agents tab: every supported agent and whether it is connected. -->
             <StackPanel DataContext="{Binding Agents}" Visibility="{Binding DataContext.AgentsVisibility, RelativeSource={RelativeSource AncestorType=Window}}">
