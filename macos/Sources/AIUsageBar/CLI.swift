@@ -6,14 +6,18 @@ import UsageCore
 /// the menu bar:
 ///
 ///     AIUsageBar --dump [--raw]
-///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run]
+///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run] [--update-available 9.9.9]
+///     AIUsageBar --install-update [--no-relaunch]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
 /// `--snapshot` also writes `out-menubar.png` with the status item image.
+/// `--install-update` runs the in-app update from the command line: if GitHub
+/// has a newer release, it is installed over this app bundle once the command exits.
 struct CLICommand {
     enum Mode {
         case dump
         case snapshot(output: String)
+        case installUpdate(relaunch: Bool)
     }
 
     let mode: Mode
@@ -27,6 +31,7 @@ struct CLICommand {
     let dark: Bool
     let raw: Bool
     let language: AppLanguage?
+    let updateAvailable: AppVersion?
 
     init?(arguments: [String]) {
         func value(after flag: String) -> String? {
@@ -37,6 +42,8 @@ struct CLICommand {
             mode = .dump
         } else if let output = value(after: "--snapshot") {
             mode = .snapshot(output: output)
+        } else if arguments.contains("--install-update") {
+            mode = .installUpdate(relaunch: !arguments.contains("--no-relaunch"))
         } else {
             return nil
         }
@@ -50,10 +57,14 @@ struct CLICommand {
         dark = arguments.contains("--dark")
         raw = arguments.contains("--raw")
         language = value(after: "--lang").flatMap(AppLanguage.init(rawValue:))
+        updateAvailable = value(after: "--update-available").flatMap(AppVersion.init)
     }
 
     @MainActor
     func run() async {
+        if case .installUpdate(let relaunch) = mode {
+            return await installUpdate(relaunch: relaunch)
+        }
         let store: UsageStore
         if fixturePath != nil || grokFixturePath != nil || copilotFixturePath != nil || codexFixturePath != nil || geminiFixturePath != nil {
             var snapshots: [ProviderSnapshot] = []
@@ -108,6 +119,29 @@ struct CLICommand {
             }
         case .snapshot(let output):
             await snapshot(store: store, to: output)
+        case .installUpdate:
+            break
+        }
+    }
+
+    @MainActor
+    private func installUpdate(relaunch: Bool) async {
+        guard let current = Bundle.main.shortVersion, let bundleID = Bundle.main.bundleIdentifier else {
+            return fail("Run this from inside the app bundle (AI Usage Bar.app/Contents/MacOS/AIUsageBar).")
+        }
+        do {
+            let release = try await AppUpdates.fetchLatest(token: ProcessInfo.processInfo.environment["GITHUB_TOKEN"])
+            print("Running \(current); latest release is \(release.version).")
+            guard let update = AppUpdates.update(from: release, current: current, asset: AppUpdates.macAsset),
+                  let asset = update.asset(named: AppUpdates.macAsset)
+            else { return print("Nothing to install.") }
+            let staged = try await UpdateInstaller.stage(asset, version: update.version, bundleID: bundleID)
+            try UpdateInstaller.replace(Bundle.main.bundleURL, with: staged, after: getpid(), relaunch: relaunch)
+            print("Installing \(update.version) into \(Bundle.main.bundlePath) as soon as this command exits.")
+        } catch let failure as UpdateInstaller.Failure {
+            fail(failure.message)
+        } catch {
+            fail("Update failed: \(error)")
         }
     }
 
@@ -116,7 +150,9 @@ struct CLICommand {
     @MainActor
     private func snapshot(store: UsageStore, to path: String) async {
         let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        let host = NSHostingView(rootView: PopoverView(store: store).background(Color(nsColor: .windowBackgroundColor)))
+        let current = Bundle.main.shortVersion ?? AppVersion("0.7.0")
+        let updater = updateAvailable.map { Updater(preview: $0, current: current) } ?? Updater(current: nil)
+        let host = NSHostingView(rootView: PopoverView(store: store, updater: updater).background(Color(nsColor: .windowBackgroundColor)))
         host.appearance = appearance
         host.frame = NSRect(origin: .zero, size: host.fittingSize)
 

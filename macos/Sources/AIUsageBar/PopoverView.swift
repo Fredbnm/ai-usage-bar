@@ -4,6 +4,7 @@ import UsageCore
 
 struct PopoverView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var updater: Updater
     var onQuit: () -> Void = {}
 
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
@@ -11,6 +12,9 @@ struct PopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            if updater.showsBanner {
+                UpdateBanner(updater: updater)
+            }
             // One agent needs no strip: the popover looks as it always did.
             if store.showTabStrip {
                 TabStrip(store: store)
@@ -94,6 +98,11 @@ struct PopoverView: View {
                 }
                 Toggle(tr("Abrir ao iniciar o Mac", "Open at login"), isOn: launchAtLoginBinding)
                 Divider()
+                Button(tr("Procurar atualizações", "Check for updates")) {
+                    Task { await updater.check(manual: true) }
+                }
+                Text(tr("Versão \(updater.currentText)", "Version \(updater.currentText)"))
+                Divider()
                 Button(tr("Sair do medidor", "Quit")) { onQuit() }
             } label: {
                 Image(systemName: "gearshape")
@@ -170,6 +179,81 @@ private struct ProviderSection: View {
                     Text(tr("Carregando…", "Loading…")).foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+}
+
+/// "New version" strip under the header: the update button, its progress, or the result of a manual check.
+private struct UpdateBanner: View {
+    @ObservedObject var updater: Updater
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            content
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var tint: Color {
+        if case .failed = updater.phase { return .orange }
+        return .accentColor
+    }
+
+    private var newVersion: String { updater.available?.version.description ?? "" }
+
+    @ViewBuilder
+    private var content: some View {
+        switch updater.phase {
+        case .checking:
+            progress(tr("Procurando atualizações…", "Checking for updates…"))
+        case .downloading:
+            progress(tr("Baixando a versão \(newVersion)…", "Downloading version \(newVersion)…"))
+        case .installing:
+            progress(tr("Instalando… o medidor reabre sozinho.", "Installing… the meter reopens by itself."))
+        case .upToDate:
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(Severity.normal.color)
+            Text(tr("Você já tem a versão mais recente (\(updater.currentText)).", "You're on the latest version (\(updater.currentText))."))
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+        case .failed(let message):
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            Text(message)
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            if updater.available != nil {
+                Button(tr("Abrir página", "Open page")) { updater.openReleasePage() }
+                    .controlSize(.small)
+            }
+        case .idle:
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(tr("Nova versão \(newVersion)", "New version \(newVersion)"))
+                    .font(.system(size: 13, weight: .semibold))
+                Text(tr("Você está com a \(updater.currentText)", "You have \(updater.currentText)"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+            Button(updater.canInstallInPlace ? tr("Atualizar", "Update") : tr("Baixar", "Download")) {
+                updater.install()
+            }
+            .controlSize(.small)
+            .help(updater.canInstallInPlace
+                ? tr("Baixa, instala e reabre o medidor", "Downloads, installs and reopens the meter")
+                : tr("Abre a página de download", "Opens the download page"))
+        }
+    }
+
+    private func progress(_ text: String) -> some View {
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text(text).font(.callout)
         }
     }
 }

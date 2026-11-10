@@ -106,6 +106,14 @@ The [website](https://matheusvelloso.github.io/ai-usage-bar/) always links to th
 | Windows (installer) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
 | Windows (portable) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
 
+## Updates
+
+From 0.8.0 on, the app looks for a new release on GitHub when it starts and every 6 hours. When there is one, the popup shows **New version … → Update**: one click downloads it, installs it over the current copy and reopens the meter. To look right away: ⚙ → **Check for updates**.
+
+- **macOS:** the app replaces itself where it is (usually Applications). If your user cannot write to that folder, the button opens the download page instead. If you use Grok Bot, macOS asks for "Always Allow" again after an update (see [Limitations](#limitations)).
+- **Windows:** an installed copy runs the new Setup silently and keeps your "Start with Windows" choice; the portable .exe replaces itself in its folder.
+- The check calls only GitHub's public releases API (`api.github.com/repos/matheusvelloso/ai-usage-bar/releases/latest`) and downloads only files from this repository's releases; nothing about you or your usage is sent. Versions before 0.8.0 do not have it, so update those once by hand.
+
 ## Install on a Mac
 
 1. Open `AIUsageBar-<version>.dmg` and drag **AI Usage Bar** into **Applications**.
@@ -184,10 +192,10 @@ Tokens are **read only**, in memory: the app never writes, refreshes or sends a 
 
 - **The endpoints are not public.** They are the ones Claude Code and Grok Bot use themselves and may change without notice. The app ignores unknown fields; if the format changes completely, it says it needs an update.
 - **The Codex and Gemini endpoints are unofficial and not yet verified against a real account.** Their fields are known from third-party tools, not from OpenAI's or Google's documentation, and neither login existed on the machine where they were written, so they have only been tested against made-up samples. Codex and the Gemini CLI renew their own tokens when they run; this app never does, so if one sits idle until its token expires the meter asks you to open it once. The Gemini CLI also supports API-key and Vertex sign-ins, which have no quota to read here.
-- **Codex, Copilot and Gemini on macOS are new and have not been built or run on a Mac yet.** They were written to mirror the Windows versions and their tests.
+- **Codex, Copilot and Gemini on macOS are new and have not run on a Mac with real logins yet.** They were written to mirror the Windows versions and their tests.
 - **The Copilot endpoint is unofficial and not yet verified against a real account.** `copilot_internal/user` is what GitHub's own editor plugins call; its fields are known from third-party tools, not from GitHub's documentation. Not every kind of GitHub token is accepted by it (the editor plugin's token is the safest). Organization-managed seats may report no premium allowance.
 - **Logins expire.** Claude Code and Grok Bot refresh their own tokens when used. If one of them sits idle for hours, the meter shows the last value and asks you to open that app once.
-- **Grok Bot and the Keychain:** macOS grants the Grok Bot key to *this build* of the app. Because the app is only signed locally (ad-hoc), each new version asks for "Always Allow" again. A Developer ID certificate removes that.
+- **Grok Bot and the Keychain:** macOS grants the Grok Bot key to *this build* of the app. Because the app is only signed locally (ad-hoc), each new version, including one installed by the in-app update, asks for "Always Allow" again. A Developer ID certificate removes that.
 - **Not signed by Apple or Microsoft yet**, hence the right-click → Open step on macOS and the SmartScreen prompt on Windows.
 - **Windows is new.** CI builds it, runs its tests and renders its popup from sample data, but it has not run on a real PC with real logins yet. Reports are welcome.
 
@@ -203,6 +211,8 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --codex-fixture docs/sample-codex-usage.json --copilot-fixture docs/sample-copilot-usage.json --gemini-fixture docs/sample-gemini-usage.json --grok-fixture docs/sample-grok-usage.json --dark --lang en
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # a given tab
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # the first-run Agents tab
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --update-available 9.9.9                                      # the "New version" banner
+"$APP" --install-update --no-relaunch   # the in-app update from the command line: installs a newer release over this copy
 ```
 
 Windows (it is a GUI app, so use `Start-Process -Wait` to see the output):
@@ -210,7 +220,8 @@ Windows (it is a GUI app, so use `Start-Process -Wait` to see the output):
 ```powershell
 Start-Process AIUsageBar.exe -ArgumentList '--dump' -Wait -NoNewWindow
 Start-Process AIUsageBar.exe -ArgumentList '--snapshot','pop.png','--fixture','docs\sample-usage.json' -Wait   # also writes pop-tray.png
-# add '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot' or '--first-run' to render other states
+# add '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot', '--first-run' or '--update-available','9.9.9' to render other states
+Start-Process AIUsageBar.exe -ArgumentList '--install-update','--no-relaunch' -Wait   # the in-app update from the command line (CI adds '--as-version','0.0.1')
 Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # real tray + taskbar widget on sample data (no logins, no network); add --left-edge, --ring-only, --dark
 ```
 

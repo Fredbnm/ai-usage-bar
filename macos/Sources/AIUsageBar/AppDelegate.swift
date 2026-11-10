@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var store: UsageStore?
+    private var updater: Updater?
     private var cancellables = Set<AnyCancellable>()
     private var appearanceObservation: NSKeyValueObservation?
 
@@ -22,8 +23,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let store = UsageStore()
         self.store = store
+        let updater = Updater()
+        self.updater = updater
         setUpStatusItem()
-        setUpPopover(store: store)
+        setUpPopover(store: store, updater: updater)
 
         store.objectWillChange
             .receive(on: RunLoop.main)
@@ -32,11 +35,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSWorkspace.shared.notificationCenter
             .publisher(for: NSWorkspace.didWakeNotification)
-            .sink { [weak store] _ in Task { await store?.refresh(force: true) } }
+            .sink { [weak store, weak updater] _ in
+                Task { await store?.refresh(force: true) }
+                updater?.checkIfStale()
+            }
             .store(in: &cancellables)
 
         updateStatusItem()
         store.start()
+        updater.start()
     }
 
     private func setUpStatusItem() {
@@ -52,11 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func setUpPopover(store: UsageStore) {
+    private func setUpPopover(store: UsageStore, updater: Updater) {
         let popover = NSPopover()
         popover.behavior = .transient
         popover.animates = true
-        let host = NSHostingController(rootView: PopoverView(store: store, onQuit: { NSApp.terminate(nil) }))
+        let host = NSHostingController(rootView: PopoverView(store: store, updater: updater, onQuit: { NSApp.terminate(nil) }))
         host.sizingOptions = .preferredContentSize
         popover.contentViewController = host
         self.popover = popover
@@ -76,6 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         Task { await store?.refreshIfStale() }
+        updater?.checkIfStale()
     }
 
     private func updateStatusItem() {

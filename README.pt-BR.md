@@ -106,6 +106,14 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 | Windows (instalador) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
 | Windows (portátil) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
 
+## Atualizações
+
+A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 horas. Quando há uma, o pop-up mostra **Nova versão … → Atualizar**: um clique baixa, instala por cima da cópia atual e reabre o medidor. Para procurar na hora: ⚙ → **Procurar atualizações**.
+
+- **macOS:** o app se substitui onde está (normalmente em Aplicativos). Se o seu usuário não pode gravar nessa pasta, o botão abre a página de download. Se você usa o Grok Bot, o macOS pede o "Permitir sempre" de novo depois de uma atualização (veja [Limitações](#limitações)).
+- **Windows:** a cópia instalada roda o novo instalador em silêncio e mantém a sua escolha de "Abrir ao iniciar o Windows"; o .exe portátil se substitui na própria pasta.
+- A verificação chama só a API pública de releases do GitHub (`api.github.com/repos/matheusvelloso/ai-usage-bar/releases/latest`) e só baixa arquivos das releases deste repositório; nada sobre você ou o seu uso é enviado. Versões anteriores à 0.8.0 não têm isso, então atualize essas uma vez à mão.
+
 ## Instalar no Mac
 
 1. Abra o `AIUsageBar-<versão>.dmg` e arraste **AI Usage Bar** para **Aplicativos**.
@@ -184,10 +192,10 @@ Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um
 
 - **Os endpoints não são públicos.** São os que o próprio Claude Code e o próprio Grok Bot usam, e podem mudar sem aviso. O app ignora campos desconhecidos; se o formato mudar de vez, ele avisa que precisa de atualização.
 - **Os endpoints do Codex e do Gemini não são oficiais e ainda não foram verificados com uma conta real.** Seus campos são conhecidos por ferramentas de terceiros, não pela documentação da OpenAI nem do Google, e nenhum dos dois logins existia na máquina onde foram escritos, então só foram testados com exemplos fictícios. O Codex e o Gemini CLI renovam os próprios tokens quando rodam; este app nunca renova, então, se um deles ficar parado até o token expirar, o medidor pede para abri-lo uma vez. O Gemini CLI também aceita login por chave de API e por Vertex, que não têm cota para ler aqui.
-- **Codex, Copilot e Gemini no macOS são novos e ainda não foram compilados nem executados num Mac.** Foram escritos para espelhar as versões do Windows e os testes delas.
+- **Codex, Copilot e Gemini no macOS são novos e ainda não rodaram num Mac com logins de verdade.** Foram escritos para espelhar as versões do Windows e os testes delas.
 - **O endpoint do Copilot não é oficial e ainda não foi verificado com uma conta real.** O `copilot_internal/user` é o que os próprios plugins de editor do GitHub chamam; seus campos são conhecidos por ferramentas de terceiros, não pela documentação do GitHub. Nem todo tipo de token do GitHub é aceito por ele (o token do plugin de editor é o mais seguro). Licenças gerenciadas por uma organização podem não informar cota premium.
 - **Os logins expiram.** Claude Code e Grok Bot renovam os próprios tokens quando são usados. Se um deles ficar horas parado, o medidor mostra o último valor e pede para abrir aquele app uma vez.
-- **Grok Bot e Keychain:** o macOS libera a chave do Grok Bot para *esta build* do app. Como o app é assinado só localmente (ad-hoc), cada versão nova pede o "Permitir sempre" de novo. Com um certificado Developer ID isso deixa de acontecer.
+- **Grok Bot e Keychain:** o macOS libera a chave do Grok Bot para *esta build* do app. Como o app é assinado só localmente (ad-hoc), cada versão nova, inclusive a instalada pela atualização do app, pede o "Permitir sempre" de novo. Com um certificado Developer ID isso deixa de acontecer.
 - **Sem assinatura da Apple nem da Microsoft ainda**, por isso o passo do botão direito → Abrir no macOS e o aviso do SmartScreen no Windows.
 - **O Windows é novo.** O CI compila, roda os testes e renderiza o pop-up com dados de exemplo, mas ele ainda não rodou num PC de verdade com logins reais. Relatos são bem-vindos.
 
@@ -201,6 +209,8 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --codex-fixture docs/sample-codex-usage.json --copilot-fixture docs/sample-copilot-usage.json --gemini-fixture docs/sample-gemini-usage.json --grok-fixture docs/sample-grok-usage.json --dark --lang pt
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # uma aba específica
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # a aba Agentes da primeira vez
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --update-available 9.9.9                                      # o aviso de "Nova versão"
+"$APP" --install-update --no-relaunch   # a atualização do app pela linha de comando: instala uma versão mais nova por cima desta cópia
 ```
 
 Windows (é um app com interface, então use `Start-Process -Wait` para ver a saída):
@@ -208,7 +218,8 @@ Windows (é um app com interface, então use `Start-Process -Wait` para ver a sa
 ```powershell
 Start-Process AIUsageBar.exe -ArgumentList '--dump' -Wait -NoNewWindow
 Start-Process AIUsageBar.exe -ArgumentList '--snapshot','pop.png','--fixture','docs\sample-usage.json' -Wait   # grava também pop-tray.png
-# acrescente '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot' ou '--first-run' para renderizar outros estados
+# acrescente '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot', '--first-run' ou '--update-available','9.9.9' para renderizar outros estados
+Start-Process AIUsageBar.exe -ArgumentList '--install-update','--no-relaunch' -Wait   # a atualização do app pela linha de comando (o CI acrescenta '--as-version','0.0.1')
 Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # bandeja e widget reais com dados de exemplo (sem logins nem rede); acrescente --left-edge, --ring-only, --dark
 ```
 

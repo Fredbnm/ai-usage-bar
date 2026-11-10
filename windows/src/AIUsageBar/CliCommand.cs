@@ -8,9 +8,12 @@ namespace AIUsageBar;
 /// Headless modes for debugging and CI:
 /// <code>
 /// AIUsageBar.exe --dump [--raw]
-/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run]
+/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run] [--update-available 9.9.9]
 /// </code>
+/// AIUsageBar.exe --install-update [--no-relaunch] [--as-version 0.0.1]
 /// <c>--snapshot</c> also writes <c>out-tray.png</c> with every tray icon combination.
+/// <c>--install-update</c> runs the in-app update from the command line: if GitHub has a newer release, it is
+/// installed over this copy once the command exits. <c>--as-version</c> pretends to be an older version (CI uses it).
 /// The app is a GUI program, so run it with <c>Start-Process -Wait</c> (or from cmd) to see the output.
 /// </summary>
 internal sealed class CliCommand
@@ -20,7 +23,7 @@ internal sealed class CliCommand
     private CliCommand(string[] args) => this.args = args;
 
     public static CliCommand? TryParse(string[] args) =>
-        args.Contains("--dump") || args.Contains("--snapshot") ? new CliCommand(args) : null;
+        args.Contains("--dump") || args.Contains("--snapshot") || args.Contains("--install-update") ? new CliCommand(args) : null;
 
     private string? Option(string name)
     {
@@ -34,6 +37,7 @@ internal sealed class CliCommand
         try
         {
             if (Localization.LanguageFromCode(Option("--lang")) is { } language) Localization.Current = language;
+            if (args.Contains("--install-update")) return await InstallUpdateAsync();
             return args.Contains("--dump") ? await DumpAsync() : Snapshot();
         }
         catch (Exception error)
@@ -111,7 +115,10 @@ internal sealed class CliCommand
         var settings = new AppSettings { LanguageValue = Localization.Current, OnboardingDismissed = !args.Contains("--first-run") };
         var store = new UsageStore(settings, snapshots);
         if (Option("--tab") is { } tab) store.PreviewTab(tab);
-        var window = new PopupWindow(store);
+        var updater = AppVersion.Parse(Option("--update-available")) is { } update
+            ? Updater.Preview(update, Updater.RunningVersion)
+            : new Updater(current: null);
+        var window = new PopupWindow(store, updater);
         window.RenderToPng(output);
         window.Close();
         Console.WriteLine($"Saved {output}");
@@ -124,6 +131,33 @@ internal sealed class CliCommand
         var trayPath = Path.ChangeExtension(output, null) + "-tray.png";
         File.WriteAllBytes(trayPath, TrayPreview.RenderPng(snapshots, glyphs));
         Console.WriteLine($"Saved {trayPath}");
+        return 0;
+    }
+
+    private async Task<int> InstallUpdateAsync()
+    {
+        var updater = new Updater(AppVersion.Parse(Option("--as-version")) ?? Updater.RunningVersion)
+        {
+            ApiToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN"),
+        };
+        await updater.CheckAsync(manual: true);
+        if (updater.Available is not { } release)
+        {
+            if (updater.Phase == UpdatePhase.Failed)
+            {
+                Console.Error.WriteLine(updater.Failure);
+                return 1;
+            }
+            Console.WriteLine($"Running {updater.CurrentText}: nothing to install.");
+            return 0;
+        }
+        Console.WriteLine($"Running {updater.CurrentText} ({updater.InstallMode}); installing {release.Version}.");
+        if (!await updater.DownloadAndSwapAsync(relaunch: !args.Contains("--no-relaunch")))
+        {
+            Console.Error.WriteLine(updater.Failure);
+            return 1;
+        }
+        Console.WriteLine($"Installing {release.Version} as soon as this command exits.");
         return 0;
     }
 
