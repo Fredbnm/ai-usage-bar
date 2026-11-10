@@ -86,6 +86,13 @@ final class UsageCoreTests: XCTestCase {
         XCTAssertEqual(sessionOnly.lines, ["95%"])
     }
 
+    func testMenuBarStyles() {
+        XCTAssertEqual(MenuBarStyle.default, .icon)
+        XCTAssertEqual(MenuBarStyle.allCases, [.icon, .percent])
+        XCTAssertEqual(MenuBarStyle(rawValue: "percent"), .percent)
+        XCTAssertEqual(MenuBarStyle.percent.label, "Só o percentual")
+    }
+
     func testMenuBarOptionsPerService() {
         XCTAssertEqual(ProviderID.claude.menuBarDisplayOptions, [.session, .weekly, .both, .hidden])
         XCTAssertEqual(ProviderID.grokBot.menuBarDisplayOptions, [.weekly, .hidden])

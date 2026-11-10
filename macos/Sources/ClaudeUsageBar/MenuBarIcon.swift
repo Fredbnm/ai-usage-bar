@@ -14,6 +14,10 @@ enum MenuBarIcon {
     private enum Metrics {
         /// The menu bar is 22 pt tall; leave a point above and below.
         static let ring: CGFloat = 19
+        /// "Só o percentual" style: the pie gauge from version 0.1.
+        static let pie: CGFloat = 14
+        static let pieOutline: CGFloat = 1.5
+        static let pieInset: CGFloat = 2.25
         static let ringWidth: CGFloat = 1.6
         static let glyphGap: CGFloat = 1.1
         static let ringToText: CGFloat = 4
@@ -26,14 +30,17 @@ enum MenuBarIcon {
 
     private struct Layout {
         let segment: MenuBarSegment
+        let style: MenuBarStyle
         let glyph: Glyph?
         let font: NSFont
         let textWidth: CGFloat
 
-        var width: CGFloat { Metrics.ring + Metrics.ringToText + textWidth }
+        var gauge: CGFloat { style == .icon ? Metrics.ring : Metrics.pie }
+        var width: CGFloat { gauge + Metrics.ringToText + textWidth }
 
-        init(segment: MenuBarSegment, glyph: Glyph?) {
+        init(segment: MenuBarSegment, style: MenuBarStyle, glyph: Glyph?) {
             self.segment = segment
+            self.style = style
             self.glyph = glyph
             font = segment.lines.count > 1 ? Metrics.stackedFont : Metrics.singleFont
             let attributes: [NSAttributedString.Key: Any] = [.font: font]
@@ -42,10 +49,20 @@ enum MenuBarIcon {
     }
 
     @MainActor
-    static func image(segments: [MenuBarSegment], height: CGFloat = NSStatusBar.system.thickness) -> NSImage {
+    static func image(
+        segments: [MenuBarSegment],
+        style: MenuBarStyle,
+        height: CGFloat = NSStatusBar.system.thickness
+    ) -> NSImage {
         guard !segments.isEmpty else { return emptyImage(height: height) }
 
-        let layouts = segments.map { Layout(segment: $0, glyph: ProviderGlyph.glyph(for: $0.provider)) }
+        let layouts = segments.map { segment in
+            Layout(
+                segment: segment,
+                style: style,
+                glyph: style == .icon ? ProviderGlyph.glyph(for: segment.provider) : nil
+            )
+        }
         let separatorWidth = Metrics.separatorPadding * 2 + 1
         let width = layouts.map(\.width).reduce(0, +) + separatorWidth * CGFloat(layouts.count - 1)
 
@@ -76,29 +93,16 @@ enum MenuBarIcon {
 
     private static func draw(_ layout: Layout, at x: CGFloat, height: CGFloat, foreground: NSColor) {
         let segment = layout.segment
-        let frame = NSRect(x: x, y: (height - Metrics.ring) / 2, width: Metrics.ring, height: Metrics.ring)
-        let ringRect = frame.insetBy(dx: Metrics.ringWidth / 2, dy: Metrics.ringWidth / 2)
+        let frame = NSRect(x: x, y: (height - layout.gauge) / 2, width: layout.gauge, height: layout.gauge)
 
-        let track = NSBezierPath(ovalIn: ringRect)
-        track.lineWidth = Metrics.ringWidth
-        foreground.withAlphaComponent(0.25).setStroke()
-        track.stroke()
-
-        if let percent = segment.ringPercent, percent > 0 {
-            let fraction = min(percent / 100, 1)
-            let arc = NSBezierPath()
-            arc.appendArc(
-                withCenter: NSPoint(x: ringRect.midX, y: ringRect.midY), radius: ringRect.width / 2,
-                startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true
-            )
-            arc.lineWidth = Metrics.ringWidth
-            arc.lineCapStyle = .round
-            ringColor(for: segment.ringSeverity, foreground: foreground).setStroke()
-            arc.stroke()
+        switch layout.style {
+        case .icon:
+            drawRing(segment, in: frame, foreground: foreground)
+            let inner = frame.insetBy(dx: Metrics.ringWidth + Metrics.glyphGap, dy: Metrics.ringWidth + Metrics.glyphGap)
+            drawGlyph(layout.glyph, provider: segment.provider, in: inner, color: foreground)
+        case .percent:
+            drawPie(segment, in: frame, foreground: foreground)
         }
-
-        let inner = frame.insetBy(dx: Metrics.ringWidth + Metrics.glyphGap, dy: Metrics.ringWidth + Metrics.glyphGap)
-        drawGlyph(layout.glyph, provider: segment.provider, in: inner, color: foreground)
 
         let textX = frame.maxX + Metrics.ringToText
         let font = layout.font
@@ -114,6 +118,48 @@ enum MenuBarIcon {
             let baseline = (height - font.capHeight) / 2
             drawText(line, font: font, color: foreground, x: textX, baseline: baseline, width: layout.textWidth)
         }
+    }
+
+    /// Icon style: a track plus an arc that fills clockwise from the top.
+    private static func drawRing(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor) {
+        let ringRect = frame.insetBy(dx: Metrics.ringWidth / 2, dy: Metrics.ringWidth / 2)
+
+        let track = NSBezierPath(ovalIn: ringRect)
+        track.lineWidth = Metrics.ringWidth
+        foreground.withAlphaComponent(0.25).setStroke()
+        track.stroke()
+
+        guard let percent = segment.ringPercent, percent > 0 else { return }
+        let fraction = min(percent / 100, 1)
+        let arc = NSBezierPath()
+        arc.appendArc(
+            withCenter: NSPoint(x: ringRect.midX, y: ringRect.midY), radius: ringRect.width / 2,
+            startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true
+        )
+        arc.lineWidth = Metrics.ringWidth
+        arc.lineCapStyle = .round
+        ringColor(for: segment.ringSeverity, foreground: foreground).setStroke()
+        arc.stroke()
+    }
+
+    /// Percent style (version 0.1): an outlined circle with a pie wedge.
+    private static func drawPie(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor) {
+        let outlineRect = frame.insetBy(dx: Metrics.pieOutline / 2, dy: Metrics.pieOutline / 2)
+        let outline = NSBezierPath(ovalIn: outlineRect)
+        outline.lineWidth = Metrics.pieOutline
+        foreground.setStroke()
+        outline.stroke()
+
+        guard let percent = segment.ringPercent, percent > 0 else { return }
+        let fraction = min(percent / 100, 1)
+        let inner = outlineRect.insetBy(dx: Metrics.pieInset, dy: Metrics.pieInset)
+        let center = NSPoint(x: inner.midX, y: inner.midY)
+        let pie = NSBezierPath()
+        pie.move(to: center)
+        pie.appendArc(withCenter: center, radius: inner.width / 2, startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true)
+        pie.close()
+        ringColor(for: segment.ringSeverity, foreground: foreground).setFill()
+        pie.fill()
     }
 
     /// Centres the glyph on its visual centre, scaled so its farthest point

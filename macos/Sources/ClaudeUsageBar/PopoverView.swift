@@ -52,6 +52,11 @@ struct PopoverView: View {
         HStack {
             Spacer()
             Menu {
+                Picker("Estilo na barra", selection: $store.menuBarStyle) {
+                    ForEach(MenuBarStyle.allCases) { style in
+                        Text(style.label).tag(style)
+                    }
+                }
                 ForEach(store.visibleProviders, id: \.self) { id in
                     Picker("\(id.displayName) na barra", selection: menuBarBinding(for: id)) {
                         ForEach(id.menuBarDisplayOptions) { option in

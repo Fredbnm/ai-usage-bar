@@ -1,5 +1,24 @@
 import Foundation
 
+/// How each service's block is drawn in the menu bar.
+public enum MenuBarStyle: String, CaseIterable, Identifiable, Sendable {
+    /// The service's glyph inside a ring that fills with the usage.
+    case icon
+    /// A small pie gauge and the numbers only (the original look).
+    case percent
+
+    public var id: String { rawValue }
+
+    public var label: String {
+        switch self {
+        case .icon: "Ícone da IA com anel"
+        case .percent: "Só o percentual"
+        }
+    }
+
+    public static let `default` = MenuBarStyle.icon
+}
+
 /// What one service shows in the menu bar.
 public enum MenuBarDisplay: String, CaseIterable, Identifiable, Sendable {
     case session

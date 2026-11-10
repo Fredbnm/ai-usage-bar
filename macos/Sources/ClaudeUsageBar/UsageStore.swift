@@ -15,6 +15,9 @@ final class UsageStore: ObservableObject {
     /// Services shown in the popover, in display order.
     @Published private(set) var visibleProviders: [ProviderID] = []
     @Published private(set) var menuBarDisplays: [ProviderID: MenuBarDisplay] = [:]
+    @Published var menuBarStyle: MenuBarStyle {
+        didSet { defaults.set(menuBarStyle.rawValue, forKey: Keys.menuBarStyle) }
+    }
 
     static let refreshInterval: TimeInterval = 180
     static let rateLimitBackoff: TimeInterval = 600
@@ -29,11 +32,13 @@ final class UsageStore: ObservableObject {
         static func cache(_ id: ProviderID) -> String { "cache.\(id.rawValue)" }
         static func cachedAt(_ id: ProviderID) -> String { "cachedAt.\(id.rawValue)" }
         static func menuBar(_ id: ProviderID) -> String { "menuBar.\(id.rawValue)" }
+        static let menuBarStyle = "menuBar.style"
     }
 
     init(providers: [any UsageProvider] = [ClaudeProvider(), GrokBotProvider()], defaults: UserDefaults = .standard) {
         self.providers = providers
         self.defaults = defaults
+        menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
         Keys.legacyKeys.forEach(defaults.removeObject(forKey:))
         for id in ProviderID.allCases {
             let saved = defaults.string(forKey: Keys.menuBar(id)).flatMap(MenuBarDisplay.init(rawValue:))
@@ -47,6 +52,7 @@ final class UsageStore: ObservableObject {
     init(preview snapshots: [ProviderSnapshot], updated: Date = Date()) {
         providers = []
         defaults = .standard
+        menuBarStyle = .default
         visibleProviders = snapshots.map(\.provider)
         for id in ProviderID.allCases { menuBarDisplays[id] = id.defaultMenuBarDisplay }
         for snapshot in snapshots {
@@ -66,7 +72,7 @@ final class UsageStore: ObservableObject {
     }
 
     /// Overrides the settings without saving them (for previews).
-    func previewMenuBarDisplays(_ displays: [ProviderID: MenuBarDisplay]) {
+    func previewMenuBar(_ displays: [ProviderID: MenuBarDisplay]) {
         menuBarDisplays.merge(displays) { _, new in new }
     }
 

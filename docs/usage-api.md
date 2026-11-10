@@ -94,7 +94,14 @@ Se `limits` não vier, monte a lista a partir de `five_hour`, `seven_day`, `seve
 
 ## 4. Número na barra
 
-Cada serviço vira um bloco na barra: um ícone monocromático (a arte branca do ícone do app, sem o fundo) dentro de um anel de progresso, mais um ou dois números, tudo na cor da barra. Os blocos são separados por um traço vertical. A escolha de cada serviço fica salva em `menuBar.<serviço>`:
+Cada serviço vira um bloco na barra, com um ou dois números, tudo na cor da barra. Os blocos são separados por um traço vertical. O estilo, salvo em `menuBar.style`, vale para todos:
+
+| `menuBar.style` | Medidor antes dos números |
+|---|---|
+| `icon` (padrão) | ícone monocromático (a arte branca do ícone do app, sem o fundo) dentro de um anel de progresso de 19 pt |
+| `percent` | bolinha de 14 pt com contorno e uma fatia de pizza que se preenche (o visual da versão 0.1) |
+
+A escolha de cada serviço fica salva em `menuBar.<serviço>`:
 
 | Valor | Números | O anel mostra |
 |---|---|---|
@@ -103,7 +110,7 @@ Cada serviço vira um bloco na barra: um ícone monocromático (a arte branca do
 | `both` | sessão em cima, semanal embaixo | sessão |
 | `hidden` | o bloco não aparece | — |
 
-O Claude oferece as quatro opções (padrão `both`); o Grok Bot oferece `weekly` (padrão) e `hidden`. Se o limite escolhido não vier na resposta, use o outro; se nenhum vier, use o maior. Sem dados, mostre `–` (carregando) ou `!` (erro). A cor do anel segue a severidade do limite (normal, alerta ou crítico).
+O Claude oferece as quatro opções (padrão `both`); o Grok Bot oferece `weekly` (padrão) e `hidden`. Se o limite escolhido não vier na resposta, use o outro; se nenhum vier, use o maior. Sem dados, mostre `–` (carregando) ou `!` (erro). A cor do anel ou da pizza segue a severidade do limite (normal, alerta ou crítico).
 
 ## 5. Grok Bot
 
