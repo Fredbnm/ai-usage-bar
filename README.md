@@ -1,4 +1,6 @@
-# Claude Usage Bar
+# AI Usage Bar
+
+> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
 
 Um medidor do seu limite de uso de IA que fica na barra de menu. Na barra, cada IA aparece com um ícone minimalista (a estrelinha do Claude, o bonequinho do Grok Bot) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço:
 
@@ -21,14 +23,20 @@ Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage`
 
 ## Barra de menu
 
-Em ⚙︎ no pop-up, cada IA tem sua opção de exibição:
+Em ⚙︎ no pop-up:
+
+**Estilo na barra** (vale para todas as IAs)
+- **Ícone da IA com anel** (padrão): o ícone de cada IA dentro de um anel que se preenche com o uso.
+- **Só o percentual**: sem ícone, só uma bolinha em pizza que se preenche e o número, como na primeira versão.
+
+**O que cada IA mostra**
 
 | Serviço | Opções |
 |---|---|
-| Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo e mais apagada) · **Não mostrar** |
+| Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo) · **Não mostrar** |
 | Grok Bot | **Semanal** (padrão) · **Não mostrar** |
 
-Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
+Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
 
 Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado, aparece a inicial do serviço.
 
@@ -111,3 +119,7 @@ macos/
   scripts/                build do .app/.dmg e geração do ícone
 .github/workflows/        build do .dmg no GitHub Actions
 ```
+
+## Licença
+
+[MIT](LICENSE).
