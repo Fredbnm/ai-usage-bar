@@ -83,6 +83,7 @@ public static class ClaudeUsage
         "premium_requests" => T("Requisições premium · mês", "Premium requests · month"),
         "chat" => "Chat",
         "completions" => T("Sugestões de código", "Code completions"),
+        "daily_scoped" => T("Diário", "Daily") + " · " + (scopeName ?? T("limite específico", "specific limit")),
         "weekly_scoped" => T("Semanal", "Weekly") + " · " + (scopeName ?? T("limite específico", "specific limit")),
         _ => BreakdownItem.Capitalize(kind.Replace('_', ' ')) + (scopeName is null ? "" : $" · {scopeName}"),
     };

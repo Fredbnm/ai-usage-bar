@@ -437,6 +437,8 @@ extension ProviderID {
     var openHelp: String {
         switch self {
         case .claude: tr("Ver uso no claude.ai", "View usage on claude.ai")
+        case .codex: tr("Ver uso no ChatGPT", "View usage on ChatGPT")
+        case .gemini: tr("Abrir o Gemini", "Open Gemini")
         case .copilot: tr("Gerenciar o Copilot no github.com", "Manage Copilot on github.com")
         case .grokBot: tr("Abrir o Grok Bot", "Open Grok Bot")
         }
@@ -447,6 +449,10 @@ extension ProviderID {
         switch self {
         case .claude:
             NSWorkspace.shared.open(URL(string: "https://claude.ai/settings/usage")!)
+        case .codex:
+            NSWorkspace.shared.open(URL(string: "https://chatgpt.com/codex/settings/usage")!)
+        case .gemini:
+            NSWorkspace.shared.open(URL(string: "https://gemini.google.com/app")!)
         case .copilot:
             NSWorkspace.shared.open(URL(string: "https://github.com/settings/copilot")!)
         case .grokBot:

@@ -3,13 +3,17 @@ import Foundation
 /// A service whose plan usage the app shows.
 public enum ProviderID: String, CaseIterable, Codable, Sendable {
     case claude
+    case codex
     case copilot
+    case gemini
     case grokBot
 
     public var displayName: String {
         switch self {
         case .claude: "Claude"
+        case .codex: "Codex"
         case .copilot: "GitHub Copilot"
+        case .gemini: "Gemini"
         case .grokBot: "Grok Bot"
         }
     }
@@ -18,7 +22,9 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
     public var shortName: String {
         switch self {
         case .claude: "Claude"
+        case .codex: "Codex"
         case .copilot: "Copilot"
+        case .gemini: "Gemini"
         case .grokBot: "Grok"
         }
     }
@@ -27,7 +33,9 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
     public var loginSource: String {
         switch self {
         case .claude: "Claude Code"
+        case .codex: "Codex"
         case .copilot: "GitHub Copilot"
+        case .gemini: "Gemini CLI"
         case .grokBot: "Grok Bot"
         }
     }
@@ -35,7 +43,12 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
     /// What the menu bar draws when there is no app icon to borrow. "Co", not
     /// "C": Copilot would otherwise look like Claude.
     public var initial: String {
-        self == .copilot ? "Co" : String(displayName.prefix(1))
+        switch self {
+        case .codex: "Cx"
+        case .copilot: "Co"
+        case .gemini: "Ge"
+        default: String(displayName.prefix(1))
+        }
     }
 
     /// How to connect this service, shown in the Agents tab when no login is found.
@@ -44,6 +57,12 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
         case .claude:
             tr("Entre com o comando claude no terminal ou pelo app do Claude.",
                "Sign in with the claude command in Terminal or in the Claude app.")
+        case .codex:
+            tr("Entre com o comando codex login no terminal ou na extensão Codex do VS Code.",
+               "Sign in with codex login in a terminal, or in the Codex extension for VS Code.")
+        case .gemini:
+            tr("Rode gemini no terminal e escolha entrar com o Google.",
+               "Run gemini in a terminal and choose to sign in with Google.")
         case .copilot:
             tr("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
                "Sign in to GitHub Copilot in VS Code, or run gh auth login.")

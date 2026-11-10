@@ -121,6 +121,8 @@ extension UsageResponse {
             return "Chat"
         case "completions":
             return tr("Sugestões de código", "Code completions")
+        case "daily_scoped":
+            return tr("Diário", "Daily") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         case "weekly_scoped":
             return tr("Semanal", "Weekly") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         default:

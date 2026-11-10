@@ -6,7 +6,7 @@ import UsageCore
 /// the menu bar:
 ///
 ///     AIUsageBar --dump [--raw]
-///     AIUsageBar --snapshot out.png [--fixture claude.json] [--copilot-fixture copilot.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run]
+///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
 /// `--snapshot` also writes `out-menubar.png` with the status item image.
@@ -20,6 +20,8 @@ struct CLICommand {
     let fixturePath: String?
     let grokFixturePath: String?
     let copilotFixturePath: String?
+    let codexFixturePath: String?
+    let geminiFixturePath: String?
     let tab: String?
     let firstRun: Bool
     let dark: Bool
@@ -41,6 +43,8 @@ struct CLICommand {
         fixturePath = value(after: "--fixture")
         grokFixturePath = value(after: "--grok-fixture")
         copilotFixturePath = value(after: "--copilot-fixture")
+        codexFixturePath = value(after: "--codex-fixture")
+        geminiFixturePath = value(after: "--gemini-fixture")
         tab = value(after: "--tab")
         firstRun = arguments.contains("--first-run")
         dark = arguments.contains("--dark")
@@ -51,7 +55,7 @@ struct CLICommand {
     @MainActor
     func run() async {
         let store: UsageStore
-        if fixturePath != nil || grokFixturePath != nil || copilotFixturePath != nil {
+        if fixturePath != nil || grokFixturePath != nil || copilotFixturePath != nil || codexFixturePath != nil || geminiFixturePath != nil {
             var snapshots: [ProviderSnapshot] = []
             if let fixturePath {
                 guard let data = FileManager.default.contents(atPath: fixturePath),
@@ -59,10 +63,22 @@ struct CLICommand {
                 else { return fail("Could not read fixture \(fixturePath)") }
                 snapshots.append(snapshot)
             }
+            if let codexFixturePath {
+                guard let data = FileManager.default.contents(atPath: codexFixturePath),
+                      let snapshot = CodexUsage.snapshot(fromResponse: data)
+                else { return fail("Could not read fixture \(codexFixturePath)") }
+                snapshots.append(snapshot)
+            }
             if let copilotFixturePath {
                 guard let data = FileManager.default.contents(atPath: copilotFixturePath),
                       let snapshot = CopilotUsage.snapshot(fromResponse: data)
                 else { return fail("Could not read fixture \(copilotFixturePath)") }
+                snapshots.append(snapshot)
+            }
+            if let geminiFixturePath {
+                guard let data = FileManager.default.contents(atPath: geminiFixturePath),
+                      let snapshot = GeminiUsage.snapshot(fromQuota: data, plan: "Free")
+                else { return fail("Could not read fixture \(geminiFixturePath)") }
                 snapshots.append(snapshot)
             }
             if let grokFixturePath {

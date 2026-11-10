@@ -110,7 +110,7 @@ Each service's choice is stored in `menuBar.<service>`:
 | `both` | session on top, weekly below | session |
 | `hidden` | the block is not shown | — |
 
-Claude offers all four options (default `both`); Grok Bot and GitHub Copilot offer `weekly` (default; for Copilot it is the monthly premium-request allowance, labelled "Monthly") and `hidden`. If the chosen limit is missing from the response, use the other one; if neither is there, use the highest. Without data, show `–` (loading) or `!` (error). The ring or pie color follows the limit's severity (normal, warning or critical) unless `menuBar.colorAlerts` is `false`, in which case everything stays in the menu bar color.
+Claude and Codex offer all four options (default `both`); Grok Bot, GitHub Copilot and Gemini offer `weekly` (default; for Copilot it is the monthly premium-request allowance, labelled "Monthly"; for Gemini the first model's daily quota, labelled "Daily") and `hidden`. If the chosen limit is missing from the response, use the other one; if neither is there, use the highest. Without data, show `–` (loading) or `!` (error). The ring or pie color follows the limit's severity (normal, warning or critical) unless `menuBar.colorAlerts` is `false`, in which case everything stays in the menu bar color.
 
 **Windows** has no shared menu bar: each service is its own tray icon (a 16–32 px square), so it shows one value only. Choices there are `session`, `weekly` or `hidden` per service, and the style is `Icon` (glyph in the ring) or `Percent` (the number in the ring, without `%`). The tooltip lists every limit. Settings live in `%APPDATA%\AIUsageBar\settings.json`.
 
@@ -246,3 +246,79 @@ An optional summary drawn over the Windows taskbar (settings `ShowTaskbarWidget`
 - **Icons:** the agents' official artwork, cut out at runtime and never bundled: Claude and Grok Bot from the installed app (uninstall entry, usual folders, or a Microsoft Store package: the package root comes from `HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages`, the logo from `AppxManifest.xml`'s `Square150x150Logo`, largest scale); GitHub Copilot from GitHub's editor extension (`github.copilot-chat-*`, else `github.copilot-*`, newest version, in `~/.vscode`, `~/.vscode-insiders` or `~/.cursor` `/extensions`; the file named by `"icon"` in its `package.json`, never outside the extension folder). Copilot's icon is dark artwork on a light square, so its glyph is extracted by *darkness* (Claude's and Grok Bot's are white artwork, extracted by *whiteness*). Without an icon the initial is drawn ("Co" for Copilot).
 - **Debug:** `AIUsageBar.exe --widget-demo --fixture … --copilot-fixture … [--left-edge] [--ring-only] [--dark] [--lang pt]` runs the real tray and widget on sample data, reading no logins and using no network.
 
+
+## 9. Codex (OpenAI)
+
+> **Status: not verified against a real account.** The usage endpoint is what ChatGPT's Codex usage page calls. It is not documented by OpenAI; the field names below come from third-party tools that use it (CodexBar and similar). [`sample-codex-usage.json`](sample-codex-usage.json) is an illustration of that shape with made-up numbers, not a captured response. Check a real response (`AIUsageBar --dump --raw`) before relying on it, and treat any change as a format change (`decoding` error).
+
+### Login
+
+The Codex CLI and the Codex editor extension share one login: `~/.codex/auth.json` (`%USERPROFILE%\.codex\auth.json` on Windows), or `$CODEX_HOME/auth.json` when that variable is set.
+
+```json
+{ "OPENAI_API_KEY": null, "tokens": { "access_token": "<JWT>", "refresh_token": "…", "id_token": "…", "account_id": "…" } }
+```
+
+- Take `tokens.access_token` and `tokens.account_id`. A file with only `OPENAI_API_KEY` (API-key login) has no ChatGPT plan to measure: treat it as no login (the service is hidden).
+- `access_token` is a JWT: its `exp` claim says when it expires. Codex renews it when it runs; **do not use the refresh token**. An expired token gives the "open Codex once" message (`unauthorized`, expired).
+- Never write, refresh, cache or log the token.
+
+### Request
+
+```
+GET https://chatgpt.com/backend-api/wham/usage
+Authorization: Bearer <access_token>
+ChatGPT-Account-Id: <account_id>        (when there is one)
+```
+
+HTTP statuses are handled as in section 2.
+
+### Response
+
+| Field | Use |
+|---|---|
+| `plan_type` | Plan: `plus` → "Plus", `pro` → "Pro", `team` → "Team" (underscores to spaces, capitalised). |
+| `rate_limit.primary_window`, `.secondary_window` | The two windows (`primary` / `secondary` and camelCase spellings are accepted). |
+| `…used_percent` | Used, 0 to 100. |
+| `…limit_window_seconds` | Window length: **6 days or more = weekly** (`kind` `weekly`, group `weekly`), otherwise the **5-hour session** (`kind` `session`, group `session`). Without it, the first window is the session and the second the week. |
+| `…reset_at` / `…reset_after_seconds` | When the window resets: epoch seconds, or seconds from now. |
+| `rate_limit.limit_reached` | `true` with a window at 99.5% or more: show it as critical. |
+
+If no window can be read the response gives no snapshot and the app reports a format error. Percentages are clamped to 0–999; severity uses the usual thresholds (75% warning, 90% critical). The cached response holds the usage data only. Tray choices are those of Claude: `session`, `weekly`, `both` on macOS (default `both`), `session` / `weekly` on Windows.
+
+## 10. Gemini (Gemini CLI)
+
+> **Status: not verified against a real account.** Gemini CLI's quota comes from the Code Assist backend (`cloudcode-pa.googleapis.com`). It is not documented by Google; the field names below come from third-party tools that call it (CodexBar, gemini-cli-usage and similar). [`sample-gemini-usage.json`](sample-gemini-usage.json) is an illustration of that shape with made-up numbers. Check a real response before relying on it.
+
+### Login
+
+Only the **Sign in with Google** login leaves a file: `~/.gemini/oauth_creds.json` (`%USERPROFILE%\.gemini\oauth_creds.json`). API-key and Vertex AI logins have no quota to read here: the service is hidden.
+
+```json
+{ "access_token": "ya29…", "refresh_token": "1//…", "expiry_date": 1795000000000, "id_token": "…" }
+```
+
+- Take `access_token`. `expiry_date` is milliseconds since the epoch: when it is in the past, show the "open the Gemini CLI once" message (`unauthorized`, expired). The CLI renews its own token when it runs; **do not use the refresh token**.
+- Never write, refresh, cache or log the token.
+
+### Requests (two POSTs, both `Authorization: Bearer <access_token>`, JSON)
+
+1. `https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` with `{"metadata":{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}}`. Take `cloudaicompanionProject` (a string, or an object with `id`) and `currentTier.id` for the plan: `free-tier` → "Free", `standard-tier` → "Standard", `legacy-tier` → "Legacy". Without a project, `GOOGLE_CLOUD_PROJECT` is used, else the body of the next call is `{}`.
+2. `https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota` with `{"project": "<project>"}`.
+
+### Response of `retrieveUserQuota`
+
+| Field | Use |
+|---|---|
+| `buckets[]` | One entry per model and token type. |
+| `…modelId` | e.g. `gemini-2.5-pro`. Shown as "2.5 Pro" (`gemini-` dropped, dashes to spaces, capitalised). |
+| `…remainingFraction` | Share **left**, 0 to 1: used = `(1 − remainingFraction) × 100`. A bucket without it is skipped. |
+| `…resetTime` | When it resets (RFC 3339). |
+
+One limit per model (`kind` `daily_scoped`, shown "Daily · 2.5 Pro"); when a model has several buckets the fullest counts. Pro models first, then Flash, then Flash-Lite, then any other, at most five. The first one has group `weekly`, which is what the tray ring and the tab summary follow (labelled "Daily"); the others have group `other`. The cached response holds the quota data only (the project id is not kept).
+
+## 11. Where the icons come from
+
+Every agent's icon is its own official artwork, taken at runtime from what is installed, never bundled. Claude and Grok Bot: from the app (section 8 lists the places, including Microsoft Store packages on Windows). GitHub Copilot, Codex and Gemini live in editors, so the icon is read from the official extension in `~/.vscode`, `~/.vscode-insiders` or `~/.cursor` `/extensions`: the newest folder whose name starts with `github.copilot-chat-` (then `github.copilot-`), `openai.chatgpt-` (the Codex extension; not `openai.codex-audio-`) or `google.geminicodeassist-` (then `google.gemini-`), and inside it the file named by `"icon"` in its `package.json`, never a path leaving the extension folder (Copilot falls back to `assets/copilot.png`). "Newest" compares the first dotted number after the id (`openai.chatgpt-26.1021.22027-win32-x64` is 26.1021.22027).
+
+How the artwork is cut out depends on the icon: **white on a colored tile** (Claude, Grok Bot, Codex) by *whiteness*; **dark on a light square** (Copilot) by *darkness*; **colored on a transparent or plain background** (Gemini) as a *silhouette*: the alpha when the corner is transparent, otherwise the distance from the corner's color. Without an icon the initial is drawn, with two letters where one would clash: "Co" (Copilot) and "Cx" (Codex) next to Claude's "C", "Ge" (Gemini) next to Grok Bot's "G".

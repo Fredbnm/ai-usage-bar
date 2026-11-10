@@ -48,12 +48,12 @@
                 <ItemsControl ItemsSource="{Binding Tabs}" Focusable="False">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <UniformGrid Rows="1" />
+                            <StackPanel Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Button Style="{StaticResource TabButton}" Command="{Binding SelectCommand}"
+                            <Button Style="{StaticResource TabButton}" Width="{Binding Width}" Command="{Binding SelectCommand}"
                                     Tag="{Binding UnderlineBrush}" AutomationProperties.Name="{Binding AutomationName}"
                                     ToolTip="{Binding AutomationName}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -62,7 +62,8 @@
                                     <TextBlock Margin="4,0,0,0" FontSize="12.5" Text="{Binding Name}" FontWeight="{Binding NameWeight}"
                                                Visibility="{Binding NameVisibility}" />
                                     <TextBlock Margin="3,0,0,0" FontSize="11" FontWeight="SemiBold"
-                                               Text="{Binding StatusText}" Foreground="{Binding StatusBrush}" />
+                                               Text="{Binding StatusText}" Foreground="{Binding StatusBrush}"
+                                               Visibility="{Binding StatusVisibility}" />
                                 </StackPanel>
                             </Button>
                         </DataTemplate>

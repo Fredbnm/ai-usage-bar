@@ -75,7 +75,7 @@ public sealed record SnapshotNote(NoteKind Kind, int Count = 0, DateTimeOffset? 
 }
 
 /// <summary>A service whose plan usage the app shows.</summary>
-public enum ProviderId { Claude, Copilot, GrokBot }
+public enum ProviderId { Claude, Codex, Copilot, Gemini, GrokBot }
 
 /// <summary>
 /// Everything that differs per service and is not parsing: names, tray
@@ -106,6 +106,13 @@ public static class ProviderCatalog
             () => T("Entre com o comando claude no terminal ou pelo app do Claude.",
                     "Sign in with the claude command in a terminal or in the Claude app."),
             new Uri("https://claude.ai/settings/usage")),
+        new(ProviderId.Codex, "Codex", "Codex", "Codex", "codex",
+            [TrayDisplay.Session, TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Session,
+            () => T("Semanal", "Weekly"),
+            () => T("Ver uso no ChatGPT", "View usage on ChatGPT"),
+            () => T("Entre com o comando codex login no terminal ou na extensão Codex do VS Code.",
+                    "Sign in with codex login in a terminal, or in the Codex extension for VS Code."),
+            new Uri("https://chatgpt.com/codex/settings/usage")),
         new(ProviderId.Copilot, "GitHub Copilot", "Copilot", "GitHub Copilot", "copilot",
             [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
             () => T("Mensal", "Monthly"),
@@ -113,6 +120,13 @@ public static class ProviderCatalog
             () => T("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
                     "Sign in to GitHub Copilot in VS Code, or run gh auth login."),
             new Uri("https://github.com/settings/copilot")),
+        new(ProviderId.Gemini, "Gemini", "Gemini", "Gemini CLI", "gemini",
+            [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
+            () => T("Diário", "Daily"),
+            () => T("Abrir o Gemini", "Open Gemini"),
+            () => T("Rode gemini no terminal e escolha entrar com o Google.",
+                    "Run gemini in a terminal and choose to sign in with Google."),
+            new Uri("https://gemini.google.com/app")),
         new(ProviderId.GrokBot, "Grok Bot", "Grok", "Grok Bot", "grokBot",
             [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
             () => T("Semanal", "Weekly"),
@@ -132,10 +146,17 @@ public static class ProviderIdExtensions
     public static string DisplayName(this ProviderId id) => id.Descriptor().DisplayName;
 
     /// <summary>
-    /// What the tray draws when there is no app icon to borrow. "Co", not "C":
-    /// Copilot would otherwise look like Claude (and "G" like Grok Bot).
+    /// What the tray draws when there is no app icon to borrow. Two letters where
+    /// the first one is taken: "Co" and "Cx" would otherwise look like Claude, and
+    /// "Ge" like Grok Bot.
     /// </summary>
-    public static string Initial(this ProviderId id) => id == ProviderId.Copilot ? "Co" : id.DisplayName()[..1];
+    public static string Initial(this ProviderId id) => id switch
+    {
+        ProviderId.Copilot => "Co",
+        ProviderId.Codex => "Cx",
+        ProviderId.Gemini => "Ge",
+        _ => id.DisplayName()[..1],
+    };
 
     /// <summary>The app whose login is reused, as named in messages.</summary>
     public static string LoginSource(this ProviderId id) => id.Descriptor().LoginSource;

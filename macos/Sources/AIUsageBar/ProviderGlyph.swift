@@ -21,13 +21,24 @@ enum ProviderGlyph {
     private static var cache: [ProviderID: Glyph] = [:]
     private static var missing: Set<ProviderID> = []
 
+    /// Where the icon of an agent that lives in an editor extension is, and how its artwork is read:
+    /// Copilot's is dark on a light square, Codex's white on a tile, Gemini's a colored shape.
+    private static func extensionIcon(for provider: ProviderID) -> (URL, GlyphExtractor.ArtworkKind)? {
+        switch provider {
+        case .copilot: return ExtensionIcon.findCopilot().map { ($0, GlyphExtractor.ArtworkKind.dark) }
+        case .codex: return ExtensionIcon.findCodex().map { ($0, GlyphExtractor.ArtworkKind.white) }
+        case .gemini: return ExtensionIcon.findGemini().map { ($0, GlyphExtractor.ArtworkKind.silhouette) }
+        case .claude, .grokBot: return nil
+        }
+    }
+
     static func glyph(for provider: ProviderID) -> Glyph? {
         if let cached = cache[provider] { return cached }
         if missing.contains(provider) { return nil }
         let glyph: Glyph?
-        if provider == .copilot {
-            // Copilot's official icon comes from GitHub's editor extension: dark artwork on a light square.
-            glyph = CopilotIcon.find().flatMap { NSImage(contentsOf: $0) }.flatMap { GlyphExtractor.whiteArtwork(of: $0, dark: true) }
+        if let (url, kind) = extensionIcon(for: provider) {
+            // Copilot, Codex and Gemini have no app of their own: their official icon comes from the editor extension.
+            glyph = NSImage(contentsOf: url).flatMap { GlyphExtractor.artwork(of: $0, kind: kind) }
         } else if let bundleIdentifier = provider.appBundleIdentifier,
                   let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             glyph = GlyphExtractor.whiteArtwork(of: NSWorkspace.shared.icon(forFile: url.path))
@@ -83,6 +94,21 @@ enum GlyphExtractor {
     /// `dark`: the symbol is dark on a light or transparent square (Copilot's icon),
     /// so "darkness" is measured instead of "whiteness".
     static func whiteArtwork(of icon: NSImage, side: Int = 256, dark: Bool = false) -> Glyph? {
+        artwork(of: icon, kind: dark ? .dark : .white, side: side)
+    }
+
+    /// What the artwork of an icon looks like, which decides how it is told
+    /// apart from its background.
+    enum ArtworkKind {
+        /// White on a colored tile (Claude, Grok Bot, Codex).
+        case white
+        /// Dark on a light or transparent square (GitHub Copilot).
+        case dark
+        /// Colored on a transparent or plain background (Gemini).
+        case silhouette
+    }
+
+    static func artwork(of icon: NSImage, kind: ArtworkKind, side: Int = 256) -> Glyph? {
         guard let source = bitmap(side: side), let input = source.bitmapData else { return nil }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: source)
@@ -91,12 +117,23 @@ enum GlyphExtractor {
 
         // 1. Coverage per pixel (row 0 = top).
         var coverage = [Double](repeating: 0, count: side * side)
+        let corner = [Int(input[0]), Int(input[1]), Int(input[2]), Int(input[3])]
         for y in 0..<side {
             for x in 0..<side {
                 let i = y * source.bytesPerRow + x * 4
                 let alpha = Double(input[i + 3]) / 255
                 guard alpha > 0 else { continue }
-                if dark {
+                if kind == .silhouette {
+                    // Transparent corner: the alpha is the shape. Otherwise how
+                    // far a pixel is from the corner's color.
+                    if corner[3] < 25 {
+                        coverage[y * side + x] = alpha
+                    } else {
+                        var distance = 0
+                        for channel in 0..<3 { distance = max(distance, abs(Int(input[i + channel]) - corner[channel])) }
+                        coverage[y * side + x] = smoothstep(40, 140, Double(distance)) * alpha
+                    }
+                } else if kind == .dark {
                     let lightest = Double(max(input[i], input[i + 1], input[i + 2])) / alpha
                     coverage[y * side + x] = (1 - smoothstep(70, 160, lightest)) * alpha
                 } else {

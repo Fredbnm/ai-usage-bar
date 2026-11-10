@@ -237,12 +237,12 @@ enum MenuBarIcon {
 }
 
 extension ProviderID {
-    /// The desktop app whose icon artwork is borrowed. Copilot lives inside
-    /// editors and has none, so it falls back to its initial.
+    /// The desktop app whose icon artwork is borrowed. Copilot, Codex and Gemini live inside
+    /// editors or terminals and have none, so it falls back to its initial.
     var appBundleIdentifier: String? {
         switch self {
         case .claude: "com.anthropic.claudefordesktop"
-        case .copilot: nil
+        case .codex, .copilot, .gemini: nil
         case .grokBot: "com.anysphere.sand"
         }
     }

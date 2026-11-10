@@ -31,6 +31,12 @@ public sealed class UsageException(UsageErrorKind kind, int statusCode = 0, Exce
             UsageErrorKind.NotLoggedIn when provider == ProviderId.Claude => T(
                 "Não achei o login do Claude Code neste PC. Entre com o comando claude no terminal ou pelo app do Claude.",
                 "No Claude Code login found on this PC. Sign in with the claude command in a terminal or in the Claude app."),
+            UsageErrorKind.NotLoggedIn when provider == ProviderId.Codex => T(
+                "Não achei o login do Codex. Entre com o comando codex login no terminal ou na extensão Codex do VS Code.",
+                "No Codex login found. Sign in with codex login in a terminal, or in the Codex extension for VS Code."),
+            UsageErrorKind.NotLoggedIn when provider == ProviderId.Gemini => T(
+                "Não achei o login do Gemini CLI. Rode gemini no terminal e entre com o Google.",
+                "No Gemini CLI login found. Run gemini in a terminal and sign in with Google."),
             UsageErrorKind.NotLoggedIn when provider == ProviderId.Copilot => T(
                 "Não achei o login do GitHub Copilot. Entre no Copilot no VS Code ou rode gh auth login.",
                 "No GitHub Copilot login found. Sign in to Copilot in VS Code, or run gh auth login."),

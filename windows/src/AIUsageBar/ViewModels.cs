@@ -57,6 +57,8 @@ internal sealed record TabViewModel(
     double IconOpacity,
     string Name,
     Visibility NameVisibility,
+    Visibility StatusVisibility,
+    double Width,
     string StatusText,
     Brush StatusBrush,
     Brush UnderlineBrush,
@@ -64,14 +66,33 @@ internal sealed record TabViewModel(
     string AutomationName,
     ICommand SelectCommand)
 {
-    /// <summary>With this many agents or more, only the selected tab keeps its name, so the strip never overflows.</summary>
-    private const int NamesFitUpTo = 3;
+    /// <summary>Room for the agent tabs in the strip, in device-independent pixels (the popup's 308 minus the "＋" tab).</summary>
+    private const double StripWidth = 278;
+
+    /// <summary>A tab that shows only its icon and percentage.</summary>
+    private const double CompactWidth = 46;
+
+    /// <summary>What a tab needs for icon + name + percentage, and for icon + name.</summary>
+    private const double FullWidth = 110;
+    private const double NameWidth = 72;
+
+    /// <summary>
+    /// Up to three agents share the strip equally and show everything. With more, the unselected tabs shrink to
+    /// icon + percentage and the selected one takes the rest: icon, name and percentage if they fit, else the name
+    /// without the percentage (the card below has it), else just icon + percentage.
+    /// </summary>
+    private static (double Width, bool Name, bool Status) Layout(int count, bool selected)
+    {
+        if (count <= 3) return (StripWidth / count, true, true);
+        if (!selected) return (CompactWidth, false, true);
+        var room = Math.Max(StripWidth - (count - 1) * CompactWidth, CompactWidth);
+        return (room, room >= NameWidth, room >= FullWidth || room < NameWidth);
+    }
 
     public static IReadOnlyList<TabViewModel> Build(UsageStore store, string current)
     {
         var tabs = new List<TabViewModel>();
         var iconColor = ((SolidColorBrush)Resource("PrimaryText")).Color;
-        var showAllNames = store.VisibleProviders.Count <= NamesFitUpTo;
         foreach (var id in store.VisibleProviders)
         {
             var state = store.State(id);
@@ -80,12 +101,15 @@ internal sealed record TabViewModel(
             var spoken = summary.Text is "!" or "–"
                 ? T("sem dados", "no data")
                 : T($"{summary.Text} usado", $"{summary.Text} used");
+            var (width, showName, showStatus) = Layout(store.VisibleProviders.Count, isCurrent);
             tabs.Add(new TabViewModel(
                 id.Key(),
                 TabIcons.Get(id, iconColor),
                 isCurrent ? 1 : 0.65,
                 id.Descriptor().ShortName,
-                showAllNames || isCurrent ? Visibility.Visible : Visibility.Collapsed,
+                showName ? Visibility.Visible : Visibility.Collapsed,
+                showStatus ? Visibility.Visible : Visibility.Collapsed,
+                width,
                 summary.IsWarning && summary.Text != "!" ? summary.Text + " ⚠" : summary.Text,
                 summary.Text == "–" ? Resource("SecondaryText") : LimitViewModel.SeverityBrush(summary.IsWarning ? Severity.Warning : summary.Severity),
                 isCurrent ? Resource("AccentBrush") : Brushes.Transparent,
@@ -106,6 +130,8 @@ internal sealed record TabViewModel(
             1,
             "＋",
             Visibility.Visible,
+            Visibility.Visible,
+            30,
             "",
             Resource("SecondaryText"),
             onAgents ? Resource("AccentBrush") : Brushes.Transparent,

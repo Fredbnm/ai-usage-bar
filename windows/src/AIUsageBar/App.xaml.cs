@@ -40,7 +40,7 @@ public partial class App : System.Windows.Application
         Localization.Current = settings.LanguageValue;
         Theme.Apply();
 
-        store = new UsageStore(settings, [new ClaudeProvider(), new CopilotProvider(), new GrokBotProvider(new DpapiUnprotector())]);
+        store = new UsageStore(settings, [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new GeminiProvider(), new GrokBotProvider(new DpapiUnprotector())]);
         tray = new TrayController(store);
         store.Start();
 

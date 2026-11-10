@@ -65,8 +65,13 @@ internal static class InstalledApps
     /// <summary>The app's executable (or icon file), from the uninstall entries or known folders.</summary>
     public static string? IconSource(ProviderId provider)
     {
-        // Copilot lives inside editors: its official icon comes from GitHub's extension.
-        if (provider == ProviderId.Copilot) return CopilotIcon.Find();
+        // These live inside editors: their official icons come from the editor extension.
+        switch (provider)
+        {
+            case ProviderId.Copilot: return ExtensionIcon.FindCopilot();
+            case ProviderId.Codex: return ExtensionIcon.FindCodex();
+            case ProviderId.Gemini: return ExtensionIcon.FindGemini();
+        }
         foreach (var hive in new[] { Registry.CurrentUser, Registry.LocalMachine })
         foreach (var path in UninstallKeys)
         {
@@ -152,11 +157,17 @@ internal static class InstalledApps
             var source = IconSource(provider);
             if (source is not null && source.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             {
-                // Copilot's icon is dark artwork on a light square; the Store apps' logos are white on a tile.
+                // Copilot's icon is dark artwork on a light square, Gemini's a colored shape; Codex's and the
+                // Store apps' logos are white on a tile.
                 using var png = SKBitmap.Decode(source);
                 if (png is not null)
                 {
-                    glyph = provider == ProviderId.Copilot ? GlyphExtractor.DarkArtwork(png) : GlyphExtractor.WhiteArtwork(png);
+                    glyph = GlyphExtractor.Artwork(png, provider switch
+                    {
+                        ProviderId.Copilot => ArtworkKind.Dark,
+                        ProviderId.Gemini => ArtworkKind.Silhouette,
+                        _ => ArtworkKind.White,
+                    });
                 }
             }
             else if (source is not null)
