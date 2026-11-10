@@ -15,24 +15,42 @@ public enum UsageError: Error, Equatable, Sendable {
         case .notLoggedIn:
             switch provider {
             case .claude:
-                return "Não achei o login do Claude Code neste Mac. Entre com o comando claude no terminal ou pelo app do Claude."
+                return tr(
+                    "Não achei o login do Claude Code neste Mac. Entre com o comando claude no terminal ou pelo app do Claude.",
+                    "No Claude Code login found on this Mac. Sign in with the claude command in Terminal or in the Claude app."
+                )
             case .grokBot:
-                return "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta."
+                return tr(
+                    "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta.",
+                    "No Grok Bot login found. Open Grok Bot and sign in."
+                )
             }
         case .unauthorized(expired: true):
-            return "O login do \(app) expirou. Abra o \(app) uma vez para renová-lo e o medidor volta sozinho."
+            return tr(
+                "O login do \(app) expirou. Abra o \(app) uma vez para renová-lo e o medidor volta sozinho.",
+                "The \(app) login expired. Open \(app) once to renew it and the meter picks up again."
+            )
         case .unauthorized(expired: false):
-            return "O servidor recusou o login atual. Saia e entre de novo no \(app)."
+            return tr(
+                "O servidor recusou o login atual. Saia e entre de novo no \(app).",
+                "The server rejected the current login. Sign out and back in to \(app)."
+            )
         case .keychainDenied:
-            return "O macOS não liberou a chave do \(app) no Keychain. Clique em atualizar e escolha “Permitir sempre”."
+            return tr(
+                "O macOS não liberou a chave do \(app) no Keychain. Clique em atualizar e escolha “Permitir sempre”.",
+                "macOS did not release the \(app) key from the Keychain. Click refresh and choose “Always Allow”."
+            )
         case .rateLimited:
-            return "Muitas consultas seguidas. Tento de novo em 10 minutos."
+            return tr("Muitas consultas seguidas. Tento de novo em 10 minutos.", "Too many requests. Trying again in 10 minutes.")
         case .http(let code):
-            return "O servidor respondeu com erro \(code). Tento de novo em breve."
+            return tr("O servidor respondeu com erro \(code). Tento de novo em breve.", "The server returned error \(code). Trying again soon.")
         case .network:
-            return "Sem conexão. Tento de novo em breve."
+            return tr("Sem conexão. Tento de novo em breve.", "No connection. Trying again soon.")
         case .decoding:
-            return "O formato dos dados de uso mudou e o medidor precisa ser atualizado."
+            return tr(
+                "O formato dos dados de uso mudou e o medidor precisa ser atualizado.",
+                "The usage data format changed and the meter needs an update."
+            )
         }
     }
 }

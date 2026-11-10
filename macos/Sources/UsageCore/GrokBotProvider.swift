@@ -133,7 +133,6 @@ public struct GrokBotProvider: UsageProvider {
             items.append(LimitItem(
                 id: "grok-weekly",
                 kind: "weekly",
-                title: "Semanal",
                 percent: percent,
                 severity: status.hasAvailableUsage == false ? .critical : Severity(api: nil, percent: percent),
                 resetsAt: status.nextResetTimestampUtc,
@@ -141,18 +140,18 @@ public struct GrokBotProvider: UsageProvider {
             ))
         }
 
-        var notes: [String] = []
+        var notes: [SnapshotNote] = []
         if status.usesPooledEnterpriseAllowance == true {
-            notes.append("Uso compartilhado da equipe, sem limite individual.")
+            notes.append(.pooledAllowance)
         }
         if let count = status.availableBankedResetCount, count > 0 {
-            notes.append(count == 1 ? "1 reset guardado disponível" : "\(count) resets guardados disponíveis")
+            notes.append(.bankedResets(count))
         }
         if let trialEnd = status.sandTrialExpiresAt, trialEnd > now {
-            notes.append("Teste grátis até \(UsageFormat.shortDate(trialEnd))")
+            notes.append(.trialUntil(trialEnd))
         }
         if status.onDemandEnabled == true {
-            notes.append("Uso sob demanda ligado")
+            notes.append(.onDemandEnabled)
         }
 
         guard !items.isEmpty || !notes.isEmpty else { return nil }

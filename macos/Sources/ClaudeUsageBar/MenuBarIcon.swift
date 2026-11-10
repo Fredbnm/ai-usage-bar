@@ -52,6 +52,7 @@ enum MenuBarIcon {
     static func image(
         segments: [MenuBarSegment],
         style: MenuBarStyle,
+        colorAlerts: Bool = true,
         height: CGFloat = NSStatusBar.system.thickness
     ) -> NSImage {
         guard !segments.isEmpty else { return emptyImage(height: height) }
@@ -74,7 +75,7 @@ enum MenuBarIcon {
                     drawSeparator(at: x + Metrics.separatorPadding, height: height, color: foreground)
                     x += separatorWidth
                 }
-                draw(layout, at: x, height: height, foreground: foreground)
+                draw(layout, at: x, height: height, foreground: foreground, colorAlerts: colorAlerts)
                 x += layout.width
             }
             return true
@@ -91,17 +92,17 @@ enum MenuBarIcon {
 
     // MARK: Drawing
 
-    private static func draw(_ layout: Layout, at x: CGFloat, height: CGFloat, foreground: NSColor) {
+    private static func draw(_ layout: Layout, at x: CGFloat, height: CGFloat, foreground: NSColor, colorAlerts: Bool) {
         let segment = layout.segment
         let frame = NSRect(x: x, y: (height - layout.gauge) / 2, width: layout.gauge, height: layout.gauge)
 
         switch layout.style {
         case .icon:
-            drawRing(segment, in: frame, foreground: foreground)
+            drawRing(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts)
             let inner = frame.insetBy(dx: Metrics.ringWidth + Metrics.glyphGap, dy: Metrics.ringWidth + Metrics.glyphGap)
             drawGlyph(layout.glyph, provider: segment.provider, in: inner, color: foreground)
         case .percent:
-            drawPie(segment, in: frame, foreground: foreground)
+            drawPie(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts)
         }
 
         let textX = frame.maxX + Metrics.ringToText
@@ -121,7 +122,7 @@ enum MenuBarIcon {
     }
 
     /// Icon style: a track plus an arc that fills clockwise from the top.
-    private static func drawRing(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor) {
+    private static func drawRing(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool) {
         let ringRect = frame.insetBy(dx: Metrics.ringWidth / 2, dy: Metrics.ringWidth / 2)
 
         let track = NSBezierPath(ovalIn: ringRect)
@@ -138,12 +139,12 @@ enum MenuBarIcon {
         )
         arc.lineWidth = Metrics.ringWidth
         arc.lineCapStyle = .round
-        ringColor(for: segment.ringSeverity, foreground: foreground).setStroke()
+        ringColor(for: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts).setStroke()
         arc.stroke()
     }
 
     /// Percent style (version 0.1): an outlined circle with a pie wedge.
-    private static func drawPie(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor) {
+    private static func drawPie(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool) {
         let outlineRect = frame.insetBy(dx: Metrics.pieOutline / 2, dy: Metrics.pieOutline / 2)
         let outline = NSBezierPath(ovalIn: outlineRect)
         outline.lineWidth = Metrics.pieOutline
@@ -158,7 +159,7 @@ enum MenuBarIcon {
         pie.move(to: center)
         pie.appendArc(withCenter: center, radius: inner.width / 2, startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true)
         pie.close()
-        ringColor(for: segment.ringSeverity, foreground: foreground).setFill()
+        ringColor(for: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts).setFill()
         pie.fill()
     }
 
@@ -210,11 +211,12 @@ enum MenuBarIcon {
         NSBezierPath(roundedRect: rect, xRadius: 0.5, yRadius: 0.5).fill()
     }
 
-    private static func ringColor(for severity: Severity, foreground: NSColor) -> NSColor {
+    private static func ringColor(for severity: Severity, foreground: NSColor, colorAlerts: Bool) -> NSColor {
+        guard colorAlerts else { return foreground }
         switch severity {
-        case .normal: foreground
-        case .warning: .systemOrange
-        case .critical: .systemRed
+        case .normal: return foreground
+        case .warning: return .systemOrange
+        case .critical: return .systemRed
         }
     }
 

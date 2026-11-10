@@ -6,7 +6,7 @@ import UsageCore
 /// the menu bar:
 ///
 ///     ClaudeUsageBar --dump [--raw]
-///     ClaudeUsageBar --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark]
+///     ClaudeUsageBar --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark] [--lang en|pt]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
 /// `--snapshot` also writes `out-menubar.png` with the status item image.
@@ -21,6 +21,7 @@ struct CLICommand {
     let grokFixturePath: String?
     let dark: Bool
     let raw: Bool
+    let language: AppLanguage?
 
     init?(arguments: [String]) {
         func value(after flag: String) -> String? {
@@ -38,6 +39,7 @@ struct CLICommand {
         grokFixturePath = value(after: "--grok-fixture")
         dark = arguments.contains("--dark")
         raw = arguments.contains("--raw")
+        language = value(after: "--lang").flatMap(AppLanguage.init(rawValue:))
     }
 
     @MainActor
@@ -62,6 +64,8 @@ struct CLICommand {
             store = UsageStore()
             await store.refresh(force: true)
         }
+
+        if let language { AppLanguage.current = language }
 
         switch mode {
         case .dump:
@@ -115,15 +119,17 @@ struct CLICommand {
     /// Every menu bar combination, in a light and a dark menu bar.
     @MainActor
     private func menuBarVariants(store: UsageStore) -> Data? {
-        let variants: [(String, MenuBarStyle, [ProviderID: MenuBarDisplay])] = [
-            ("Claude sessão + semanal | Grok Bot", .icon, [.claude: .both, .grokBot: .weekly]),
-            ("Claude só sessão | Grok Bot", .icon, [.claude: .session, .grokBot: .weekly]),
-            ("Claude só semanal | Grok Bot", .icon, [.claude: .weekly, .grokBot: .weekly]),
-            ("Só Claude, sessão + semanal", .icon, [.claude: .both, .grokBot: .hidden]),
-            ("Só Grok Bot", .icon, [.claude: .hidden, .grokBot: .weekly]),
-            ("Percentual: sessão + semanal | Grok", .percent, [.claude: .both, .grokBot: .weekly]),
-            ("Percentual: só sessão | Grok Bot", .percent, [.claude: .session, .grokBot: .weekly]),
-            ("Percentual: só Claude, sessão", .percent, [.claude: .session, .grokBot: .hidden]),
+        let variants: [(String, MenuBarStyle, [ProviderID: MenuBarDisplay], Bool)] = [
+            ("Claude sessão + semanal | Grok Bot", .icon, [.claude: .both, .grokBot: .weekly], true),
+            ("Claude só sessão | Grok Bot", .icon, [.claude: .session, .grokBot: .weekly], true),
+            ("Claude só semanal | Grok Bot", .icon, [.claude: .weekly, .grokBot: .weekly], true),
+            ("Só Claude, sessão + semanal", .icon, [.claude: .both, .grokBot: .hidden], true),
+            ("Só Grok Bot", .icon, [.claude: .hidden, .grokBot: .weekly], true),
+            ("Percentual: sessão + semanal | Grok", .percent, [.claude: .both, .grokBot: .weekly], true),
+            ("Percentual: só sessão | Grok Bot", .percent, [.claude: .session, .grokBot: .weekly], true),
+            ("Percentual: só Claude, sessão", .percent, [.claude: .session, .grokBot: .hidden], true),
+            ("Ícone, sem cores de alerta", .icon, [.claude: .both, .grokBot: .weekly], false),
+            ("Percentual, sem cores de alerta", .percent, [.claude: .both, .grokBot: .weekly], false),
         ]
         let scale: CGFloat = 3
         let barHeight: CGFloat = 24
@@ -154,7 +160,9 @@ struct CLICommand {
                 (column == 0 ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.13, alpha: 1)).setFill()
                 cell.fill()
                 NSAppearance(named: appearanceName)?.performAsCurrentDrawingAppearance {
-                    let image = MenuBarIcon.image(segments: store.menuBarSegments, style: variant.1, height: barHeight)
+                    let image = MenuBarIcon.image(
+                        segments: store.menuBarSegments, style: variant.1, colorAlerts: variant.3, height: barHeight
+                    )
                     image.draw(in: NSRect(x: cell.minX + 10, y: cell.minY, width: image.size.width, height: image.size.height))
                 }
             }

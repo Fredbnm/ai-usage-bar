@@ -80,7 +80,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem() {
         guard let store, let button = statusItem?.button else { return }
-        button.image = MenuBarIcon.image(segments: store.menuBarSegments, style: store.menuBarStyle)
+        button.image = MenuBarIcon.image(
+            segments: store.menuBarSegments,
+            style: store.menuBarStyle,
+            colorAlerts: store.colorAlerts
+        )
         button.toolTip = store.tooltip
     }
 }

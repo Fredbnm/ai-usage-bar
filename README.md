@@ -38,6 +38,10 @@ Em ⚙︎ no pop-up:
 
 Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
 
+**Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra, sem o laranja e o vermelho. O pop-up continua mostrando as cores.
+
+**Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
+
 Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado, aparece a inicial do serviço.
 
 <p align="center">

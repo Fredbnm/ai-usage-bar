@@ -18,6 +18,16 @@ final class UsageStore: ObservableObject {
     @Published var menuBarStyle: MenuBarStyle {
         didSet { defaults.set(menuBarStyle.rawValue, forKey: Keys.menuBarStyle) }
     }
+    /// Orange/red ring when a limit is close; off keeps it in the menu bar color.
+    @Published var colorAlerts: Bool {
+        didSet { defaults.set(colorAlerts, forKey: Keys.colorAlerts) }
+    }
+    @Published var language: AppLanguage {
+        didSet {
+            AppLanguage.current = language
+            defaults.set(language.rawValue, forKey: Keys.language)
+        }
+    }
 
     static let refreshInterval: TimeInterval = 180
     static let rateLimitBackoff: TimeInterval = 600
@@ -33,12 +43,26 @@ final class UsageStore: ObservableObject {
         static func cachedAt(_ id: ProviderID) -> String { "cachedAt.\(id.rawValue)" }
         static func menuBar(_ id: ProviderID) -> String { "menuBar.\(id.rawValue)" }
         static let menuBarStyle = "menuBar.style"
+        static let colorAlerts = "menuBar.colorAlerts"
+        static let language = "language"
     }
 
     init(providers: [any UsageProvider] = [ClaudeProvider(), GrokBotProvider()], defaults: UserDefaults = .standard) {
         self.providers = providers
         self.defaults = defaults
         menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
+        colorAlerts = defaults.object(forKey: Keys.colorAlerts) as? Bool ?? true
+        if let saved = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
+            language = saved
+        } else {
+            // Versions before 0.5 were Portuguese-only: an existing install
+            // keeps Portuguese; a new one follows the system language.
+            let isUpgrade = defaults.object(forKey: Keys.cache(.claude)) != nil
+                || defaults.object(forKey: Keys.menuBar(.claude)) != nil
+            language = isUpgrade ? .portuguese : .systemDefault
+            defaults.set(language.rawValue, forKey: Keys.language)
+        }
+        AppLanguage.current = language
         Keys.legacyKeys.forEach(defaults.removeObject(forKey:))
         for id in ProviderID.allCases {
             let saved = defaults.string(forKey: Keys.menuBar(id)).flatMap(MenuBarDisplay.init(rawValue:))
@@ -53,6 +77,8 @@ final class UsageStore: ObservableObject {
         providers = []
         defaults = .standard
         menuBarStyle = .default
+        colorAlerts = true
+        language = AppLanguage.current
         visibleProviders = snapshots.map(\.provider)
         for id in ProviderID.allCases { menuBarDisplays[id] = id.defaultMenuBarDisplay }
         for snapshot in snapshots {
@@ -120,7 +146,7 @@ final class UsageStore: ObservableObject {
             }
             return snapshot.items.map { "\(id.displayName) · \($0.title): \(UsageFormat.percent($0.percent))" }
         }
-        return lines.isEmpty ? "Uso de IA" : lines.joined(separator: "\n")
+        return lines.isEmpty ? tr("Uso de IA", "AI usage") : lines.joined(separator: "\n")
     }
 
     // MARK: Refreshing
@@ -219,14 +245,14 @@ final class UsageStore: ObservableObject {
             let state = state(for: id)
             lines.append("== \(id.displayName)\(state.snapshot?.planName.map { " (\($0))" } ?? "")")
             if let updated = state.lastUpdated { lines.append(UsageFormat.updated(updated)) }
-            if let error = state.error { lines.append("Aviso: \(error.message(for: id))") }
+            if let error = state.error { lines.append(tr("Aviso: ", "Warning: ") + error.message(for: id)) }
             for item in state.snapshot?.items ?? [] {
                 let reset = item.resetsAt.map { " — \(UsageFormat.reset($0))" } ?? ""
                 lines.append("• \(item.title): \(UsageFormat.percent(item.percent)) [\(item.severity)]\(reset)")
             }
             for note in state.snapshot?.notes ?? [] { lines.append("ℹ︎ \(note)") }
             let breakdown = (state.snapshot?.breakdown ?? []).map { "\($0.name) \(UsageFormat.percent($0.percent))" }
-            if !breakdown.isEmpty { lines.append("Divisão da semana: " + breakdown.joined(separator: ", ")) }
+            if !breakdown.isEmpty { lines.append(tr("Divisão da semana: ", "Weekly split: ") + breakdown.joined(separator: ", ")) }
         }
         return lines.joined(separator: "\n")
     }

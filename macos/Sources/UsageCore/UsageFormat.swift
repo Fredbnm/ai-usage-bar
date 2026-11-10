@@ -1,16 +1,14 @@
 import Foundation
 
-/// Portuguese (pt-BR) strings for percentages, durations and reset times.
+/// Percentages, durations and reset times in the current `AppLanguage`.
 public enum UsageFormat {
-    public static let locale = Locale(identifier: "pt_BR")
-
     /// "42%"; "<1%" for usage that is above zero but would round to 0.
     public static func percent(_ value: Double) -> String {
         if value > 0, value < 0.5 { return "<1%" }
         return "\(Int(value.rounded()))%"
     }
 
-    /// "1 h 16 min", "45 min", "2 d 4 h".
+    /// "1 h 16 min", "45 min", "2 d 4 h" (the same in both languages).
     public static func duration(_ interval: TimeInterval) -> String {
         let minutes = max(1, Int((interval / 60).rounded(.up)))
         let days = minutes / 1440
@@ -21,40 +19,49 @@ public enum UsageFormat {
         return "\(mins) min"
     }
 
-    /// "Reinicia em 1 h 16 min · 13:50" for less than a day,
-    /// "Reinicia qui. às 00:00 · em 1 d 11 h" beyond that.
+    /// Less than a day away: "Reinicia em 1 h 16 min · 13:50" /
+    /// "Resets in 1 h 16 min · 1:50 PM". Further: "Reinicia qui. às 00:00 ·
+    /// em 1 d 11 h" / "Resets Thu at 12:00 AM · in 1 d 11 h".
     public static func reset(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
         // Limits that reset together come back as 02:59:59.55 and 03:00:00.55;
         // rounding to the minute keeps them from looking like different days.
         let date = Date(timeIntervalSinceReferenceDate: (date.timeIntervalSinceReferenceDate / 60).rounded() * 60)
         let interval = date.timeIntervalSince(now)
-        guard interval > 0 else { return "Reiniciando…" }
-        let time = string(date, format: "HH:mm", calendar: calendar)
+        guard interval > 0 else { return tr("Reiniciando…", "Resetting…") }
+        let time = string(date, format: tr("HH:mm", "h:mm a"), calendar: calendar)
+        let remaining = duration(interval)
         if interval < 24 * 3600 {
-            return "Reinicia em \(duration(interval)) · \(time)"
+            return tr("Reinicia em \(remaining) · \(time)", "Resets in \(remaining) · \(time)")
         }
         let day = calendar.isDate(date, inSameDayAs: now.addingTimeInterval(86_400))
-            ? "amanhã"
+            ? tr("amanhã", "tomorrow")
             : string(date, format: "EEE", calendar: calendar)
-        return "Reinicia \(day) às \(time) · em \(duration(interval))"
+        return tr("Reinicia \(day) às \(time) · em \(remaining)", "Resets \(day) at \(time) · in \(remaining)")
     }
 
     public static func updated(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
         let elapsed = now.timeIntervalSince(date)
-        if elapsed < 60 { return "Atualizado agora" }
-        if elapsed < 3600 { return "Atualizado há \(Int(elapsed / 60)) min" }
-        if elapsed < 86_400 { return "Atualizado há \(Int(elapsed / 3600)) h" }
-        return "Atualizado em \(string(date, format: "dd/MM HH:mm", calendar: calendar))"
+        if elapsed < 60 { return tr("Atualizado agora", "Updated just now") }
+        if elapsed < 3600 {
+            let minutes = Int(elapsed / 60)
+            return tr("Atualizado há \(minutes) min", "Updated \(minutes) min ago")
+        }
+        if elapsed < 86_400 {
+            let hours = Int(elapsed / 3600)
+            return tr("Atualizado há \(hours) h", "Updated \(hours) h ago")
+        }
+        let when = string(date, format: tr("dd/MM HH:mm", "MMM d, h:mm a"), calendar: calendar)
+        return tr("Atualizado em \(when)", "Updated \(when)")
     }
 
-    /// "12/11".
+    /// "12/11" / "Nov 12".
     public static func shortDate(_ date: Date, calendar: Calendar = .current) -> String {
-        string(date, format: "dd/MM", calendar: calendar)
+        string(date, format: tr("dd/MM", "MMM d"), calendar: calendar)
     }
 
     private static func string(_ date: Date, format: String, calendar: Calendar) -> String {
         let formatter = DateFormatter()
-        formatter.locale = locale
+        formatter.locale = AppLanguage.current.locale
         formatter.calendar = calendar
         formatter.timeZone = calendar.timeZone
         formatter.dateFormat = format

@@ -20,15 +20,16 @@ struct PopoverView: View {
         }
         .padding(16)
         .frame(width: 320)
+        .id(store.language)
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Uso de IA")
+                Text(tr("Uso de IA", "AI Usage"))
                     .font(.system(size: 15, weight: .semibold))
                 TimelineView(.periodic(from: .now, by: 30)) { context in
-                    Text(store.lastUpdated.map { UsageFormat.updated($0, now: context.date) } ?? "Ainda sem dados")
+                    Text(store.lastUpdated.map { UsageFormat.updated($0, now: context.date) } ?? tr("Ainda sem dados", "No data yet"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -43,7 +44,7 @@ struct PopoverView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.borderless)
-                .help("Atualizar agora")
+                .help(tr("Atualizar agora", "Refresh now"))
             }
         }
     }
@@ -52,29 +53,36 @@ struct PopoverView: View {
         HStack {
             Spacer()
             Menu {
-                Picker("Estilo na barra", selection: $store.menuBarStyle) {
+                Picker(tr("Estilo na barra", "Menu bar style"), selection: $store.menuBarStyle) {
                     ForEach(MenuBarStyle.allCases) { style in
                         Text(style.label).tag(style)
                     }
                 }
                 ForEach(store.visibleProviders, id: \.self) { id in
-                    Picker("\(id.displayName) na barra", selection: menuBarBinding(for: id)) {
+                    Picker(id.displayName + tr(" na barra", " in menu bar"), selection: menuBarBinding(for: id)) {
                         ForEach(id.menuBarDisplayOptions) { option in
                             Text(option.label(for: id)).tag(option)
                         }
                     }
                 }
                 Divider()
-                Toggle("Abrir ao iniciar o Mac", isOn: launchAtLoginBinding)
+                Toggle(tr("Cores de alerta na barra", "Alert colors in menu bar"), isOn: $store.colorAlerts)
                 Divider()
-                Button("Sair do medidor") { onQuit() }
+                Picker(tr("Idioma", "Language"), selection: $store.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.nativeName).tag(language)
+                    }
+                }
+                Toggle(tr("Abrir ao iniciar o Mac", "Open at login"), isOn: launchAtLoginBinding)
+                Divider()
+                Button(tr("Sair do medidor", "Quit")) { onQuit() }
             } label: {
                 Image(systemName: "gearshape")
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("Opções")
+            .help(tr("Opções", "Options"))
         }
     }
 
@@ -129,7 +137,7 @@ private struct ProviderSection: View {
             if let snapshot = state.snapshot {
                 ForEach(snapshot.items) { LimitRow(item: $0) }
                 ForEach(snapshot.notes, id: \.self) { note in
-                    Label(note, systemImage: "info.circle")
+                    Label(note.text, systemImage: "info.circle")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -140,7 +148,7 @@ private struct ProviderSection: View {
             } else if state.error == nil {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Carregando…").foregroundStyle(.secondary)
+                    Text(tr("Carregando…", "Loading…")).foregroundStyle(.secondary)
                 }
             }
         }
@@ -177,7 +185,7 @@ private struct BreakdownSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("ONDE FOI O USO DA SEMANA")
+            Text(tr("ONDE FOI O USO DA SEMANA", "WHERE THIS WEEK’S USAGE WENT"))
                 .font(.system(size: 10, weight: .semibold))
                 .kerning(0.4)
                 .foregroundStyle(.secondary)
@@ -261,8 +269,8 @@ extension Severity {
 extension ProviderID {
     var openHelp: String {
         switch self {
-        case .claude: "Ver uso no claude.ai"
-        case .grokBot: "Abrir o Grok Bot"
+        case .claude: tr("Ver uso no claude.ai", "View usage on claude.ai")
+        case .grokBot: tr("Abrir o Grok Bot", "Open Grok Bot")
         }
     }
 

@@ -11,8 +11,8 @@ public enum MenuBarStyle: String, CaseIterable, Identifiable, Sendable {
 
     public var label: String {
         switch self {
-        case .icon: "Ícone da IA com anel"
-        case .percent: "Só o percentual"
+        case .icon: tr("Ícone da IA com anel", "AI icon with ring")
+        case .percent: tr("Só o percentual", "Percentage only")
         }
     }
 
@@ -31,10 +31,10 @@ public enum MenuBarDisplay: String, CaseIterable, Identifiable, Sendable {
 
     public func label(for provider: ProviderID) -> String {
         switch self {
-        case .session: "Só a sessão atual"
-        case .weekly: provider.menuBarDisplayOptions.contains(.session) ? "Só a semanal" : "Semanal"
-        case .both: "Sessão atual + semanal"
-        case .hidden: "Não mostrar"
+        case .session: tr("Só a sessão atual", "Current session only")
+        case .weekly: provider.menuBarDisplayOptions.contains(.session) ? tr("Só a semanal", "Weekly only") : tr("Semanal", "Weekly")
+        case .both: tr("Sessão atual + semanal", "Session + weekly")
+        case .hidden: tr("Não mostrar", "Hide")
         }
     }
 }

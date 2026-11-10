@@ -2,6 +2,11 @@ import XCTest
 @testable import UsageCore
 
 final class GrokBotTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        AppLanguage.current = .portuguese
+    }
+
     // Generated with:
     //   key = PBKDF2-SHA1("test-password", "saltysalt", 1003, 16 bytes)
     //   "v10" + openssl enc -aes-128-cbc -K <key> -iv 2020…20 <<< "hello grok bot"
@@ -72,7 +77,8 @@ final class GrokBotTests: XCTestCase {
         XCTAssertEqual(snapshot.items.map(\.title), ["Semanal"])
         XCTAssertEqual(snapshot.items.first?.percent, 41.5)
         XCTAssertNotNil(snapshot.items.first?.resetsAt)
-        XCTAssertEqual(snapshot.notes, ["2 resets guardados disponíveis", "Uso sob demanda ligado"])
+        XCTAssertEqual(snapshot.notes, [.bankedResets(2), .onDemandEnabled])
+        XCTAssertEqual(snapshot.notes.map(\.text), ["2 resets guardados disponíveis", "Uso sob demanda ligado"])
     }
 
     func testGenericPlanLabelFallsBackToCursorPlan() throws {
@@ -101,7 +107,7 @@ final class GrokBotTests: XCTestCase {
         let json = #"{"usesPooledEnterpriseAllowance": true, "usagePercent": 12}"#
         let snapshot = try XCTUnwrap(GrokBotProvider.snapshot(fromResponse: Data(json.utf8)))
         XCTAssertTrue(snapshot.items.isEmpty)
-        XCTAssertEqual(snapshot.notes, ["Uso compartilhado da equipe, sem limite individual."])
+        XCTAssertEqual(snapshot.notes, [.pooledAllowance])
     }
 
     func testEmptyResponseIsNotASnapshot() {
@@ -119,5 +125,17 @@ final class GrokBotTests: XCTestCase {
         XCTAssertTrue(UsageError.unauthorized(expired: true).message(for: .grokBot).contains("Grok Bot"))
         XCTAssertTrue(UsageError.unauthorized(expired: true).message(for: .claude).contains("Claude Code"))
         XCTAssertTrue(UsageError.keychainDenied.message(for: .grokBot).contains("Permitir sempre"))
+    }
+
+    func testGrokTextsInEnglish() throws {
+        AppLanguage.current = .english
+        let json = #"{"usagePercent": 12, "availableBankedResetCount": "1", "onDemandSettings": {"enabled": true}}"#
+        let snapshot = try XCTUnwrap(GrokBotProvider.snapshot(fromResponse: Data(json.utf8)))
+        XCTAssertEqual(snapshot.items.map(\.title), ["Weekly"])
+        XCTAssertEqual(snapshot.notes.map(\.text), ["1 banked reset available", "On-demand usage on"])
+        XCTAssertEqual(
+            UsageError.unauthorized(expired: true).message(for: .grokBot),
+            "The Grok Bot login expired. Open Grok Bot once to renew it and the meter picks up again."
+        )
     }
 }

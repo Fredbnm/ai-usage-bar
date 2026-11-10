@@ -25,17 +25,45 @@ public struct LimitItem: Identifiable, Equatable, Sendable {
 
     public var id: String
     public var kind: String
-    public var title: String
+    /// Model or surface a scoped limit applies to ("Fable").
+    public var scopeName: String?
     public var percent: Double
     public var severity: Severity
     public var resetsAt: Date?
     public var group: Group
+
+    public init(
+        id: String, kind: String, scopeName: String? = nil, percent: Double,
+        severity: Severity, resetsAt: Date?, group: Group
+    ) {
+        self.id = id
+        self.kind = kind
+        self.scopeName = scopeName
+        self.percent = percent
+        self.severity = severity
+        self.resetsAt = resetsAt
+        self.group = group
+    }
+
+    /// Built when shown, so it follows the language setting.
+    public var title: String {
+        UsageResponse.title(kind: kind, scopeName: scopeName)
+    }
 }
 
 public struct BreakdownItem: Identifiable, Equatable, Sendable {
+    /// The API key ("claude_code", "chat", …).
     public var id: String
-    public var name: String
+    public var displayName: String?
     public var percent: Double
+
+    public var name: String {
+        switch id {
+        case "chat": "Chat"
+        case "other": tr("Outros", "Other")
+        default: displayName ?? id.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
 }
 
 extension UsageResponse {
@@ -47,7 +75,7 @@ extension UsageResponse {
                 LimitItem(
                     id: "\(index)-\(limit.kind)-\(limit.scope?.displayName ?? "")",
                     kind: limit.kind,
-                    title: Self.title(kind: limit.kind, scopeName: limit.scope?.displayName),
+                    scopeName: limit.scope?.displayName,
                     percent: limit.percent,
                     severity: Severity(api: limit.severity, percent: limit.percent),
                     resetsAt: limit.resetsAt,
@@ -56,18 +84,18 @@ extension UsageResponse {
             }
         }
 
-        let windows: [(String, String, UsageWindow?, LimitItem.Group)] = [
-            ("session", "Sessão atual", fiveHour, .session),
-            ("weekly_all", "Semanal · todos os modelos", sevenDay, .weekly),
-            ("weekly_opus", "Semanal · Opus", sevenDayOpus, .weekly),
-            ("weekly_sonnet", "Semanal · Sonnet", sevenDaySonnet, .weekly),
+        let windows: [(id: String, kind: String, scope: String?, window: UsageWindow?, group: LimitItem.Group)] = [
+            ("session", "session", nil, fiveHour, .session),
+            ("weekly_all", "weekly_all", nil, sevenDay, .weekly),
+            ("weekly_opus", "weekly_scoped", "Opus", sevenDayOpus, .weekly),
+            ("weekly_sonnet", "weekly_scoped", "Sonnet", sevenDaySonnet, .weekly),
         ]
-        return windows.compactMap { kind, title, window, group in
-            guard let percent = window?.utilization else { return nil }
+        return windows.compactMap { entry in
+            guard let percent = entry.window?.utilization else { return nil }
             return LimitItem(
-                id: kind, kind: kind, title: title, percent: percent,
+                id: entry.id, kind: entry.kind, scopeName: entry.scope, percent: percent,
                 severity: Severity(api: nil, percent: percent),
-                resetsAt: window?.resetsAt, group: group
+                resetsAt: entry.window?.resetsAt, group: entry.group
             )
         }
     }
@@ -76,17 +104,19 @@ extension UsageResponse {
         (sevenDayBreakdown?.rows ?? [])
             .filter { $0.percent > 0 }
             .sorted { $0.percent > $1.percent }
-            .map { BreakdownItem(id: $0.key, name: Self.breakdownName(key: $0.key, displayName: $0.displayName), percent: $0.percent) }
+            .map { BreakdownItem(id: $0.key, displayName: $0.displayName, percent: $0.percent) }
     }
 
     static func title(kind: String, scopeName: String?) -> String {
         switch kind {
         case "session":
-            return "Sessão atual"
+            return tr("Sessão atual", "Current session")
         case "weekly_all":
-            return "Semanal · todos os modelos"
+            return tr("Semanal · todos os modelos", "Weekly · all models")
+        case "weekly":
+            return tr("Semanal", "Weekly")
         case "weekly_scoped":
-            return "Semanal · \(scopeName ?? "limite específico")"
+            return tr("Semanal", "Weekly") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         default:
             let base = kind.replacingOccurrences(of: "_", with: " ").capitalized
             return scopeName.map { "\(base) · \($0)" } ?? base
@@ -97,13 +127,5 @@ extension UsageResponse {
         if kind == "session" || group == "session" { return .session }
         if group == "weekly" || kind.hasPrefix("weekly") { return .weekly }
         return .other
-    }
-
-    static func breakdownName(key: String, displayName: String?) -> String {
-        switch key {
-        case "chat": return "Chat"
-        case "other": return "Outros"
-        default: return displayName ?? key.replacingOccurrences(of: "_", with: " ").capitalized
-        }
     }
 }

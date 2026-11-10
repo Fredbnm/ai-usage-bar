@@ -110,7 +110,9 @@ A escolha de cada serviço fica salva em `menuBar.<serviço>`:
 | `both` | sessão em cima, semanal embaixo | sessão |
 | `hidden` | o bloco não aparece | — |
 
-O Claude oferece as quatro opções (padrão `both`); o Grok Bot oferece `weekly` (padrão) e `hidden`. Se o limite escolhido não vier na resposta, use o outro; se nenhum vier, use o maior. Sem dados, mostre `–` (carregando) ou `!` (erro). A cor do anel ou da pizza segue a severidade do limite (normal, alerta ou crítico).
+O Claude oferece as quatro opções (padrão `both`); o Grok Bot oferece `weekly` (padrão) e `hidden`. Se o limite escolhido não vier na resposta, use o outro; se nenhum vier, use o maior. Sem dados, mostre `–` (carregando) ou `!` (erro). A cor do anel ou da pizza segue a severidade do limite (normal, alerta ou crítico), a menos que `menuBar.colorAlerts` seja `false`; nesse caso tudo fica na cor da barra.
+
+Os textos seguem a preferência `language` (`pt` ou `en`). Numa instalação nova, ela começa no idioma do sistema: português se o primeiro idioma preferido começar com `pt`, inglês nos outros casos.
 
 ## 5. Grok Bot
 

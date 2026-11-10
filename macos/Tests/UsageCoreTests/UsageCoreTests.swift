@@ -2,6 +2,11 @@ import XCTest
 @testable import UsageCore
 
 final class UsageCoreTests: XCTestCase {
+    override func setUp() {
+        super.setUp()
+        AppLanguage.current = .portuguese
+    }
+
     /// Same shape as the real response, with made-up numbers, an unknown
     /// field and a broken `limits` entry that must be skipped.
     private let sample = """
@@ -77,7 +82,7 @@ final class UsageCoreTests: XCTestCase {
     func testMenuBarSegmentFallsBackWhenLimitMissing() throws {
         // A service with only a weekly limit asked to show "both" shows just that.
         let grok = ProviderSnapshot(provider: .grokBot, planName: nil, items: [
-            LimitItem(id: "g", kind: "weekly", title: "Semanal", percent: 95, severity: .critical, resetsAt: nil, group: .weekly),
+            LimitItem(id: "g", kind: "weekly", percent: 95, severity: .critical, resetsAt: nil, group: .weekly),
         ])
         let segment = try XCTUnwrap(MenuBarSegment.make(provider: .grokBot, display: .both, snapshot: grok, hasError: false))
         XCTAssertEqual(segment.lines, ["95%"])
@@ -202,5 +207,33 @@ final class UsageCoreTests: XCTestCase {
             UsageFormat.reset(almostMidnight, now: now, calendar: calendar),
             "Reinicia qui. às 00:00 · em 1 d 11 h"
         )
+    }
+
+    func testTitlesFollowTheLanguage() throws {
+        let response = try decodeSample()
+        AppLanguage.current = .english
+        XCTAssertEqual(response.items.map(\.title), ["Current session", "Weekly · all models", "Weekly · Fable"])
+        XCTAssertEqual(response.breakdownItems.map(\.name), ["Claude Code", "Chat"])
+        XCTAssertEqual(MenuBarDisplay.both.label(for: .claude), "Session + weekly")
+        XCTAssertEqual(MenuBarStyle.percent.label, "Percentage only")
+        AppLanguage.current = .portuguese
+        XCTAssertEqual(response.items.first?.title, "Sessão atual")
+    }
+
+    func testEnglishResetAndUpdatedText() {
+        AppLanguage.current = .english
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Sao_Paulo")!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 11, day: 10, hour: 12, minute: 34))!
+
+        XCTAssertEqual(UsageFormat.reset(now.addingTimeInterval(76 * 60), now: now, calendar: calendar), "Resets in 1 h 16 min · 1:50 PM")
+        let thursday = calendar.date(from: DateComponents(year: 2026, month: 11, day: 12, hour: 0, minute: 0))!
+        XCTAssertEqual(UsageFormat.reset(thursday, now: now, calendar: calendar), "Resets Thu at 12:00 AM · in 1 d 11 h")
+        let tomorrow = calendar.date(from: DateComponents(year: 2026, month: 11, day: 11, hour: 18, minute: 0))!
+        XCTAssertEqual(UsageFormat.reset(tomorrow, now: now, calendar: calendar), "Resets tomorrow at 6:00 PM · in 1 d 5 h")
+        XCTAssertEqual(UsageFormat.updated(now.addingTimeInterval(-10), now: now, calendar: calendar), "Updated just now")
+        XCTAssertEqual(UsageFormat.updated(now.addingTimeInterval(-600), now: now, calendar: calendar), "Updated 10 min ago")
+        XCTAssertEqual(UsageFormat.shortDate(thursday, calendar: calendar), "Nov 12")
+        XCTAssertEqual(UsageError.network("x").message(for: .claude), "No connection. Trying again soon.")
     }
 }
