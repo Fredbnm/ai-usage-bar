@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Usage Bar</title>
+  <meta name="description" content="See your Claude and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows tray.">
+  <link rel="icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #f6f6f4;
+      --surface: #ffffff;
+      --text: #1b1b1a;
+      --muted: #5f5e5a;
+      --line: #e3e2dd;
+      --accent: #1f6feb;
+      --accent-text: #ffffff;
+      --tag: #eceae4;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 8px 24px rgba(0, 0, 0, .06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #161615;
+        --surface: #20201f;
+        --text: #f1f0ec;
+        --muted: #a9a7a0;
+        --line: #33322f;
+        --accent: #4c9bff;
+        --accent-text: #0b1220;
+        --tag: #2c2b29;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .35);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+    header.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; color: var(--text); text-decoration: none; }
+    .brand img { width: 32px; height: 32px; }
+    .top nav { display: flex; align-items: center; gap: 16px; font-size: 15px; }
+    .top nav a { color: var(--muted); text-decoration: none; }
+    .top nav a:hover { color: var(--text); }
+    .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+    .lang button {
+      border: 0; background: transparent; color: var(--muted); padding: 4px 10px; font: inherit; font-size: 13px; cursor: pointer;
+    }
+    .lang button[aria-pressed="true"] { background: var(--tag); color: var(--text); font-weight: 600; }
+
+    .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; padding: 40px 0 56px; }
+    .hero h1 { font-size: clamp(32px, 5vw, 48px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 16px; }
+    .hero p.lead { font-size: 19px; color: var(--muted); margin: 0 0 28px; max-width: 34em; }
+    .hero .shots { position: relative; display: flex; justify-content: center; }
+    .hero .shots img { width: min(340px, 100%); height: auto; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--line); }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .button {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 10px;
+      background: var(--accent); color: var(--accent-text); font-weight: 600; text-decoration: none;
+    }
+    .button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); }
+    .small { font-size: 14px; color: var(--muted); }
+
+    section { padding: 48px 0; border-top: 1px solid var(--line); }
+    section h2 { font-size: 28px; letter-spacing: -.01em; margin: 0 0 8px; }
+    section > .wrap > p.intro { color: var(--muted); margin: 0 0 28px; max-width: 46em; }
+
+    .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px;
+      display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow);
+    }
+    .card.recommended { border-color: var(--accent); }
+    .card .os { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card h3 { margin: 0; font-size: 19px; }
+    .tag { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--tag); color: var(--muted); }
+    .card.recommended .tag.rec { background: var(--accent); color: var(--accent-text); }
+    .tag.rec { display: none; }
+    .card.recommended .tag.rec { display: inline-block; }
+    .card p { margin: 0; color: var(--muted); font-size: 15px; }
+    .card .button { margin-top: auto; justify-content: center; }
+    .card code { font-size: 13px; }
+
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .feature { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+    .feature h3 { margin: 0 0 6px; font-size: 17px; }
+    .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+
+    .wide-shot img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+
+    .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .steps ol { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
+    .steps li { margin-bottom: 6px; }
+
+    .note {
+      background: var(--surface); border: 1px solid var(--line); border-left: 4px solid #ff8c00; border-radius: 10px;
+      padding: 14px 16px; color: var(--muted); font-size: 15px;
+    }
+
+    footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+    footer .row { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; }
+
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; padding-top: 16px; }
+      .downloads, .features, .steps { grid-template-columns: 1fr; }
+      .top nav a.optional { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="./"><img src="icon.png" alt=""> AI Usage Bar</a>
+      <nav>
+        <a class="optional" href="#download" data-i18n="nav.download">Download</a>
+        <a class="optional" href="#features" data-i18n="nav.features">Features</a>
+        <a href="https://github.com/matheusvelloso/ai-usage-bar">GitHub</a>
+        <span class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" data-lang="pt" aria-pressed="false">PT</button>
+        </span>
+      </nav>
+    </header>
+
+    <div class="hero">
+      <div>
+        <h1 data-i18n="hero.title">Your AI limits, one glance away.</h1>
+        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude and Grok Bot plans you have used, right in the macOS menu bar or the Windows tray, and when each limit resets.</p>
+        <div class="cta">
+          <a class="button" id="primary-download" href="#download" data-i18n="hero.cta">Download</a>
+          <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar" data-i18n="hero.source">View source</a>
+        </div>
+        <p class="small" data-i18n="hero.free">Free and open source (MIT). macOS 13+ and Windows 10/11.</p>
+      </div>
+      <div class="shots">
+        <picture>
+          <source srcset="screenshot-dark.png" media="(prefers-color-scheme: dark)">
+          <img src="screenshot-light.png" alt="The AI Usage Bar popover showing Claude and Grok Bot limits" width="320" height="560">
+        </picture>
+      </div>
+    </div>
+  </div>
+
+  <section id="download">
+    <div class="wrap">
+      <h2 data-i18n="download.title">Download</h2>
+      <p class="intro" data-i18n="download.intro">Always the latest release, built by GitHub Actions straight from the source code.</p>
+      <div class="downloads">
+        <div class="card" data-os="mac">
+          <div class="os"><h3>macOS</h3><span class="tag rec" data-i18n="download.recommended">For your system</span></div>
+          <p data-i18n="download.mac">Native app for macOS 13 or newer, Apple Silicon and Intel.</p>
+          <p><code>AIUsageBar-macOS.dmg</code></p>
+          <a class="button" href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-macOS.dmg" data-i18n="download.mac.button">Download for Mac</a>
+        </div>
+        <div class="card" data-os="windows">
+          <div class="os"><h3>Windows</h3><span class="tag rec" data-i18n="download.recommended">For your system</span></div>
+          <p data-i18n="download.win">Installer for Windows 10 and 11 (64-bit). No admin rights needed.</p>
+          <p><code>AIUsageBar-Windows-Setup.exe</code></p>
+          <a class="button" href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe" data-i18n="download.win.button">Download installer</a>
+        </div>
+        <div class="card" data-os="windows-portable">
+          <div class="os"><h3 data-i18n="download.portable.title">Windows, portable</h3></div>
+          <p data-i18n="download.portable">A single .exe that runs without installing. Handy for trying it out.</p>
+          <p><code>AIUsageBar-Windows-Portable.exe</code></p>
+          <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe" data-i18n="download.portable.button">Download portable</a>
+        </div>
+      </div>
+      <p class="small" style="margin-top:16px">
+        <a href="https://github.com/matheusvelloso/ai-usage-bar/releases" data-i18n="download.all">All releases and release notes</a>
+      </p>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <h2 data-i18n="features.title">What it shows</h2>
+      <p class="intro" data-i18n="features.intro">The same numbers as claude.ai → Settings → Usage, Claude Code's /usage and Grok Bot's own Usage screen.</p>
+      <div class="features">
+        <div class="feature">
+          <h3>Claude</h3>
+          <p data-i18n="features.claude">Current 5-hour session, weekly limit for all models, weekly per-model limits (like Fable) and where this week's usage went: Claude Code, Chat, Cowork.</p>
+        </div>
+        <div class="feature">
+          <h3>Grok Bot</h3>
+          <p data-i18n="features.grok">Weekly limit and when it resets, plus banked resets and on-demand usage when your plan has them.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.glance.title">At a glance</h3>
+          <p data-i18n="features.glance">Each AI gets a ring that fills with usage, around its icon or its percentage. The ring turns orange or red as you get close to a limit.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.yours.title">Your choice</h3>
+          <p data-i18n="features.yours">Pick what each AI shows (session, weekly or both on macOS), the icon style, whether alert colors are on, and English or Portuguese.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.private.title">Private by design</h3>
+          <p data-i18n="features.private">It reuses the logins of the apps you already have, read only and in memory. Tokens are never stored, refreshed or sent anywhere but the service they belong to.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.native.title">Native on each system</h3>
+          <p data-i18n="features.native">Swift and SwiftUI on macOS, C# and WPF on Windows. Small, fast and at home next to your other menu bar and tray icons.</p>
+        </div>
+      </div>
+      <div class="wide-shot" style="margin-top:24px">
+        <img src="menubar.png" alt="Menu bar styles on macOS, light and dark" loading="lazy">
+        <p class="small" data-i18n="features.shot">macOS menu bar styles, with alert colors on and off.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2 data-i18n="install.title">First launch</h2>
+      <p class="intro" data-i18n="install.intro">The apps are not signed with paid Apple or Microsoft certificates yet, so each system asks you to confirm once.</p>
+      <div class="steps">
+        <div class="feature">
+          <h3>macOS</h3>
+          <ol>
+            <li data-i18n="install.mac.1">Open the .dmg and drag AI Usage Bar into Applications.</li>
+            <li data-i18n="install.mac.2">Right-click the app → Open, then confirm.</li>
+            <li data-i18n="install.mac.3">If you use Grok Bot, choose "Always Allow" when macOS asks about "Grok Bot Safe Storage".</li>
+          </ol>
+        </div>
+        <div class="feature">
+          <h3>Windows</h3>
+          <ol>
+            <li data-i18n="install.win.1">Run the installer. If SmartScreen appears, click "More info" → "Run anyway".</li>
+            <li data-i18n="install.win.2">Find the ring icons in the tray, next to the clock (they may start in the ^ overflow area; drag them out).</li>
+            <li data-i18n="install.win.3">Left-click an icon for details; right-click for refresh and quit.</li>
+          </ol>
+        </div>
+      </div>
+      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Grok Bot, the Grok Bot app installed and signed in. The Windows version is new; please report anything odd on GitHub.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p data-i18n="footer.disclaimer">Independent project. Not affiliated with, sponsored or endorsed by Anthropic, xAI/SpaceXAI or Anysphere (Cursor). Claude, Grok and Grok Bot are trademarks of their respective owners. It relies on undocumented endpoints that may change at any time.</p>
+      <div class="row">
+        <span>© 2026 matheusvelloso · <a href="https://github.com/matheusvelloso/ai-usage-bar/blob/main/LICENSE">MIT License</a></span>
+        <span>
+          <a href="https://github.com/matheusvelloso/ai-usage-bar" data-i18n="footer.source">Source code</a> ·
+          <a href="https://github.com/matheusvelloso/ai-usage-bar/blob/main/docs/usage-api.md" data-i18n="footer.api">Data contract</a> ·
+          <a href="https://github.com/matheusvelloso/ai-usage-bar/issues" data-i18n="footer.issues">Report a problem</a>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const pt = {
+      "nav.download": "Baixar",
+      "nav.features": "Recursos",
+      "hero.title": "Seus limites de IA a um olhar de distância.",
+      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows, e quando cada limite reinicia.",
+      "hero.cta": "Baixar",
+      "hero.source": "Ver código",
+      "hero.free": "Gratuito e de código aberto (MIT). macOS 13+ e Windows 10/11.",
+      "download.title": "Baixar",
+      "download.intro": "Sempre a versão mais recente, gerada pelo GitHub Actions direto do código-fonte.",
+      "download.recommended": "Para o seu sistema",
+      "download.mac": "App nativo para macOS 13 ou mais novo, Apple Silicon e Intel.",
+      "download.mac.button": "Baixar para Mac",
+      "download.win": "Instalador para Windows 10 e 11 (64 bits). Não precisa de administrador.",
+      "download.win.button": "Baixar instalador",
+      "download.portable.title": "Windows, portátil",
+      "download.portable": "Um único .exe que roda sem instalar. Bom para experimentar.",
+      "download.portable.button": "Baixar portátil",
+      "download.all": "Todas as versões e notas de lançamento",
+      "features.title": "O que ele mostra",
+      "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code e da tela de Uso do próprio Grok Bot.",
+      "features.claude": "Sessão atual de 5 horas, limite semanal de todos os modelos, limites semanais por modelo (como o Fable) e onde foi o uso da semana: Claude Code, Chat, Cowork.",
+      "features.grok": "Limite semanal e quando ele reinicia, além de resets guardados e uso sob demanda quando o seu plano tem.",
+      "features.glance.title": "Num relance",
+      "features.glance": "Cada IA tem um anel que se preenche com o uso, em volta do ícone ou do percentual. O anel fica laranja ou vermelho quando você se aproxima do limite.",
+      "features.yours.title": "Do seu jeito",
+      "features.yours": "Escolha o que cada IA mostra (sessão, semanal ou as duas no macOS), o estilo do ícone, se as cores de alerta ficam ligadas, e português ou inglês.",
+      "features.private.title": "Privado por padrão",
+      "features.private": "Ele reaproveita o login dos apps que você já tem, só para leitura e em memória. Os tokens nunca são gravados, renovados nem enviados para outro lugar além do próprio serviço.",
+      "features.native.title": "Nativo em cada sistema",
+      "features.native": "Swift e SwiftUI no macOS, C# e WPF no Windows. Leve, rápido e à vontade ao lado dos outros ícones da barra e da bandeja.",
+      "features.shot": "Estilos da barra de menu no macOS, com as cores de alerta ligadas e desligadas.",
+      "install.title": "Primeira abertura",
+      "install.intro": "Os apps ainda não têm certificados pagos da Apple ou da Microsoft, então cada sistema pede uma confirmação uma vez.",
+      "install.mac.1": "Abra o .dmg e arraste o AI Usage Bar para Aplicativos.",
+      "install.mac.2": "Clique com o botão direito no app → Abrir e confirme.",
+      "install.mac.3": "Se você usa o Grok Bot, escolha \"Permitir sempre\" quando o macOS perguntar sobre \"Grok Bot Safe Storage\".",
+      "install.win.1": "Rode o instalador. Se o SmartScreen aparecer, clique em \"Mais informações\" → \"Executar assim mesmo\".",
+      "install.win.2": "Os ícones de anel ficam na bandeja, perto do relógio (podem começar escondidos na seta ^; arraste-os para fora).",
+      "install.win.3": "Clique com o botão esquerdo para ver os detalhes; com o direito para atualizar e sair.",
+      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Grok Bot, o app Grok Bot instalado e logado. A versão de Windows é nova; avise no GitHub se algo estranho acontecer.",
+      "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Grok e Grok Bot são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
+      "footer.source": "Código-fonte",
+      "footer.api": "Contrato de dados",
+      "footer.issues": "Relatar um problema",
+    };
+
+    const english = {};
+    document.querySelectorAll("[data-i18n]").forEach((el) => { english[el.dataset.i18n] = el.textContent; });
+
+    function setLanguage(lang) {
+      const table = lang === "pt" ? pt : english;
+      document.documentElement.lang = lang === "pt" ? "pt-BR" : "en";
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const text = table[el.dataset.i18n];
+        if (text) el.textContent = text;
+      });
+      document.querySelectorAll(".lang button").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.lang === lang));
+      });
+      try { localStorage.setItem("lang", lang); } catch (e) { /* storage may be blocked */ }
+    }
+
+    // English is the site's language; Portuguese only when the visitor picks it.
+    let saved = null;
+    try { saved = localStorage.getItem("lang"); } catch (e) { /* storage may be blocked */ }
+    setLanguage(saved === "pt" ? "pt" : "en");
+    document.querySelectorAll(".lang button").forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.lang));
+    });
+
+    // Highlight the download for the visitor's system and point the main button at it.
+    const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent;
+    const os = /mac/i.test(platform) ? "mac" : /win/i.test(platform) ? "windows" : null;
+    if (os) {
+      const card = document.querySelector(`.card[data-os="${os}"]`);
+      card.classList.add("recommended");
+      document.getElementById("primary-download").href = card.querySelector("a.button").href;
+    }
+  </script>
+</body>
+</html>

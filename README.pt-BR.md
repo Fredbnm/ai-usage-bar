@@ -1,0 +1,174 @@
+# AI Usage Bar
+
+[English](README.md) · **Português** · **[Site e downloads](https://matheusvelloso.github.io/ai-usage-bar/)**
+
+> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
+
+Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com um ícone minimalista (a estrelinha do Claude, o bonequinho do Grok Bot) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço:
+
+**Claude**
+- **Sessão atual** (janela de 5 h): quanto já foi usado e quando reinicia
+- **Semanal, todos os modelos**
+- **Semanal por modelo** (ex.: Fable), quando o seu plano tem esse limite separado
+- **Onde foi o uso da semana**: Claude Code, Chat, Cowork…
+
+**Grok Bot**
+- **Semanal**: quanto já foi usado e quando reinicia
+- Resets guardados disponíveis e uso sob demanda, quando houver
+
+Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage` do Claude Code e da tela de Uso do Grok Bot. O Grok Bot só aparece se estiver instalado e logado neste Mac.
+
+<p align="center">
+  <img src="docs/screenshot-light.png" width="320" alt="Pop-up no tema claro">
+  <img src="docs/screenshot-dark.png" width="320" alt="Pop-up no tema escuro">
+</p>
+
+## Barra de menu
+
+Em ⚙︎ no pop-up:
+
+**Estilo na barra** (vale para todas as IAs)
+- **Ícone da IA com anel** (padrão): o ícone de cada IA dentro de um anel que se preenche com o uso.
+- **Só o percentual**: sem ícone, só uma bolinha em pizza que se preenche e o número, como na primeira versão.
+
+**O que cada IA mostra**
+
+| Serviço | Opções |
+|---|---|
+| Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo) · **Não mostrar** |
+| Grok Bot | **Semanal** (padrão) · **Não mostrar** |
+
+Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
+
+**Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra, sem o laranja e o vermelho. O pop-up continua mostrando as cores.
+
+**Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
+
+Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado, aparece a inicial do serviço.
+
+<p align="center">
+  <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
+</p>
+
+## Plataformas
+
+| Sistema | Situação | Onde |
+|---|---|---|
+| macOS 13+ (Apple Silicon e Intel) | ✅ App nativo (Swift/SwiftUI), instalador `.dmg` | [`macos/`](macos/) |
+| Windows 10/11 (x64) | 🧪 Novo: app nativo (C#/WPF), instalador e `.exe` portátil. Compilado e testado pelo CI, ainda não num PC de verdade | [`windows/`](windows/) |
+| Linux | Planejado | — |
+
+Cada sistema tem um app nativo e um instalador próprios. Tudo de que um novo port precisa está em [`docs/usage-api.md`](docs/usage-api.md): de onde vem cada login, quais endpoints chamar e como ler as respostas. Use [`docs/sample-usage.json`](docs/sample-usage.json) e [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) como dados de teste.
+
+## Baixar
+
+O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a versão mais recente:
+
+| Sistema | Arquivo |
+|---|---|
+| macOS | [`AIUsageBar-macOS.dmg`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-macOS.dmg) |
+| Windows (instalador) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
+| Windows (portátil) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
+
+## Instalar no Mac
+
+1. Abra o `AIUsageBar-<versão>.dmg` e arraste **AI Usage Bar** para **Aplicativos**.
+2. Na primeira vez, clique com o botão direito no app → **Abrir**. O app ainda não é assinado com um certificado da Apple, então o macOS pede essa confirmação uma vez.
+3. Se você usa o Grok Bot, o macOS pergunta se o app pode acessar **"Grok Bot Safe Storage"** no Keychain. Escolha **Permitir sempre** (veja [Como funciona](#como-funciona)).
+4. Para abrir junto com o Mac: ⚙︎ no pop-up → **Abrir ao iniciar o Mac**.
+
+**Requisitos:** o Claude Code logado neste Mac (pelo app do Claude ou pelo `claude` no terminal). Para o Grok Bot, o app Grok Bot instalado e logado.
+
+## Instalar no Windows
+
+1. Rode o `AIUsageBar-Windows-Setup.exe` (instala só para o seu usuário, sem administrador). Se o SmartScreen aparecer, clique em **Mais informações** → **Executar assim mesmo**: o app ainda não tem certificado da Microsoft.
+2. Cada IA ganha o **próprio ícone na bandeja**, perto do relógio. O Windows pode colocar ícones novos na área escondida (**^**); arraste-os para a barra de tarefas para deixá-los visíveis.
+3. Clique com o botão esquerdo para abrir o pop-up e com o direito para atualizar ou sair. As opções (estilo, o que cada IA mostra, cores de alerta, idioma, abrir com o Windows) ficam em ⚙ no pop-up.
+
+Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo. Prefere não instalar? O `AIUsageBar-Windows-Portable.exe` roda direto.
+
+## Compilar
+
+### macOS
+
+Precisa do Xcode (ou das Command Line Tools) com Swift 5.10 ou mais novo.
+
+```bash
+cd macos
+make test      # testes da camada de dados
+make build     # gera dist/AI Usage Bar.app e dist/AIUsageBar-<versão>.dmg
+make install   # copia para /Applications e abre
+```
+
+A versão sai do arquivo `macos/VERSION`. Para assinar com um certificado Developer ID, use `SIGN_IDENTITY="Developer ID Application: …" make build`.
+
+### Windows
+
+Precisa do .NET 10 SDK. O app só roda no Windows, mas tudo compila (e os testes do núcleo rodam) também no macOS e no Linux.
+
+```bash
+cd windows
+dotnet test tests/UsageCore.Tests     # testes do núcleo (qualquer sistema)
+dotnet run --project tools/Preview -- tray.png --claude-fixture ../docs/sample-usage.json --grok-fixture ../docs/sample-grok-usage.json
+dotnet publish src/AIUsageBar -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/win-x64
+```
+
+O instalador é feito com o [Inno Setup](https://jrsoftware.org/isinfo.php) a partir de `windows/installer/AIUsageBar.iss` (veja `.github/workflows/windows.yml`).
+
+## Como funciona
+
+Cada serviço é um "provedor" (`UsageProvider`) que lê o login de um app já instalado e consulta o mesmo endpoint que esse app usa na própria tela de uso. A consulta acontece a cada 3 minutos, ao abrir o pop-up e quando o Mac acorda. A última resposta fica salva para aparecer na hora em que o app abre.
+
+| Serviço | Login reaproveitado | Endpoint |
+|---|---|---|
+| Claude | Keychain, item `Claude Code-credentials`, lido via `/usr/bin/security` | `GET api.anthropic.com/api/oauth/usage` |
+| Grok Bot | `~/Library/Application Support/Grok Bot/sand-secrets.json`, criptografado pelo Electron com a chave do item **Grok Bot Safe Storage** do Keychain | `POST api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus` |
+
+No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json` e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os dois apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
+
+Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um token para outro lugar além do próprio serviço. O cache guarda apenas as respostas de uso.
+
+## Limitações
+
+- **Os endpoints não são públicos.** São os que o próprio Claude Code e o próprio Grok Bot usam, e podem mudar sem aviso. O app ignora campos desconhecidos; se o formato mudar de vez, ele avisa que precisa de atualização.
+- **Os logins expiram.** Claude Code e Grok Bot renovam os próprios tokens quando são usados. Se um deles ficar horas parado, o medidor mostra o último valor e pede para abrir aquele app uma vez.
+- **Grok Bot e Keychain:** o macOS libera a chave do Grok Bot para *esta build* do app. Como o app é assinado só localmente (ad-hoc), cada versão nova pede o "Permitir sempre" de novo. Com um certificado Developer ID isso deixa de acontecer.
+- **Sem assinatura da Apple nem da Microsoft ainda**, por isso o passo do botão direito → Abrir no macOS e o aviso do SmartScreen no Windows.
+- **O Windows é novo.** O CI compila, roda os testes e renderiza o pop-up com dados de exemplo, mas ele ainda não rodou num PC de verdade com logins reais. Relatos são bem-vindos.
+
+## Depuração
+
+```bash
+APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
+"$APP" --dump                 # imprime o uso atual em texto
+"$APP" --dump --raw           # … e as respostas brutas (sem tokens)
+"$APP" --snapshot pop.png     # renderiza o pop-up e, em pop-menubar.png, todas as combinações da barra
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --grok-fixture docs/sample-grok-usage.json --dark
+```
+
+## Estrutura
+
+```
+docs/
+  usage-api.md            contrato de dados para todos os ports
+  sample-usage.json       resposta de exemplo do Claude (números fictícios)
+  sample-grok-usage.json  resposta de exemplo do Grok Bot (números fictícios)
+macos/
+  Sources/UsageCore/      provedores (Claude, Grok Bot), logins, clientes HTTP, textos em PT/EN (testado)
+  Sources/AIUsageBar/     ícone na barra (AppKit) + pop-up (SwiftUI)
+  Tests/                  testes da camada de dados
+  Support/                Info.plist e ícone
+  scripts/                build do .app/.dmg e geração do ícone
+windows/
+  src/UsageCore/          provedores, logins (DPAPI), desenho dos ícones da bandeja; multiplataforma (testado)
+  src/AIUsageBar/         ícones da bandeja (NotifyIcon do WinForms) + pop-up (WPF)
+  tests/                  testes do núcleo
+  tools/Preview/          renderiza todas as combinações de ícone da bandeja num PNG, em qualquer sistema
+  installer/              script do Inno Setup
+docs/index.html           site (GitHub Pages) com os links de download
+.github/workflows/        builds, testes e releases de macOS e Windows
+```
+
+## Licença
+
+[MIT](LICENSE).
