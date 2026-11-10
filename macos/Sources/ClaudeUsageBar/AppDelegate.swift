@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var popover: NSPopover?
     private var store: UsageStore?
     private var cancellables = Set<AnyCancellable>()
+    private var appearanceObservation: NSKeyValueObservation?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if let command = CLICommand(arguments: CommandLine.arguments) {
@@ -44,6 +45,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.button?.action = #selector(togglePopover(_:))
         item.button?.imagePosition = .imageOnly
         statusItem = item
+        // The icon is drawn in color, so redraw it when the menu bar flips
+        // between light and dark (wallpaper, Dark Mode, full-screen apps).
+        appearanceObservation = item.button?.observe(\.effectiveAppearance) { [weak self] _, _ in
+            Task { @MainActor in self?.updateStatusItem() }
+        }
     }
 
     private func setUpPopover(store: UsageStore) {
@@ -74,7 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateStatusItem() {
         guard let store, let button = statusItem?.button else { return }
-        button.image = MenuBarIcon.image(percent: store.menuBarPercent, showsAlert: store.hasError)
+        button.image = MenuBarIcon.image(segments: store.menuBarSegments)
         button.toolTip = store.tooltip
     }
 }

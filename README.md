@@ -1,6 +1,6 @@
 # Claude Usage Bar
 
-Um medidor do seu limite de uso de IA que fica na barra de menu. O ícone mostra a porcentagem mais alta do momento; um clique abre o pop-up com cada serviço:
+Um medidor do seu limite de uso de IA que fica na barra de menu. Na barra, cada IA aparece com um ícone minimalista (a estrelinha do Claude, o bonequinho do Grok Bot) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço:
 
 **Claude**
 - **Sessão atual** (janela de 5 h): quanto já foi usado e quando reinicia
@@ -17,6 +17,23 @@ Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage`
 <p align="center">
   <img src="docs/screenshot-light.png" width="320" alt="Pop-up no tema claro">
   <img src="docs/screenshot-dark.png" width="320" alt="Pop-up no tema escuro">
+</p>
+
+## Barra de menu
+
+Em ⚙︎ no pop-up, cada IA tem sua opção de exibição:
+
+| Serviço | Opções |
+|---|---|
+| Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo e mais apagada) · **Não mostrar** |
+| Grok Bot | **Semanal** (padrão) · **Não mostrar** |
+
+Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
+
+Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado, aparece a inicial do serviço.
+
+<p align="center">
+  <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
 </p>
 
 ## Plataformas
@@ -75,7 +92,7 @@ Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um
 APP="/Applications/Claude Usage.app/Contents/MacOS/ClaudeUsageBar"
 "$APP" --dump                 # imprime o uso atual em texto
 "$APP" --dump --raw           # … e as respostas brutas (sem tokens)
-"$APP" --snapshot pop.png     # renderiza o pop-up com seus dados
+"$APP" --snapshot pop.png     # renderiza o pop-up e, em pop-menubar.png, todas as combinações da barra
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --grok-fixture docs/sample-grok-usage.json --dark
 ```
 

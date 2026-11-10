@@ -52,11 +52,14 @@ struct PopoverView: View {
         HStack {
             Spacer()
             Menu {
-                Picker("Número na barra", selection: $store.menuBarSelection) {
-                    ForEach(store.menuBarOptions, id: \.id) { option in
-                        Text(option.label).tag(option.id)
+                ForEach(store.visibleProviders, id: \.self) { id in
+                    Picker("\(id.displayName) na barra", selection: menuBarBinding(for: id)) {
+                        ForEach(id.menuBarDisplayOptions) { option in
+                            Text(option.label(for: id)).tag(option)
+                        }
                     }
                 }
+                Divider()
                 Toggle("Abrir ao iniciar o Mac", isOn: launchAtLoginBinding)
                 Divider()
                 Button("Sair do medidor") { onQuit() }
@@ -68,6 +71,13 @@ struct PopoverView: View {
             .fixedSize()
             .help("Opções")
         }
+    }
+
+    private func menuBarBinding(for id: ProviderID) -> Binding<MenuBarDisplay> {
+        Binding(
+            get: { store.menuBarDisplay(for: id) },
+            set: { store.setMenuBarDisplay($0, for: id) }
+        )
     }
 
     private var launchAtLoginBinding: Binding<Bool> {

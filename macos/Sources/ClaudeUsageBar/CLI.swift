@@ -106,35 +106,55 @@ struct CLICommand {
         }
         write(png, to: path)
 
-        let icon = MenuBarIcon.image(percent: store.menuBarPercent, showsAlert: store.hasError)
-        let iconPath = (path as NSString).deletingPathExtension + "-menubar.png"
-        if let iconPNG = pngData(icon, scale: 4, background: dark ? .black : .white, tint: dark ? .white : .black) {
-            write(iconPNG, to: iconPath)
+        let menuBarPath = (path as NSString).deletingPathExtension + "-menubar.png"
+        if let menuBarPNG = menuBarVariants(store: store) {
+            write(menuBarPNG, to: menuBarPath)
         }
     }
 
-    private func pngData(_ image: NSImage, scale: CGFloat = 1, background: NSColor? = nil, tint: NSColor? = nil) -> Data? {
-        let pixelsWide = Int(image.size.width * scale)
-        let pixelsHigh = Int(image.size.height * scale)
-        guard pixelsWide > 0, pixelsHigh > 0,
-              let rep = NSBitmapImageRep(
-                bitmapDataPlanes: nil, pixelsWide: pixelsWide, pixelsHigh: pixelsHigh,
-                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
+    /// Every menu bar combination, in a light and a dark menu bar.
+    @MainActor
+    private func menuBarVariants(store: UsageStore) -> Data? {
+        let variants: [(String, [ProviderID: MenuBarDisplay])] = [
+            ("Claude sessão + semanal | Grok Bot", [.claude: .both, .grokBot: .weekly]),
+            ("Claude só sessão | Grok Bot", [.claude: .session, .grokBot: .weekly]),
+            ("Claude só semanal | Grok Bot", [.claude: .weekly, .grokBot: .weekly]),
+            ("Só Claude, sessão + semanal", [.claude: .both, .grokBot: .hidden]),
+            ("Só Grok Bot", [.claude: .hidden, .grokBot: .weekly]),
+        ]
+        let scale: CGFloat = 3
+        let barHeight: CGFloat = 24
+        let labelWidth: CGFloat = 210
+        let columnWidth: CGFloat = 170
+        let size = NSSize(width: labelWidth + columnWidth * 2, height: barHeight * CGFloat(variants.count))
+
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(size.width * scale), pixelsHigh: Int(size.height * scale),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)
         else { return nil }
-        rep.size = image.size
+        rep.size = size
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-        let rect = NSRect(origin: .zero, size: image.size)
-        image.draw(in: rect)
-        if let tint {
-            // Recolor only the glyph pixels (template images draw in black).
-            tint.setFill()
-            rect.fill(using: .sourceAtop)
-        }
-        if let background {
-            background.setFill()
-            rect.fill(using: .destinationOver)
+        NSColor.white.setFill()
+        NSRect(origin: .zero, size: size).fill()
+
+        for (row, variant) in variants.enumerated() {
+            let y = size.height - barHeight * CGFloat(row + 1)
+            (variant.0 as NSString).draw(
+                at: NSPoint(x: 8, y: y + 6),
+                withAttributes: [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: NSColor.darkGray]
+            )
+            store.previewMenuBarDisplays(variant.1)
+            for (column, appearanceName) in [NSAppearance.Name.aqua, .darkAqua].enumerated() {
+                let cell = NSRect(x: labelWidth + columnWidth * CGFloat(column), y: y, width: columnWidth, height: barHeight)
+                (column == 0 ? NSColor(white: 0.92, alpha: 1) : NSColor(white: 0.13, alpha: 1)).setFill()
+                cell.fill()
+                NSAppearance(named: appearanceName)?.performAsCurrentDrawingAppearance {
+                    let image = MenuBarIcon.image(segments: store.menuBarSegments, height: barHeight)
+                    image.draw(in: NSRect(x: cell.minX + 10, y: cell.minY, width: image.size.width, height: image.size.height))
+                }
+            }
         }
         NSGraphicsContext.restoreGraphicsState()
         return rep.representation(using: .png, properties: [:])

@@ -94,14 +94,16 @@ Se `limits` não vier, monte a lista a partir de `five_hour`, `seven_day`, `seve
 
 ## 4. Número na barra
 
-O usuário escolhe o que aparece ao lado do ícone. A escolha é salva como texto:
+Cada serviço vira um bloco na barra: um ícone monocromático (a arte branca do ícone do app, sem o fundo) dentro de um anel de progresso, mais um ou dois números, tudo na cor da barra. Os blocos são separados por um traço vertical. A escolha de cada serviço fica salva em `menuBar.<serviço>`:
 
-| Valor salvo | Número mostrado |
-|---|---|
-| `highest` (padrão) | maior `percent` entre todos os limites de todos os serviços |
-| `<serviço>:<kind>`, ex. `claude:session`, `grokBot:weekly` | `percent` daquele limite; sem dados, cai para o mais alto |
+| Valor | Números | O anel mostra |
+|---|---|---|
+| `session` | sessão (`kind` `session`) | sessão |
+| `weekly` | semanal (`kind` `weekly_all`; no Grok Bot, o único limite semanal) | semanal |
+| `both` | sessão em cima, semanal embaixo | sessão |
+| `hidden` | o bloco não aparece | — |
 
-A versão 0.1 salvava `session` e `weekly`, que equivalem a `claude:session` e `claude:weekly_all`.
+O Claude oferece as quatro opções (padrão `both`); o Grok Bot oferece `weekly` (padrão) e `hidden`. Se o limite escolhido não vier na resposta, use o outro; se nenhum vier, use o maior. Sem dados, mostre `–` (carregando) ou `!` (erro). A cor do anel segue a severidade do limite (normal, alerta ou crítico).
 
 ## 5. Grok Bot
 

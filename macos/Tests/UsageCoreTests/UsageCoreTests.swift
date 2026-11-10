@@ -45,27 +45,53 @@ final class UsageCoreTests: XCTestCase {
         XCTAssertNotNil(items[0].resetsAt)
     }
 
-    func testMenuBarSelection() throws {
+    func testMenuBarSegments() throws {
         let claude = try XCTUnwrap(ClaudeProvider.snapshot(fromResponse: Data(sample.utf8), plan: "Max 5x"))
+
+        // Both: session on top (drives the ring), weekly below.
+        let both = try XCTUnwrap(MenuBarSegment.make(provider: .claude, display: .both, snapshot: claude, hasError: false))
+        XCTAssertEqual(both.lines, ["42%", "30%"])
+        XCTAssertEqual(both.ringPercent, 42)
+
+        let session = try XCTUnwrap(MenuBarSegment.make(provider: .claude, display: .session, snapshot: claude, hasError: false))
+        XCTAssertEqual(session.lines, ["42%"])
+        XCTAssertEqual(session.ringPercent, 42)
+
+        // Weekly means "all models", not the per-model Fable limit (91%).
+        let weekly = try XCTUnwrap(MenuBarSegment.make(provider: .claude, display: .weekly, snapshot: claude, hasError: false))
+        XCTAssertEqual(weekly.lines, ["30%"])
+        XCTAssertEqual(weekly.ringPercent, 30)
+        XCTAssertEqual(weekly.ringSeverity, .normal)
+
+        XCTAssertNil(MenuBarSegment.make(provider: .claude, display: .hidden, snapshot: claude, hasError: false))
+    }
+
+    func testMenuBarSegmentWithoutData() throws {
+        let loading = try XCTUnwrap(MenuBarSegment.make(provider: .grokBot, display: .weekly, snapshot: nil, hasError: false))
+        XCTAssertEqual(loading.lines, ["–"])
+        XCTAssertNil(loading.ringPercent)
+        let failed = try XCTUnwrap(MenuBarSegment.make(provider: .grokBot, display: .weekly, snapshot: nil, hasError: true))
+        XCTAssertEqual(failed.lines, ["!"])
+    }
+
+    func testMenuBarSegmentFallsBackWhenLimitMissing() throws {
+        // A service with only a weekly limit asked to show "both" shows just that.
         let grok = ProviderSnapshot(provider: .grokBot, planName: nil, items: [
             LimitItem(id: "g", kind: "weekly", title: "Semanal", percent: 95, severity: .critical, resetsAt: nil, group: .weekly),
         ])
-        let snapshots = [claude, grok]
+        let segment = try XCTUnwrap(MenuBarSegment.make(provider: .grokBot, display: .both, snapshot: grok, hasError: false))
+        XCTAssertEqual(segment.lines, ["95%"])
+        XCTAssertEqual(segment.ringSeverity, .critical)
+        let sessionOnly = try XCTUnwrap(MenuBarSegment.make(provider: .grokBot, display: .session, snapshot: grok, hasError: false))
+        XCTAssertEqual(sessionOnly.lines, ["95%"])
+    }
 
-        XCTAssertEqual(MenuBarSelection.highest.percent(in: snapshots), 95)
-        XCTAssertEqual(MenuBarSelection(rawValue: "claude:session").percent(in: snapshots), 42)
-        XCTAssertEqual(MenuBarSelection(rawValue: "grokBot:weekly").percent(in: snapshots), 95)
-        // A choice whose data is missing falls back to the highest value.
-        XCTAssertEqual(MenuBarSelection(rawValue: "claude:nonexistent").percent(in: snapshots), 95)
-        // Values saved by version 0.1.
-        XCTAssertEqual(MenuBarSelection(rawValue: "session"), .item(.claude, kind: "session"))
-        XCTAssertEqual(MenuBarSelection(rawValue: "weekly"), .item(.claude, kind: "weekly_all"))
-        XCTAssertEqual(MenuBarSelection(rawValue: "garbage"), .highest)
-
-        let labels = MenuBarSelection.options(for: snapshots).map(\.label)
-        XCTAssertEqual(labels.first, "O mais alto entre todos")
-        XCTAssertTrue(labels.contains("Grok Bot · Semanal"))
-        XCTAssertTrue(labels.contains("Claude · Semanal · Fable"))
+    func testMenuBarOptionsPerService() {
+        XCTAssertEqual(ProviderID.claude.menuBarDisplayOptions, [.session, .weekly, .both, .hidden])
+        XCTAssertEqual(ProviderID.grokBot.menuBarDisplayOptions, [.weekly, .hidden])
+        XCTAssertEqual(MenuBarDisplay.weekly.label(for: .claude), "Só a semanal")
+        XCTAssertEqual(MenuBarDisplay.weekly.label(for: .grokBot), "Semanal")
+        XCTAssertEqual(ProviderID.claude.defaultMenuBarDisplay, .both)
     }
 
     func testBreakdownSkipsZeroAndTranslates() throws {

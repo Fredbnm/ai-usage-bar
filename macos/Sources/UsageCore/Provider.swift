@@ -64,56 +64,6 @@ struct ProviderCache: Codable {
     static func decode(_ data: Data) -> ProviderCache? { try? JSONDecoder().decode(ProviderCache.self, from: data) }
 }
 
-/// The number shown next to the menu bar icon.
-public enum MenuBarSelection: Hashable, Sendable {
-    case highest
-    case item(ProviderID, kind: String)
-
-    public init(rawValue: String) {
-        switch rawValue {
-        // Values saved by version 0.1.
-        case "session": self = .item(.claude, kind: "session")
-        case "weekly": self = .item(.claude, kind: "weekly_all")
-        default:
-            let parts = rawValue.split(separator: ":", maxSplits: 1).map(String.init)
-            if parts.count == 2, let provider = ProviderID(rawValue: parts[0]) {
-                self = .item(provider, kind: parts[1])
-            } else {
-                self = .highest
-            }
-        }
-    }
-
-    public var rawValue: String {
-        switch self {
-        case .highest: "highest"
-        case .item(let provider, let kind): "\(provider.rawValue):\(kind)"
-        }
-    }
-
-    /// Falls back to the highest value when the chosen limit is missing.
-    public func percent(in snapshots: [ProviderSnapshot]) -> Double? {
-        let highest = snapshots.flatMap(\.items).map(\.percent).max()
-        switch self {
-        case .highest:
-            return highest
-        case .item(let provider, let kind):
-            return snapshots.first { $0.provider == provider }?.items.first { $0.kind == kind }?.percent ?? highest
-        }
-    }
-
-    public static func options(for snapshots: [ProviderSnapshot]) -> [(id: String, label: String)] {
-        var options = [(id: MenuBarSelection.highest.rawValue, label: "O mais alto entre todos")]
-        for snapshot in snapshots {
-            for item in snapshot.items {
-                let selection = MenuBarSelection.item(snapshot.provider, kind: item.kind)
-                options.append((id: selection.rawValue, label: "\(snapshot.provider.displayName) · \(item.title)"))
-            }
-        }
-        return options
-    }
-}
-
 /// Runs blocking work (Keychain prompts, subprocesses) off the Swift
 /// concurrency pool.
 func runBlocking<T: Sendable>(_ work: @escaping @Sendable () throws -> T) async throws -> T {

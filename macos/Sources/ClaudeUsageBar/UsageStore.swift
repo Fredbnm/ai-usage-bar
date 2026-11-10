@@ -14,10 +14,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var states: [ProviderID: ProviderState] = [:]
     /// Services shown in the popover, in display order.
     @Published private(set) var visibleProviders: [ProviderID] = []
-    /// `MenuBarSelection.rawValue`.
-    @Published var menuBarSelection: String {
-        didSet { defaults.set(menuBarSelection, forKey: Keys.selection) }
-    }
+    @Published private(set) var menuBarDisplays: [ProviderID: MenuBarDisplay] = [:]
 
     static let refreshInterval: TimeInterval = 180
     static let rateLimitBackoff: TimeInterval = 600
@@ -27,20 +24,21 @@ final class UsageStore: ObservableObject {
     private var timer: Timer?
 
     private enum Keys {
-        static let selection = "menuBarSelection"
-        static let legacyMetric = "menuBarMetric"
-        static let legacyKeys = ["cachedResponse", "cachedAt", "planName", "menuBarMetric"]
+        /// Settings from versions 0.1 and 0.2 that no longer apply.
+        static let legacyKeys = ["cachedResponse", "cachedAt", "planName", "menuBarMetric", "menuBarSelection"]
         static func cache(_ id: ProviderID) -> String { "cache.\(id.rawValue)" }
         static func cachedAt(_ id: ProviderID) -> String { "cachedAt.\(id.rawValue)" }
+        static func menuBar(_ id: ProviderID) -> String { "menuBar.\(id.rawValue)" }
     }
 
     init(providers: [any UsageProvider] = [ClaudeProvider(), GrokBotProvider()], defaults: UserDefaults = .standard) {
         self.providers = providers
         self.defaults = defaults
-        menuBarSelection = defaults.string(forKey: Keys.selection)
-            ?? defaults.string(forKey: Keys.legacyMetric)
-            ?? MenuBarSelection.highest.rawValue
         Keys.legacyKeys.forEach(defaults.removeObject(forKey:))
+        for id in ProviderID.allCases {
+            let saved = defaults.string(forKey: Keys.menuBar(id)).flatMap(MenuBarDisplay.init(rawValue:))
+            menuBarDisplays[id] = saved.flatMap { id.menuBarDisplayOptions.contains($0) ? $0 : nil } ?? id.defaultMenuBarDisplay
+        }
         updateVisibleProviders()
         loadCache()
     }
@@ -49,10 +47,39 @@ final class UsageStore: ObservableObject {
     init(preview snapshots: [ProviderSnapshot], updated: Date = Date()) {
         providers = []
         defaults = .standard
-        menuBarSelection = MenuBarSelection.highest.rawValue
         visibleProviders = snapshots.map(\.provider)
+        for id in ProviderID.allCases { menuBarDisplays[id] = id.defaultMenuBarDisplay }
         for snapshot in snapshots {
             states[snapshot.provider] = ProviderState(snapshot: snapshot, lastUpdated: updated)
+        }
+    }
+
+    // MARK: Menu bar settings
+
+    func menuBarDisplay(for id: ProviderID) -> MenuBarDisplay {
+        menuBarDisplays[id] ?? id.defaultMenuBarDisplay
+    }
+
+    func setMenuBarDisplay(_ display: MenuBarDisplay, for id: ProviderID) {
+        menuBarDisplays[id] = display
+        defaults.set(display.rawValue, forKey: Keys.menuBar(id))
+    }
+
+    /// Overrides the settings without saving them (for previews).
+    func previewMenuBarDisplays(_ displays: [ProviderID: MenuBarDisplay]) {
+        menuBarDisplays.merge(displays) { _, new in new }
+    }
+
+    /// The blocks to draw in the menu bar, in display order.
+    var menuBarSegments: [MenuBarSegment] {
+        visibleProviders.compactMap { id in
+            let state = state(for: id)
+            return MenuBarSegment.make(
+                provider: id,
+                display: menuBarDisplay(for: id),
+                snapshot: state.snapshot,
+                hasError: state.error != nil
+            )
         }
     }
 
@@ -77,17 +104,6 @@ final class UsageStore: ObservableObject {
     /// The oldest successful update, so a stale service is not hidden.
     var lastUpdated: Date? {
         visibleProviders.compactMap { states[$0]?.lastUpdated }.min()
-    }
-
-    var menuBarPercent: Double? {
-        MenuBarSelection(rawValue: menuBarSelection).percent(in: snapshots)
-    }
-
-    var menuBarOptions: [(id: String, label: String)] {
-        let options = MenuBarSelection.options(for: snapshots)
-        // Keep a saved choice selectable even while its data is loading.
-        if options.contains(where: { $0.id == menuBarSelection }) { return options }
-        return options + [(id: menuBarSelection, label: "Escolha anterior (sem dados agora)")]
     }
 
     var tooltip: String {
