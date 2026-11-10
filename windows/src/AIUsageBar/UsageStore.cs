@@ -123,16 +123,29 @@ internal sealed class UsageStore
 
     public void SetTaskbarWidget(bool enabled) => UpdateSettings(() => Settings.ShowTaskbarWidget = enabled);
 
-    /// <summary>Changing the anchor drops the drag offset, which only makes sense relative to it.</summary>
+    /// <summary>
+    /// Changing the anchor drops the drag offset, which only makes sense relative to it.
+    /// Picking a position is a request to see the widget there, so it also turns the widget on.
+    /// </summary>
     public void SetTaskbarPlacement(TaskbarPlacement placement) => UpdateSettings(() =>
     {
         Settings.TaskbarPlacement = placement;
         Settings.TaskbarOffset = 0;
+        Settings.ShowTaskbarWidget = true;
     });
 
-    public void SetTaskbarStyle(TaskbarStyle style) => UpdateSettings(() => Settings.TaskbarStyle = style);
+    /// <summary>Picking a style also turns the widget on, like <see cref="SetTaskbarPlacement"/>.</summary>
+    public void SetTaskbarStyle(TaskbarStyle style) => UpdateSettings(() =>
+    {
+        Settings.TaskbarStyle = style;
+        Settings.ShowTaskbarWidget = true;
+    });
 
-    public void ResetTaskbarOffset() => UpdateSettings(() => Settings.TaskbarOffset = 0);
+    public void ResetTaskbarOffset() => UpdateSettings(() =>
+    {
+        Settings.TaskbarOffset = 0;
+        Settings.ShowTaskbarWidget = true;
+    });
 
     /// <summary>Writes the settings without notifying: the widget saves once when a drag ends.</summary>
     public void SaveSettings() => Settings.Save();
