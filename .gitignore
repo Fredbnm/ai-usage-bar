@@ -4,3 +4,8 @@ macos/.swiftpm/
 macos/dist/
 *.xcuserstate
 xcuserdata/
+windows/**/bin/
+windows/**/obj/
+windows/publish/
+windows/dist/
+windows/screens/

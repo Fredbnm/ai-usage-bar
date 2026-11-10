@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Cross-platform on purpose: everything that is not Windows UI lives
+       here, so it is unit-tested (and its tray icons previewed) on any OS. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>AIUsageBar.Core</RootNamespace>
+    <AssemblyName>AIUsageBar.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.155.0" />
+    <InternalsVisibleTo Include="UsageCore.Tests" />
+  </ItemGroup>
+
+</Project>

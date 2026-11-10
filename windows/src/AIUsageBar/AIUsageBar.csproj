@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- NotifyIcon (tray) and System.Drawing icon extraction come from WinForms. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Lets the project build on macOS/Linux too (it only runs on Windows). -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>AIUsageBar</AssemblyName>
+    <RootNamespace>AIUsageBar</RootNamespace>
+    <ApplicationIcon>AppIcon.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Product>AI Usage Bar</Product>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)../../VERSION').Trim())</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WPF and WinForms share type names (Application, Button…): keep WinForms explicit. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <!-- WPF leaves System.IO out of the implicit usings. -->
+    <Using Include="System.IO" />
+    <Resource Include="AppIcon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UsageCore\UsageCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="11.0.0" />
+  </ItemGroup>
+
+</Project>

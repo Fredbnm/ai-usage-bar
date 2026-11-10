@@ -1,0 +1,68 @@
+﻿<Application x:Class="AIUsageBar.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Placeholders: Theme.Apply replaces these to follow the Windows light/dark setting. -->
+            <SolidColorBrush x:Key="PopupBackground" Color="#F9F9F9" />
+            <SolidColorBrush x:Key="PopupBorder" Color="#E0E0E0" />
+            <SolidColorBrush x:Key="PrimaryText" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="SecondaryText" Color="#5F5F5F" />
+            <SolidColorBrush x:Key="TrackBrush" Color="#1A000000" />
+            <SolidColorBrush x:Key="Divider" Color="#E5E5E5" />
+            <SolidColorBrush x:Key="BadgeBackground" Color="#0F000000" />
+            <SolidColorBrush x:Key="HoverBackground" Color="#0F000000" />
+            <SolidColorBrush x:Key="ErrorBackground" Color="#26FF8C00" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#FF8C00" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#0067C0" />
+            <SolidColorBrush x:Key="NeutralBarBrush" Color="#808080" />
+
+            <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+            <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+            <!-- A rounded bar; Value is 0–1. -->
+            <Style x:Key="UsageBar" TargetType="ProgressBar">
+                <Setter Property="Minimum" Value="0" />
+                <Setter Property="Maximum" Value="1" />
+                <Setter Property="Height" Value="6" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Grid>
+                                <Border x:Name="PART_Track" CornerRadius="3" Background="{DynamicResource TrackBrush}" />
+                                <Border x:Name="PART_Indicator" CornerRadius="3" HorizontalAlignment="Left"
+                                        Background="{TemplateBinding Foreground}" />
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Flat icon button (refresh, open, settings). -->
+            <Style x:Key="IconButton" TargetType="Button">
+                <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Width" Value="30" />
+                <Setter Property="Height" Value="30" />
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Chrome" CornerRadius="4" Background="Transparent">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource HoverBackground}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

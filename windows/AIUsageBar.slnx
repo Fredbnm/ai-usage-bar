@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AIUsageBar/AIUsageBar.csproj" />
+    <Project Path="src/UsageCore/UsageCore.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UsageCore.Tests/UsageCore.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Preview/Preview.csproj" />
+  </Folder>
+</Solution>
