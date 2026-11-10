@@ -18,6 +18,16 @@ internal sealed class AppSettings
     /// <summary>Key of the agent tab shown last.</summary>
     public string? SelectedProvider { get; set; }
 
+    /// <summary>The widget drawn over the taskbar (off by default: it is an option).</summary>
+    public bool ShowTaskbarWidget { get; set; }
+
+    public TaskbarPlacement TaskbarPlacement { get; set; } = TaskbarPlacement.LeftOfTray;
+
+    public TaskbarStyle TaskbarStyle { get; set; } = TaskbarStyle.RingAndPercent;
+
+    /// <summary>How far the user dragged the widget from its anchor, in device-independent pixels (right is positive).</summary>
+    public double TaskbarOffset { get; set; }
+
     /// <summary>Agents the user switched off in the Agents tab (keys).</summary>
     public List<string> HiddenProviders { get; set; } = [];
 

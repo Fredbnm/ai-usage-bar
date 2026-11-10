@@ -22,6 +22,13 @@ public partial class App : System.Windows.Application
             return;
         }
 
+        // Debug: the real tray and taskbar widget on the sample fixtures, with no logins read and no network.
+        if (e.Args.Contains("--widget-demo"))
+        {
+            RunWidgetDemo(e.Args);
+            return;
+        }
+
         singleInstance = new Mutex(initiallyOwned: true, "AIUsageBar.SingleInstance", out var isFirstInstance);
         if (!isFirstInstance)
         {
@@ -41,6 +48,22 @@ public partial class App : System.Windows.Application
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
+    }
+
+    private void RunWidgetDemo(string[] args)
+    {
+        if (Localization.LanguageFromCode(args.SkipWhile(a => a != "--lang").Skip(1).FirstOrDefault()) is { } language) Localization.Current = language;
+        Theme.Apply(forceDark: args.Contains("--dark"));
+        var demo = new AppSettings
+        {
+            LanguageValue = Localization.Current,
+            OnboardingDismissed = true,
+            ShowTaskbarWidget = true,
+            TaskbarPlacement = args.Contains("--left-edge") ? TaskbarPlacement.LeftEdge : TaskbarPlacement.LeftOfTray,
+            TaskbarStyle = args.Contains("--ring-only") ? TaskbarStyle.RingOnly : TaskbarStyle.RingAndPercent,
+        };
+        store = new UsageStore(demo, CliCommand.FixtureSnapshots(args));
+        tray = new TrayController(store);
     }
 
     private void OnUserPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e) =>

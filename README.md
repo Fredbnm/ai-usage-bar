@@ -53,7 +53,7 @@ Everything is drawn in the menu bar's own color, like other menu bar icons: whit
 
 **Language**: English or Português. Applies to the popover, the gear menu, messages and times (AM/PM in English, 24-hour in Portuguese). A fresh install starts in the macOS language.
 
-The icons are cut out, at runtime, of the installed apps' own icons (Claude and Grok Bot): the meter keeps only the white artwork and drops the colored background. No brand artwork ships with this repository. If one of the apps is not installed (Copilot has no app of its own), the service's initial is shown instead.
+The icons are the agents' own official artwork, cut out at runtime from what is installed on the computer: the meter keeps only the artwork and drops the colored background, and draws it in the menu bar's or taskbar's color. Claude and Grok Bot come from their apps (on Windows also from Microsoft Store installs); GitHub Copilot comes from GitHub's own VS Code extension (`github.copilot-chat`, also found in VS Code Insiders and Cursor). No brand artwork ships with this repository. If an icon cannot be found, the service's initial is shown instead.
 
 <p align="center">
   <img src="docs/menubar.png" width="820" alt="Menu bar combinations in light and dark themes">
@@ -97,6 +97,17 @@ The [website](https://matheusvelloso.github.io/ai-usage-bar/) always links to th
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Popup on Windows"></p>
 
 Windows tray icons are small squares, so each one shows a single value (session *or* weekly) around the AI's icon or as a number; the popup shows everything. Prefer not to install? `AIUsageBar-Windows-Portable.exe` runs as is.
+
+### Taskbar widget (Windows, optional)
+
+For a summary you can see without opening anything, turn on **⚙ → Taskbar widget → Show on the taskbar**. A small pill appears on the taskbar with one chip per agent: its official icon inside a progress ring that follows usage, plus the percentage, coloured orange or red when a limit is close.
+
+- **Hover** a chip for a card with that agent's plan, every limit and when it resets. **Click** opens the full popup on that agent's tab, **drag** moves it, **right-click** has refresh, position, style and hide.
+- **Position:** *left of the system tray* (default) or *left edge*, which uses the first free gap from the left (after Widgets on a centred taskbar, so it does not sit on Start or your apps). Drag to fine-tune; "Reset position" undoes it.
+- **Style:** icon with ring and percentage, or just the ringed icon.
+- It is independent of the tray icons: you can hide those and keep the widget.
+
+Windows 11 has no supported way to add content to the taskbar, so the widget is a small borderless window kept above it. It hides by itself for full-screen apps, games and presentations and while an auto-hidden taskbar is hidden, follows the taskbar across DPI and monitor changes (the primary taskbar only), and is not shown on a vertical taskbar. If you click the taskbar itself, the widget can disappear behind it for up to a second before it comes back.
 
 ## Build
 
@@ -169,6 +180,7 @@ Windows (it is a GUI app, so use `Start-Process -Wait` to see the output):
 Start-Process AIUsageBar.exe -ArgumentList '--dump' -Wait -NoNewWindow
 Start-Process AIUsageBar.exe -ArgumentList '--snapshot','pop.png','--fixture','docs\sample-usage.json' -Wait   # also writes pop-tray.png
 # add '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot' or '--first-run' to render other states
+Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # real tray + taskbar widget on sample data (no logins, no network); add --left-edge, --ring-only, --dark
 ```
 
 ## Layout

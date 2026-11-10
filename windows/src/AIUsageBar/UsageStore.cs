@@ -121,6 +121,22 @@ internal sealed class UsageStore
     public void SetDisplay(ProviderId provider, TrayDisplay display) =>
         UpdateSettings(() => Settings.Displays[provider.Key()] = display);
 
+    public void SetTaskbarWidget(bool enabled) => UpdateSettings(() => Settings.ShowTaskbarWidget = enabled);
+
+    /// <summary>Changing the anchor drops the drag offset, which only makes sense relative to it.</summary>
+    public void SetTaskbarPlacement(TaskbarPlacement placement) => UpdateSettings(() =>
+    {
+        Settings.TaskbarPlacement = placement;
+        Settings.TaskbarOffset = 0;
+    });
+
+    public void SetTaskbarStyle(TaskbarStyle style) => UpdateSettings(() => Settings.TaskbarStyle = style);
+
+    public void ResetTaskbarOffset() => UpdateSettings(() => Settings.TaskbarOffset = 0);
+
+    /// <summary>Writes the settings without notifying: the widget saves once when a drag ends.</summary>
+    public void SaveSettings() => Settings.Save();
+
     public void SetColorAlerts(bool enabled) => UpdateSettings(() => Settings.ColorAlerts = enabled);
 
     public void SetLanguage(AppLanguage language) => UpdateSettings(() =>

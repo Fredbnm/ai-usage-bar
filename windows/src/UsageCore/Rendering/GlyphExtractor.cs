@@ -19,7 +19,14 @@ public sealed record Glyph(SKBitmap Mask, float CenterX, float CenterY, float Ra
 /// </summary>
 public static class GlyphExtractor
 {
-    public static Glyph? WhiteArtwork(SKBitmap icon, int side = 256)
+    /// <summary>
+    /// The artwork of an icon whose symbol is <i>dark</i> on a light or transparent
+    /// background, such as GitHub Copilot's own icon. Same pipeline, with "darkness"
+    /// instead of "whiteness".
+    /// </summary>
+    public static Glyph? DarkArtwork(SKBitmap icon, int side = 256) => WhiteArtwork(icon, side, darkArtwork: true);
+
+    public static Glyph? WhiteArtwork(SKBitmap icon, int side = 256, bool darkArtwork = false)
     {
         var info = new SKImageInfo(side, side, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var source = new SKBitmap(info);
@@ -37,6 +44,12 @@ public static class GlyphExtractor
         {
             var alpha = pixels[i * 4 + 3] / 255.0;
             if (alpha <= 0) continue;
+            if (darkArtwork)
+            {
+                var lightest = Math.Max(pixels[i * 4], Math.Max(pixels[i * 4 + 1], pixels[i * 4 + 2])) / alpha;
+                coverage[i] = (1 - Smoothstep(70, 160, lightest)) * alpha;
+                continue;
+            }
             var darkest = Math.Min(pixels[i * 4], Math.Min(pixels[i * 4 + 1], pixels[i * 4 + 2])) / alpha;
             coverage[i] = Smoothstep(170, 235, darkest) * alpha;
         }

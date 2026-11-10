@@ -69,9 +69,15 @@ internal sealed class CliCommand
         return 0;
     }
 
-    private int Snapshot()
+    /// <summary>The snapshots of <c>--fixture</c>, <c>--copilot-fixture</c> and <c>--grok-fixture</c>, in display order.</summary>
+    internal static List<ProviderSnapshot> FixtureSnapshots(string[] args)
     {
-        var output = Option("--snapshot") ?? throw new ArgumentException("--snapshot needs a file name");
+        string? Option(string name)
+        {
+            var index = Array.IndexOf(args, name);
+            return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+        }
+
         var snapshots = new List<ProviderSnapshot>();
         if (Option("--fixture") is { } claude &&
             ClaudeProvider.SnapshotFromResponse(File.ReadAllBytes(claude), "Max 5x") is { } claudeSnapshot)
@@ -86,8 +92,14 @@ internal sealed class CliCommand
         {
             snapshots.Add(grokSnapshot);
         }
+        return snapshots;
+    }
 
-        Theme.Apply(forceDark: args.Contains("--dark"));
+    private int Snapshot()
+    {
+        var output = Option("--snapshot") ?? throw new ArgumentException("--snapshot needs a file name");
+        var snapshots = FixtureSnapshots(args);
+
         var settings = new AppSettings { LanguageValue = Localization.Current, OnboardingDismissed = !args.Contains("--first-run") };
         var store = new UsageStore(settings, snapshots);
         if (Option("--tab") is { } tab) store.PreviewTab(tab);

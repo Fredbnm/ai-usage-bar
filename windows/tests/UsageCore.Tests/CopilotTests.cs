@@ -209,6 +209,148 @@ public class CopilotTests : IDisposable
         }
     }
 
+    private string Extension(string root, string name, string? icon, string? packageIcon = "assets/copilot.png")
+    {
+        var folder = Path.Combine(directory, root, name);
+        Directory.CreateDirectory(Path.Combine(folder, "assets"));
+        File.WriteAllText(Path.Combine(folder, "package.json"), packageIcon is null ? "{}" : $$"""{"icon":"{{packageIcon}}"}""");
+        if (icon is not null) File.WriteAllText(Path.Combine(folder, icon), "png");
+        return folder;
+    }
+
+    [Fact]
+    public void FindsCopilotsOfficialIconInTheNewestExtension()
+    {
+        var older = Extension("a", "github.copilot-chat-0.9.1", "assets/copilot.png");
+        var newer = Extension("b", "github.copilot-chat-0.33.2025103102", "assets/copilot.png");
+        Extension("b", "github.copilot-1.388.0", "assets/Copilot-App-Icon.png", "assets/Copilot-App-Icon.png");
+        Extension("b", "ms-python.python-2024.1.0", "assets/copilot.png");
+
+        var found = CopilotIcon.Find([Path.Combine(directory, "a"), Path.Combine(directory, "b")]);
+        Assert.Equal(Path.Combine(newer, "assets", "copilot.png"), found);
+        Assert.NotEqual(Path.Combine(older, "assets", "copilot.png"), found);
+        Assert.True(CopilotIcon.VersionOf("github.copilot-chat-0.33.2025103102") > CopilotIcon.VersionOf("github.copilot-chat-0.9.1"));
+    }
+
+    [Fact]
+    public void CopilotIconFallsBackAndNeverLeavesTheExtensionFolder()
+    {
+        // No "icon" field: the usual assets/copilot.png.
+        Extension("c", "github.copilot-chat-1.0.0", "assets/copilot.png", packageIcon: null);
+        Assert.NotNull(CopilotIcon.Find([Path.Combine(directory, "c")]));
+
+        // A path escaping the extension folder is ignored.
+        Extension("d", "github.copilot-chat-1.0.0", null, packageIcon: "../../outside.png");
+        Assert.Null(CopilotIcon.Find([Path.Combine(directory, "d")]));
+        Assert.Null(CopilotIcon.Find([Path.Combine(directory, "missing")]));
+    }
+
+    [Fact]
+    public void DarkArtworkIsExtractedFromALightSquare()
+    {
+        using var icon = new SkiaSharp.SKBitmap(256, 256);
+        using (var canvas = new SkiaSharp.SKCanvas(icon))
+        {
+            canvas.Clear(SkiaSharp.SKColors.White);
+            using var paint = new SkiaSharp.SKPaint { Color = new SkiaSharp.SKColor(0x20, 0x26, 0x30), IsAntialias = true };
+            canvas.DrawCircle(128, 120, 70, paint);
+        }
+        var glyph = AIUsageBar.Core.Rendering.GlyphExtractor.DarkArtwork(icon);
+        Assert.NotNull(glyph);
+        Assert.InRange(glyph.CenterX, 120, 136);
+        Assert.InRange(glyph.CenterY, 112, 128);
+        Assert.InRange(glyph.Radius, 55, 80);
+    }
+
+    // A 3440x1440 monitor with a 48 px taskbar and a 290 px tray area, like a real one.
+    private static readonly PixelRect Monitor = new(0, 0, 3440, 1440);
+    private static readonly PixelRect Taskbar = new(0, 1392, 3440, 1440);
+    private static readonly PixelRect Tray = new(3150, 1392, 3440, 1440);
+
+    [Fact]
+    public void WidgetSitsLeftOfTheTrayOrAtTheLeftEdge()
+    {
+        var (x, y) = TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftOfTray, 0, 8);
+        Assert.Equal(3150 - 8 - 260, x);
+        Assert.Equal(1392 + 4, y);                   // centred vertically
+
+        var left = TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, 0, 8);
+        Assert.Equal(8, left.X);
+    }
+
+    [Fact]
+    public void DraggingMovesTheWidgetAndIsKeptOnTheTaskbar()
+    {
+        Assert.Equal(2882 - 100, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftOfTray, -100, 8).X);
+        Assert.Equal(8 + 300, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, 300, 8).X);
+        // Dragged past either end: clamped.
+        Assert.Equal(0, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, -5000, 8).X);
+        Assert.Equal(3440 - 260, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftOfTray, 5000, 8).X);
+    }
+
+    [Fact]
+    public void LeftEdgeUsesTheFirstFreeGapBetweenTaskbarButtons()
+    {
+        // A centred Windows 11 taskbar: Widgets at the far left, Start/Search in the middle, then apps.
+        PixelRect[] items =
+        [
+            new(6, 1392, 158, 1440),        // Widgets
+            new(1124, 1392, 1169, 1440),    // Start
+            new(1171, 1392, 1391, 1440),    // Search
+            new(1437, 1392, 1481, 1440),    // pinned app
+        ];
+        Assert.Equal(158 + 8, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, 0, 8, items).X);
+
+        // Too wide for that gap: it moves on past Start and Search, to the next free spot.
+        var wide = TaskbarLayout.Place(Taskbar, Tray, 1100, 40, TaskbarPlacement.LeftEdge, 0, 8, items);
+        Assert.True(wide.X >= 1481 + 8);
+
+        // A left-aligned taskbar has no gap at the left: it goes after the last button.
+        PixelRect[] packed = [new(12, 1392, 57, 1440), new(59, 1392, 279, 1440), new(283, 1392, 327, 1440), new(331, 1392, 375, 1440)];
+        Assert.Equal(375 + 8, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, 0, 8, packed).X);
+
+        // The tray side does not look at the buttons (the user can drag it).
+        Assert.Equal(3150 - 8 - 260, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftOfTray, 0, 8, packed).X);
+        // No items known: the plain edge.
+        Assert.Equal(8, TaskbarLayout.Place(Taskbar, Tray, 260, 40, TaskbarPlacement.LeftEdge, 0, 8, null).X);
+    }
+
+    [Fact]
+    public void UnknownTrayAreaIsEstimated()
+    {
+        var withoutTray = TaskbarLayout.Place(Taskbar, null, 260, 40, TaskbarPlacement.LeftOfTray, 0, 8);
+        Assert.Equal(3440 - 320 - 8 - 260, withoutTray.X);
+        // A nonsense rectangle (zero width, or outside the taskbar) is treated the same way.
+        Assert.Equal(withoutTray, TaskbarLayout.Place(Taskbar, new PixelRect(0, 0, 0, 0), 260, 40, TaskbarPlacement.LeftOfTray, 0, 8));
+    }
+
+    [Fact]
+    public void WidgetHidesWithAnAutoHiddenTaskbarAndForFullScreenApps()
+    {
+        Assert.True(TaskbarLayout.IsHorizontal(Taskbar));
+        Assert.False(TaskbarLayout.IsHorizontal(new PixelRect(0, 0, 60, 1400)));
+
+        Assert.False(TaskbarLayout.IsTaskbarHidden(Taskbar, Monitor));
+        Assert.True(TaskbarLayout.IsTaskbarHidden(new PixelRect(0, 1438, 3440, 1486), Monitor)); // slid off screen
+        Assert.True(TaskbarLayout.IsTaskbarHidden(new PixelRect(0, 0, 0, 0), Monitor));
+
+        Assert.False(TaskbarLayout.ShouldHideForNotificationState(1));  // not present
+        Assert.False(TaskbarLayout.ShouldHideForNotificationState(5));  // normal
+        Assert.True(TaskbarLayout.ShouldHideForNotificationState(2));   // full-screen app
+        Assert.True(TaskbarLayout.ShouldHideForNotificationState(3));   // full-screen game
+        Assert.True(TaskbarLayout.ShouldHideForNotificationState(4));   // presentation
+    }
+
+    [Fact]
+    public void PercentTextKeepsPlaceholders()
+    {
+        var snapshot = CopilotUsage.Snapshot(Bytes(Sample));
+        var segment = TraySegment.Make(ProviderId.Copilot, TrayDisplay.Weekly, snapshot, null)!;
+        Assert.Equal("61%", TaskbarLayout.PercentText(segment));
+        Assert.Equal("–", TaskbarLayout.PercentText(TraySegment.Make(ProviderId.Copilot, TrayDisplay.Weekly, null, null)!));
+        Assert.Equal("!", TaskbarLayout.PercentText(TraySegment.Make(ProviderId.Copilot, TrayDisplay.Weekly, null, "boom")!));
+    }
+
     [Fact]
     public void EveryProviderHasADescriptor()
     {

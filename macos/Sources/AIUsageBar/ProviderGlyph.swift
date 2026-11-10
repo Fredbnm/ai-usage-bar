@@ -24,10 +24,17 @@ enum ProviderGlyph {
     static func glyph(for provider: ProviderID) -> Glyph? {
         if let cached = cache[provider] { return cached }
         if missing.contains(provider) { return nil }
-        guard let bundleIdentifier = provider.appBundleIdentifier,
-              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier),
-              let glyph = GlyphExtractor.whiteArtwork(of: NSWorkspace.shared.icon(forFile: url.path))
-        else {
+        let glyph: Glyph?
+        if provider == .copilot {
+            // Copilot's official icon comes from GitHub's editor extension: dark artwork on a light square.
+            glyph = CopilotIcon.find().flatMap { NSImage(contentsOf: $0) }.flatMap { GlyphExtractor.whiteArtwork(of: $0, dark: true) }
+        } else if let bundleIdentifier = provider.appBundleIdentifier,
+                  let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            glyph = GlyphExtractor.whiteArtwork(of: NSWorkspace.shared.icon(forFile: url.path))
+        } else {
+            glyph = nil
+        }
+        guard let glyph else {
             missing.insert(provider)
             return nil
         }
@@ -73,7 +80,9 @@ enum GlyphExtractor {
     /// 3. the centre is found by mean shift towards the densest area — the
     ///    hub of a star, the middle of a blob — rather than the bounding box,
     ///    which irregular rays would skew.
-    static func whiteArtwork(of icon: NSImage, side: Int = 256) -> Glyph? {
+    /// `dark`: the symbol is dark on a light or transparent square (Copilot's icon),
+    /// so "darkness" is measured instead of "whiteness".
+    static func whiteArtwork(of icon: NSImage, side: Int = 256, dark: Bool = false) -> Glyph? {
         guard let source = bitmap(side: side), let input = source.bitmapData else { return nil }
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: source)
@@ -87,8 +96,13 @@ enum GlyphExtractor {
                 let i = y * source.bytesPerRow + x * 4
                 let alpha = Double(input[i + 3]) / 255
                 guard alpha > 0 else { continue }
-                let darkest = Double(min(input[i], input[i + 1], input[i + 2])) / alpha
-                coverage[y * side + x] = smoothstep(170, 235, darkest) * alpha
+                if dark {
+                    let lightest = Double(max(input[i], input[i + 1], input[i + 2])) / alpha
+                    coverage[y * side + x] = (1 - smoothstep(70, 160, lightest)) * alpha
+                } else {
+                    let darkest = Double(min(input[i], input[i + 1], input[i + 2])) / alpha
+                    coverage[y * side + x] = smoothstep(170, 235, darkest) * alpha
+                }
             }
         }
 

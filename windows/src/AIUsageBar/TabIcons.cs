@@ -20,10 +20,16 @@ internal static class TabIcons
         if (Cache.TryGetValue((provider, color), out var cached)) return cached;
 
         using var rendered = TabIconRenderer.Render(provider, InstalledApps.Glyph(provider), new SKColor(color.R, color.G, color.B), Pixels);
-        using var bgra = rendered.Copy(SKColorType.Bgra8888);
-        var dpi = 96 * Pixels / Dips;
-        var source = BitmapSource.Create(Pixels, Pixels, dpi, dpi, PixelFormats.Pbgra32, null, bgra.Bytes, Pixels * 4);
+        return Cache[(provider, color)] = FromBitmap(rendered, Dips);
+    }
+
+    /// <summary>A frozen WPF image of a Skia bitmap that is shown <paramref name="dips"/> device-independent pixels wide.</summary>
+    public static BitmapSource FromBitmap(SKBitmap bitmap, double dips)
+    {
+        using var bgra = bitmap.Copy(SKColorType.Bgra8888);
+        var dpi = 96 * bitmap.Width / dips;
+        var source = BitmapSource.Create(bitmap.Width, bitmap.Height, dpi, dpi, PixelFormats.Pbgra32, null, bgra.Bytes, bitmap.Width * 4);
         source.Freeze();
-        return Cache[(provider, color)] = source;
+        return source;
     }
 }

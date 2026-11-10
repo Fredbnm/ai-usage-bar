@@ -147,6 +147,7 @@ public partial class PopupWindow : Window
         var agents = new MenuItem { Header = T("Configurar agentes…", "Set up agents…") };
         agents.Click += (_, _) => store.ShowAgents();
         menu.Items.Add(agents);
+        menu.Items.Add(TaskbarMenu.Submenu(store));
 
         foreach (var id in store.VisibleProviders)
         {

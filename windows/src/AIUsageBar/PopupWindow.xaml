@@ -109,78 +109,7 @@
                     <DataTemplate>
                         <StackPanel>
                             <Border Height="1" Margin="0,12,0,12" Background="{DynamicResource Divider}" />
-                            <Grid>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" />
-                                    <Border Margin="8,0,0,0" Padding="7,1" CornerRadius="9" VerticalAlignment="Center"
-                                            Background="{DynamicResource BadgeBackground}" Visibility="{Binding PlanVisibility}">
-                                        <TextBlock Text="{Binding Plan}" FontSize="10.5" FontWeight="SemiBold" />
-                                    </Border>
-                                </StackPanel>
-                                <Button HorizontalAlignment="Right" Style="{StaticResource IconButton}" FontSize="12"
-                                        Content="&#xE8A7;" ToolTip="{Binding OpenTip}" Command="{Binding OpenCommand}" />
-                            </Grid>
-
-                            <Border Margin="0,8,0,0" Padding="10,8" CornerRadius="6" Background="{DynamicResource ErrorBackground}"
-                                    Visibility="{Binding ErrorVisibility}">
-                                <DockPanel>
-                                    <TextBlock DockPanel.Dock="Left" Margin="0,1,8,0" FontFamily="{StaticResource IconFont}"
-                                               Text="&#xE7BA;" Foreground="{DynamicResource WarningBrush}" />
-                                    <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap" FontSize="12" />
-                                </DockPanel>
-                            </Border>
-
-                            <TextBlock Margin="0,8,0,0" Text="{Binding LoadingText}" Foreground="{DynamicResource SecondaryText}"
-                                       Visibility="{Binding LoadingVisibility}" />
-
-                            <ItemsControl ItemsSource="{Binding Limits}" Focusable="False">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Margin="0,10,0,0">
-                                            <Grid>
-                                                <TextBlock Text="{Binding Title}" FontWeight="Medium" />
-                                                <TextBlock HorizontalAlignment="Right" Text="{Binding PercentText}" FontWeight="SemiBold"
-                                                           Foreground="{Binding Brush}" />
-                                            </Grid>
-                                            <ProgressBar Margin="0,6,0,5" Style="{StaticResource UsageBar}" Value="{Binding Fraction, Mode=OneWay}"
-                                                         Foreground="{Binding Brush}" />
-                                            <TextBlock Text="{Binding ResetText}" FontSize="11" Foreground="{DynamicResource SecondaryText}"
-                                                       Visibility="{Binding ResetVisibility}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <ItemsControl ItemsSource="{Binding Notes}" Margin="0,4,0,0" Focusable="False">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Margin="0,4,0,0" Text="{Binding}" FontSize="11.5" Foreground="{DynamicResource SecondaryText}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <StackPanel Margin="0,12,0,0" Visibility="{Binding BreakdownVisibility}">
-                                <TextBlock Text="{Binding BreakdownHeader}" FontSize="10.5" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource SecondaryText}" />
-                                <ItemsControl ItemsSource="{Binding Breakdown}" Focusable="False">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,7,0,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="100" />
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="44" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
-                                                <ProgressBar Grid.Column="1" Height="4" VerticalAlignment="Center" Style="{StaticResource UsageBar}"
-                                                             Value="{Binding Fraction, Mode=OneWay}" Foreground="{DynamicResource NeutralBarBrush}" />
-                                                <TextBlock Grid.Column="2" HorizontalAlignment="Right" Text="{Binding PercentText}"
-                                                           Foreground="{DynamicResource SecondaryText}" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource ProviderCardTemplate}" Focusable="False" />
                         </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
