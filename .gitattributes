@@ -1,0 +1,9 @@
+# Language stats on GitHub (Linguist).
+# The website lives in docs/, which Linguist would skip as documentation.
+docs/index.html linguist-documentation=false
+# Sample API responses are test data, not source.
+docs/*.json linguist-documentation
+# Binary assets.
+*.png binary
+*.ico binary
+*.icns binary
