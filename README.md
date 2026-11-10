@@ -85,6 +85,8 @@ The [website](https://matheusvelloso.github.io/ai-usage-bar/) always links to th
 2. Each AI gets its own **tray icon**, next to the clock. Windows may put new icons in the **^** overflow area; drag them onto the taskbar to keep them visible.
 3. Left-click an icon for the popup, right-click for refresh and quit. Options (style, what each AI shows, alert colors, language, start with Windows) are under ⚙ in the popup.
 
+<p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Popup on Windows"></p>
+
 Windows tray icons are small squares, so each one shows a single value (session *or* weekly) around the AI's icon or as a number; the popup shows everything. Prefer not to install? `AIUsageBar-Windows-Portable.exe` runs as is.
 
 ## Build

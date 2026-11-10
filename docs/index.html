@@ -93,6 +93,11 @@
     .feature p { margin: 0; color: var(--muted); font-size: 15px; }
 
     .wide-shot img { width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+    .platform-shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 28px; }
+    .platform-shots figure { margin: 0; text-align: center; }
+    .platform-shots img { width: min(320px, 100%); height: auto; border-radius: 12px; }
+    .platform-shots figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; }
+    @media (max-width: 860px) { .platform-shots { grid-template-columns: 1fr; } }
 
     .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
     .steps ol { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
@@ -207,7 +212,23 @@
           <p data-i18n="features.native">Swift and SwiftUI on macOS, C# and WPF on Windows. Small, fast and at home next to your other menu bar and tray icons.</p>
         </div>
       </div>
-      <div class="wide-shot" style="margin-top:24px">
+      <div class="platform-shots">
+        <figure>
+          <picture>
+            <source srcset="screenshot-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="screenshot-light.png" alt="The popover on macOS" loading="lazy" width="320" height="560">
+          </picture>
+          <figcaption data-i18n="shots.mac">macOS: one menu bar item for every AI</figcaption>
+        </figure>
+        <figure>
+          <picture>
+            <source srcset="screenshot-windows-dark.png" media="(prefers-color-scheme: dark)">
+            <img src="screenshot-windows.png" alt="The popup on Windows" loading="lazy" width="340" height="560">
+          </picture>
+          <figcaption data-i18n="shots.win">Windows: one tray icon per AI, same popup</figcaption>
+        </figure>
+      </div>
+      <div class="wide-shot" style="margin-top:28px">
         <img src="menubar.png" alt="Menu bar styles on macOS, light and dark" loading="lazy">
         <p class="small" data-i18n="features.shot">macOS menu bar styles, with alert colors on and off.</p>
       </div>
@@ -287,6 +308,8 @@
       "features.native.title": "Nativo em cada sistema",
       "features.native": "Swift e SwiftUI no macOS, C# e WPF no Windows. Leve, rápido e à vontade ao lado dos outros ícones da barra e da bandeja.",
       "features.shot": "Estilos da barra de menu no macOS, com as cores de alerta ligadas e desligadas.",
+      "shots.mac": "macOS: um item na barra de menu para cada IA",
+      "shots.win": "Windows: um ícone na bandeja por IA, o mesmo pop-up",
       "install.title": "Primeira abertura",
       "install.intro": "Os apps ainda não têm certificados pagos da Apple ou da Microsoft, então cada sistema pede uma confirmação uma vez.",
       "install.mac.1": "Abra o .dmg e arraste o AI Usage Bar para Aplicativos.",

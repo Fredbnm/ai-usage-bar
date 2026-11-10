@@ -85,6 +85,8 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 2. Cada IA ganha o **próprio ícone na bandeja**, perto do relógio. O Windows pode colocar ícones novos na área escondida (**^**); arraste-os para a barra de tarefas para deixá-los visíveis.
 3. Clique com o botão esquerdo para abrir o pop-up e com o direito para atualizar ou sair. As opções (estilo, o que cada IA mostra, cores de alerta, idioma, abrir com o Windows) ficam em ⚙ no pop-up.
 
+<p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Pop-up no Windows"></p>
+
 Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo. Prefere não instalar? O `AIUsageBar-Windows-Portable.exe` roda direto.
 
 ## Compilar
