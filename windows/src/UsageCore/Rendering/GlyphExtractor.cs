@@ -17,9 +17,48 @@ public sealed record Glyph(SKBitmap Mask, float CenterX, float CenterY, float Ra
 /// 3. sparse shapes (Claude's star) are centred on their hub by mean shift,
 ///    filled shapes (Grok Bot's character) on their bounding box.
 /// </summary>
+/// <summary>What the artwork of an icon looks like, which decides how it is told apart from its background.</summary>
+public enum ArtworkKind
+{
+    /// <summary>White on a colored tile (Claude, Grok Bot, Codex).</summary>
+    White,
+    /// <summary>Dark on a light or transparent square (GitHub Copilot).</summary>
+    Dark,
+    /// <summary>Colored on a transparent or plain background (Gemini).</summary>
+    Silhouette,
+}
+
 public static class GlyphExtractor
 {
-    public static Glyph? WhiteArtwork(SKBitmap icon, int side = 256)
+    /// <summary>
+    /// Transparent corner: the alpha is the shape. Opaque corner: how far a pixel is from the corner's color.
+    /// </summary>
+    private static double SilhouetteCoverage(ReadOnlySpan<byte> pixels, int index, double alpha, byte[] corner)
+    {
+        if (corner[3] < 25) return alpha;
+        if (alpha <= 0) return 0;
+        var distance = 0;
+        for (var channel = 0; channel < 3; channel++) distance = Math.Max(distance, Math.Abs(pixels[index * 4 + channel] - corner[channel]));
+        return Smoothstep(40, 140, distance) * alpha;
+    }
+
+    /// <summary>
+    /// The artwork of an icon whose symbol is <i>dark</i> on a light or transparent
+    /// background, such as GitHub Copilot's own icon. Same pipeline, with "darkness"
+    /// instead of "whiteness".
+    /// </summary>
+    public static Glyph? DarkArtwork(SKBitmap icon, int side = 256) => Artwork(icon, ArtworkKind.Dark, side);
+
+    /// <summary>
+    /// The shape of an icon that is neither white nor dark but colored (Gemini's sparkle): what stands out from the
+    /// background, which is transparent or the color of the icon's corner.
+    /// </summary>
+    public static Glyph? Silhouette(SKBitmap icon, int side = 256) => Artwork(icon, ArtworkKind.Silhouette, side);
+
+    public static Glyph? WhiteArtwork(SKBitmap icon, int side = 256, bool darkArtwork = false) =>
+        Artwork(icon, darkArtwork ? ArtworkKind.Dark : ArtworkKind.White, side);
+
+    public static Glyph? Artwork(SKBitmap icon, ArtworkKind kind, int side = 256)
     {
         var info = new SKImageInfo(side, side, SKColorType.Rgba8888, SKAlphaType.Premul);
         using var source = new SKBitmap(info);
@@ -33,10 +72,22 @@ public static class GlyphExtractor
 
         // 1. Coverage per pixel (row 0 = top).
         var coverage = new double[side * side];
+        var corner = new[] { pixels[0], pixels[1], pixels[2], pixels[3] };
         for (var i = 0; i < side * side; i++)
         {
             var alpha = pixels[i * 4 + 3] / 255.0;
             if (alpha <= 0) continue;
+            if (kind == ArtworkKind.Silhouette)
+            {
+                coverage[i] = SilhouetteCoverage(pixels, i, alpha, corner);
+                continue;
+            }
+            if (kind == ArtworkKind.Dark)
+            {
+                var lightest = Math.Max(pixels[i * 4], Math.Max(pixels[i * 4 + 1], pixels[i * 4 + 2])) / alpha;
+                coverage[i] = (1 - Smoothstep(70, 160, lightest)) * alpha;
+                continue;
+            }
             var darkest = Math.Min(pixels[i * 4], Math.Min(pixels[i * 4 + 1], pixels[i * 4 + 2])) / alpha;
             coverage[i] = Smoothstep(170, 235, darkest) * alpha;
         }

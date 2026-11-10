@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Usage Bar</title>
-  <meta name="description" content="See your Claude and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows tray.">
+  <meta name="description" content="See your Claude, Codex, GitHub Copilot, Gemini and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows tray.">
   <link rel="icon" href="icon.png">
   <style>
     :root {
@@ -136,7 +136,7 @@
     <div class="hero">
       <div>
         <h1 data-i18n="hero.title">Your AI limits, one glance away.</h1>
-        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude and Grok Bot plans you have used, right in the macOS menu bar or the Windows tray, and when each limit resets.</p>
+        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude, Codex, GitHub Copilot, Gemini and Grok Bot plans you have used, right in the macOS menu bar or the Windows tray, and when each limit resets.</p>
         <div class="cta">
           <a class="button" id="primary-download" href="#download" data-i18n="hero.cta">Download</a>
           <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar" data-i18n="hero.source">View source</a>
@@ -185,11 +185,23 @@
   <section id="features">
     <div class="wrap">
       <h2 data-i18n="features.title">What it shows</h2>
-      <p class="intro" data-i18n="features.intro">The same numbers as claude.ai → Settings → Usage, Claude Code's /usage and Grok Bot's own Usage screen.</p>
+      <p class="intro" data-i18n="features.intro">The same numbers as claude.ai → Settings → Usage, Claude Code's /usage, ChatGPT's Codex usage page, GitHub's Copilot settings, the quotas the Gemini CLI reports and Grok Bot's own Usage screen.</p>
       <div class="features">
         <div class="feature">
           <h3>Claude</h3>
           <p data-i18n="features.claude">Current 5-hour session, weekly limit for all models, weekly per-model limits (like Fable) and where this week's usage went: Claude Code, Chat, Cowork.</p>
+        </div>
+        <div class="feature">
+          <h3>Codex</h3>
+          <p data-i18n="features.codex">Current 5-hour session and weekly limit, and when each resets. Uses an unofficial ChatGPT endpoint, not yet verified against a real account.</p>
+        </div>
+        <div class="feature">
+          <h3>GitHub Copilot</h3>
+          <p data-i18n="features.copilot">Premium requests used this month and when the allowance resets, plus chat and code completions on plans where they are limited. Uses an unofficial GitHub endpoint.</p>
+        </div>
+        <div class="feature">
+          <h3>Gemini</h3>
+          <p data-i18n="features.gemini">Daily quota per model (2.5 Pro first, then Flash and Flash-Lite) and when it resets. Uses an unofficial Google endpoint, not yet verified against a real account.</p>
         </div>
         <div class="feature">
           <h3>Grok Bot</h3>
@@ -197,7 +209,15 @@
         </div>
         <div class="feature">
           <h3 data-i18n="features.glance.title">At a glance</h3>
-          <p data-i18n="features.glance">Each AI gets a ring that fills with usage, around its icon or its percentage. The ring turns orange or red as you get close to a limit.</p>
+          <p data-i18n="features.glance">Each AI gets a ring that fills with usage, around its official icon (taken from the installed app or extension) or its percentage. The ring turns orange or red as you get close to a limit.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.widget.title">Taskbar widget (Windows)</h3>
+          <p data-i18n="features.widget">Optional: a small pill on the Windows taskbar with each agent's official icon in a progress ring plus its percentage. Hover for details, click to open the popup, and choose where it sits.</p>
+        </div>
+        <div class="feature">
+          <h3 data-i18n="features.tabs.title">One tab per agent</h3>
+          <p data-i18n="features.tabs">With two or more AIs connected, the popup gets one tab each. A guided setup tab lists every supported agent and how to sign in; the app reuses your existing logins and never asks you to log in.</p>
         </div>
         <div class="feature">
           <h3 data-i18n="features.yours.title">Your choice</h3>
@@ -257,13 +277,13 @@
           </ol>
         </div>
       </div>
-      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Grok Bot, the Grok Bot app installed and signed in. The Windows version is new; please report anything odd on GitHub.</p>
+      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Codex, the Codex CLI or extension signed in with ChatGPT (codex login). For GitHub Copilot, a Copilot plan and a signed-in editor plugin (VS Code, JetBrains) or the gh CLI. For Gemini, the Gemini CLI signed in with Google (gemini). For Grok Bot, the Grok Bot app installed and signed in. The Windows version is new; please report anything odd on GitHub.</p>
     </div>
   </section>
 
   <footer>
     <div class="wrap">
-      <p data-i18n="footer.disclaimer">Independent project. Not affiliated with, sponsored or endorsed by Anthropic, xAI/SpaceXAI or Anysphere (Cursor). Claude, Grok and Grok Bot are trademarks of their respective owners. It relies on undocumented endpoints that may change at any time.</p>
+      <p data-i18n="footer.disclaimer">Independent project. Not affiliated with, sponsored or endorsed by Anthropic, OpenAI, GitHub/Microsoft, Google, xAI/SpaceXAI or Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok and Grok Bot are trademarks of their respective owners. It relies on undocumented endpoints that may change at any time.</p>
       <div class="row">
         <span>© 2026 matheusvelloso · <a href="https://github.com/matheusvelloso/ai-usage-bar/blob/main/LICENSE">MIT License</a></span>
         <span>
@@ -280,7 +300,7 @@
       "nav.download": "Baixar",
       "nav.features": "Recursos",
       "hero.title": "Seus limites de IA a um olhar de distância.",
-      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows, e quando cada limite reinicia.",
+      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude, do Codex, do GitHub Copilot, do Gemini e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows, e quando cada limite reinicia.",
       "hero.cta": "Baixar",
       "hero.source": "Ver código",
       "hero.free": "Gratuito e de código aberto (MIT). macOS 13+ e Windows 10/11.",
@@ -296,11 +316,18 @@
       "download.portable.button": "Baixar portátil",
       "download.all": "Todas as versões e notas de lançamento",
       "features.title": "O que ele mostra",
-      "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code e da tela de Uso do próprio Grok Bot.",
+      "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, das cotas que o Gemini CLI informa e da tela de Uso do próprio Grok Bot.",
       "features.claude": "Sessão atual de 5 horas, limite semanal de todos os modelos, limites semanais por modelo (como o Fable) e onde foi o uso da semana: Claude Code, Chat, Cowork.",
-      "features.grok": "Limite semanal e quando ele reinicia, além de resets guardados e uso sob demanda quando o seu plano tem.",
+      "features.codex": "Sessão atual de 5 horas e limite semanal, e quando cada um reinicia. Usa um endpoint não oficial do ChatGPT, ainda não verificado com uma conta real.",
+      "features.gemini": "Cota diária por modelo (2.5 Pro primeiro, depois Flash e Flash-Lite) e quando ela reinicia. Usa um endpoint não oficial do Google, ainda não verificado com uma conta real.",
+      "features.copilot": "Requisições premium usadas no mês e quando a cota reinicia, além de chat e completações de código nos planos em que são limitados. Usa um endpoint não oficial do GitHub.",
+      "features.tabs.title": "Uma aba por agente",
+      "features.tabs": "Com duas ou mais IAs conectadas, o pop-up ganha uma aba para cada uma. Uma aba de configuração guiada lista todos os agentes compatíveis e como entrar; o app reaproveita os logins que você já tem e nunca pede login.",
+      "features.grok":"Limite semanal e quando ele reinicia, além de resets guardados e uso sob demanda quando o seu plano tem.",
       "features.glance.title": "Num relance",
-      "features.glance": "Cada IA tem um anel que se preenche com o uso, em volta do ícone ou do percentual. O anel fica laranja ou vermelho quando você se aproxima do limite.",
+      "features.glance": "Cada IA tem um anel que se preenche com o uso, em volta do ícone oficial (tirado do app ou da extensão instalada) ou do percentual. O anel fica laranja ou vermelho quando você se aproxima do limite.",
+      "features.widget.title": "Widget na barra de tarefas (Windows)",
+      "features.widget": "Opcional: uma pílula pequena na barra de tarefas do Windows com o ícone oficial de cada agente dentro de um anel de progresso, mais o percentual. Passe o mouse para ver os detalhes, clique para abrir o pop-up e escolha onde ele fica.",
       "features.yours.title": "Do seu jeito",
       "features.yours": "Escolha o que cada IA mostra (sessão, semanal ou as duas no macOS), o estilo do ícone, se as cores de alerta ficam ligadas, e português ou inglês.",
       "features.private.title": "Privado por padrão",
@@ -318,8 +345,8 @@
       "install.win.1": "Rode o instalador. Se o SmartScreen aparecer, clique em \"Mais informações\" → \"Executar assim mesmo\".",
       "install.win.2": "Os ícones de anel ficam na bandeja, perto do relógio (podem começar escondidos na seta ^; arraste-os para fora).",
       "install.win.3": "Clique com o botão esquerdo para ver os detalhes; com o direito para atualizar e sair.",
-      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Grok Bot, o app Grok Bot instalado e logado. A versão de Windows é nova; avise no GitHub se algo estranho acontecer.",
-      "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Grok e Grok Bot são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
+      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (codex login). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o gh CLI. Para o Gemini, o Gemini CLI logado com o Google (gemini). Para o Grok Bot, o app Grok Bot instalado e logado. A versão de Windows é nova; avise no GitHub se algo estranho acontecer.",
+      "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
       "footer.source": "Código-fonte",
       "footer.api": "Contrato de dados",
       "footer.issues": "Relatar um problema",

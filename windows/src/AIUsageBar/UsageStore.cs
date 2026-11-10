@@ -3,6 +3,8 @@ using AIUsageBar.Core;
 
 namespace AIUsageBar;
 
+internal sealed record AgentRow(ProviderId Id, SetupStatus Status, bool Hidden, string? Plan);
+
 internal sealed class ProviderState
 {
     public ProviderSnapshot? Snapshot { get; set; }
@@ -52,6 +54,58 @@ internal sealed class UsageStore
     /// <summary>Services shown, in display order.</summary>
     public IReadOnlyList<ProviderId> VisibleProviders { get; private set; } = [];
 
+    // MARK: Tabs and onboarding
+
+    private string? requestedTab;
+
+    /// <summary>The tab the popup shows: a provider's key or <see cref="PopupTabs.AgentsKey"/>.</summary>
+    public string CurrentTab =>
+        PopupTabs.Resolve(requestedTab ?? Settings.SelectedProvider, VisibleProviders, Settings.OnboardingDismissed);
+
+    public bool ShowTabStrip => PopupTabs.ShowStrip(VisibleProviders.Count);
+
+    public void SelectTab(string key)
+    {
+        requestedTab = key;
+        if (key != PopupTabs.AgentsKey) Settings.SelectedProvider = key;
+        Settings.Save();
+        Changed?.Invoke();
+    }
+
+    public void SelectProvider(ProviderId id) => SelectTab(id.Key());
+
+    /// <summary>Picks a tab without saving anything: used by <c>--snapshot --tab</c>.</summary>
+    public void PreviewTab(string key) => requestedTab = key;
+
+    /// <summary>"Set up agents…": opens the Agents tab, also with a single agent.</summary>
+    public void ShowAgents() => SelectTab(PopupTabs.AgentsKey);
+
+    public void DismissOnboarding()
+    {
+        Settings.OnboardingDismissed = true;
+        requestedTab = VisibleProviders.Count > 0 ? VisibleProviders[0].Key() : null;
+        Settings.Save();
+        Changed?.Invoke();
+    }
+
+    public void SetProviderHidden(ProviderId id, bool hidden) => UpdateSettings(() =>
+    {
+        Settings.HiddenProviders.RemoveAll(key => key == id.Key());
+        if (hidden) Settings.HiddenProviders.Add(id.Key());
+        UpdateVisibleProviders();
+    });
+
+    /// <summary>One row per supported agent, connected or not, for the Agents tab.</summary>
+    public IReadOnlyList<AgentRow> AgentRows() =>
+    [
+        .. ProviderCatalog.All.Select(descriptor =>
+        {
+            var provider = providers.FirstOrDefault(p => p.Id == descriptor.Id);
+            var status = provider?.Detect() ?? (State(descriptor.Id).Snapshot is null ? SetupStatus.NeedsLogin : SetupStatus.Connected);
+            return new AgentRow(descriptor.Id, status, Settings.HiddenProviders.Contains(descriptor.Key), State(descriptor.Id).Snapshot?.PlanName);
+        }),
+    ];
+
     public ProviderState State(ProviderId id) => states.TryGetValue(id, out var state) ? state : states[id] = new ProviderState();
 
     public bool IsLoading => VisibleProviders.Any(id => State(id).IsLoading);
@@ -66,6 +120,35 @@ internal sealed class UsageStore
 
     public void SetDisplay(ProviderId provider, TrayDisplay display) =>
         UpdateSettings(() => Settings.Displays[provider.Key()] = display);
+
+    public void SetTaskbarWidget(bool enabled) => UpdateSettings(() => Settings.ShowTaskbarWidget = enabled);
+
+    /// <summary>
+    /// Changing the anchor drops the drag offset, which only makes sense relative to it.
+    /// Picking a position is a request to see the widget there, so it also turns the widget on.
+    /// </summary>
+    public void SetTaskbarPlacement(TaskbarPlacement placement) => UpdateSettings(() =>
+    {
+        Settings.TaskbarPlacement = placement;
+        Settings.TaskbarOffset = 0;
+        Settings.ShowTaskbarWidget = true;
+    });
+
+    /// <summary>Picking a style also turns the widget on, like <see cref="SetTaskbarPlacement"/>.</summary>
+    public void SetTaskbarStyle(TaskbarStyle style) => UpdateSettings(() =>
+    {
+        Settings.TaskbarStyle = style;
+        Settings.ShowTaskbarWidget = true;
+    });
+
+    public void ResetTaskbarOffset() => UpdateSettings(() =>
+    {
+        Settings.TaskbarOffset = 0;
+        Settings.ShowTaskbarWidget = true;
+    });
+
+    /// <summary>Writes the settings without notifying: the widget saves once when a drag ends.</summary>
+    public void SaveSettings() => Settings.Save();
 
     public void SetColorAlerts(bool enabled) => UpdateSettings(() => Settings.ColorAlerts = enabled);
 
@@ -151,7 +234,9 @@ internal sealed class UsageStore
     }
 
     private void UpdateVisibleProviders() =>
-        VisibleProviders = [.. providers.Where(p => p.IsAvailable()).Select(p => p.Id)];
+        VisibleProviders = [.. providers
+            .Where(p => !Settings.HiddenProviders.Contains(p.Id.Key()) && p.IsAvailable())
+            .Select(p => p.Id)];
 
     // MARK: Cache (usage responses only, never tokens)
 

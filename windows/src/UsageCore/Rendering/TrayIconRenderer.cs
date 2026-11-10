@@ -59,7 +59,7 @@ public static class TrayIconRenderer
         }
         else
         {
-            DrawNumber(canvas, provider.DisplayName()[..1], inner, foreground);
+            DrawNumber(canvas, provider.Initial(), inner, foreground);
         }
         return bitmap;
     }
@@ -73,7 +73,7 @@ public static class TrayIconRenderer
         };
 
     /// <summary>Centres the glyph on its visual centre, its farthest point touching the inner circle.</summary>
-    private static void DrawGlyph(SKCanvas canvas, Glyph glyph, SKRect inner, SKColor color)
+    internal static void DrawGlyph(SKCanvas canvas, Glyph glyph, SKRect inner, SKColor color)
     {
         var scale = inner.Width / 2 / glyph.Radius;
         var target = SKRect.Create(
@@ -95,7 +95,7 @@ public static class TrayIconRenderer
     }
 
     /// <summary>The largest bold text that fits inside the ring.</summary>
-    private static void DrawNumber(SKCanvas canvas, string text, SKRect inner, SKColor color)
+    internal static void DrawNumber(SKCanvas canvas, string text, SKRect inner, SKColor color)
     {
         using var typeface = SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold) ?? SKTypeface.Default;
         using var font = new SKFont(typeface, inner.Height) { Edging = SKFontEdging.Antialias, Subpixel = true };

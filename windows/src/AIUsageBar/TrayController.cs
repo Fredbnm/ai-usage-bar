@@ -14,6 +14,7 @@ internal sealed class TrayController : IDisposable
 {
     private readonly UsageStore store;
     private readonly PopupWindow popup;
+    private readonly TaskbarWidgetWindow widget;
     private readonly Dictionary<ProviderId, Forms.NotifyIcon> icons = [];
     private readonly Dictionary<ProviderId, TrayIconImage> images = [];
     private Forms.NotifyIcon? placeholder;
@@ -22,6 +23,7 @@ internal sealed class TrayController : IDisposable
     {
         this.store = store;
         popup = new PopupWindow(store);
+        widget = new TaskbarWidgetWindow(store, id => popup.Toggle(id));
         store.Changed += Refresh;
         Refresh();
     }
@@ -45,7 +47,7 @@ internal sealed class TrayController : IDisposable
         {
             if (!icons.TryGetValue(id, out var icon))
             {
-                icon = CreateIcon();
+                icon = CreateIcon(id);
                 icons[id] = icon;
             }
             var glyph = store.Settings.Style == TrayStyle.Icon ? InstalledApps.Glyph(id) : null;
@@ -76,14 +78,15 @@ internal sealed class TrayController : IDisposable
         }
 
         popup.Refresh();
+        widget.Refresh();
     }
 
-    private Forms.NotifyIcon CreateIcon()
+    private Forms.NotifyIcon CreateIcon(ProviderId? provider = null)
     {
         var icon = new Forms.NotifyIcon();
         icon.MouseClick += (_, e) =>
         {
-            if (e.Button == Forms.MouseButtons.Left) popup.Toggle();
+            if (e.Button == Forms.MouseButtons.Left) popup.Toggle(provider);
         };
         return icon;
     }
@@ -113,6 +116,7 @@ internal sealed class TrayController : IDisposable
     public void Dispose()
     {
         store.Changed -= Refresh;
+        widget.Shutdown();
         foreach (var id in icons.Keys.ToList()) RemoveIcon(id);
         if (placeholder is not null)
         {
