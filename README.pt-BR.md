@@ -53,7 +53,7 @@ Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escur
 
 **Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
 
-Os ícones são extraídos, na hora, dos ícones dos próprios apps instalados (Claude e Grok Bot): o medidor mantém só a arte branca e descarta o fundo colorido. Nenhuma imagem de marca vem no repositório. Se um dos apps não estiver instalado (o Copilot não tem app próprio), aparece a inicial do serviço.
+Os ícones são a arte oficial de cada IA, extraída na hora do que está instalado no computador: o medidor mantém só a arte e descarta o fundo colorido, e a desenha na cor da barra de menu ou da barra de tarefas. O Claude e o Grok Bot vêm dos próprios apps (no Windows, também de instalações pela Microsoft Store); o GitHub Copilot vem da extensão oficial do GitHub para o VS Code (`github.copilot-chat`, que também existe no VS Code Insiders e no Cursor). Nenhuma imagem de marca vem no repositório. Se um ícone não for encontrado, aparece a inicial do serviço.
 
 <p align="center">
   <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
@@ -97,6 +97,17 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Pop-up no Windows"></p>
 
 Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo. Prefere não instalar? O `AIUsageBar-Windows-Portable.exe` roda direto.
+
+### Widget na barra de tarefas (Windows, opcional)
+
+Para ver um resumo sem abrir nada, ligue em **⚙ → Widget na barra de tarefas → Mostrar na barra de tarefas**. Uma pílula pequena aparece na barra de tarefas com um chip por agente: o ícone oficial dele dentro de um anel que acompanha o uso, mais o percentual, em laranja ou vermelho quando um limite está perto.
+
+- **Passe o mouse** sobre um chip para ver um cartão com o plano do agente, cada limite e quando ele reinicia. **Clicar** abre o pop-up completo na aba daquele agente, **arrastar** move o widget e **clicar com o botão direito** tem atualizar, posição, estilo e ocultar.
+- **Posição:** *À esquerda da bandeja do sistema* (padrão) ou *Na borda esquerda, junto do Iniciar e da Pesquisa*, que usa o primeiro espaço livre a partir da esquerda (depois de Widgets numa barra centralizada, para não ficar sobre o Iniciar nem sobre os seus apps). Arraste para ajustar; **Restaurar posição** desfaz.
+- **Estilo:** *Ícone com anel e percentual* ou *Só o ícone com anel*.
+- Ele é independente dos ícones da bandeja: dá para ocultá-los e ficar só com o widget. Para tirá-lo da barra, use **Ocultar da barra de tarefas**.
+
+O Windows 11 não tem uma forma oficial de adicionar conteúdo à barra de tarefas, então o widget é uma janela pequena, sem borda, mantida por cima dela. Ele se esconde sozinho em apps em tela cheia, jogos e apresentações e enquanto uma barra de tarefas com ocultação automática estiver escondida, acompanha a barra de tarefas em mudanças de DPI e de monitor (só a barra principal) e não aparece numa barra de tarefas vertical. Se você clicar na própria barra de tarefas, o widget pode sumir atrás dela por até um segundo antes de voltar.
 
 ## Compilar
 
@@ -159,6 +170,15 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --grok-fixture docs/sample-grok-usage.json --dark
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # uma aba específica
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # a aba Agentes da primeira vez
+```
+
+Windows (é um app com interface, então use `Start-Process -Wait` para ver a saída):
+
+```powershell
+Start-Process AIUsageBar.exe -ArgumentList '--dump' -Wait -NoNewWindow
+Start-Process AIUsageBar.exe -ArgumentList '--snapshot','pop.png','--fixture','docs\sample-usage.json' -Wait   # grava também pop-tray.png
+# acrescente '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot' ou '--first-run' para renderizar outros estados
+Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # bandeja e widget reais com dados de exemplo (sem logins nem rede); acrescente --left-edge, --ring-only, --dark
 ```
 
 ## Estrutura
