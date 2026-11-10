@@ -148,6 +148,13 @@ public partial class PopupWindow : Window
         }
         menu.Items.Add(style);
 
+        var layout = new MenuItem { Header = T("Pop-up", "Popup") };
+        foreach (var option in Enum.GetValues<PopupLayout>())
+        {
+            layout.Items.Add(Check(option.Label(), settings.Layout == option, () => store.SetLayout(option)));
+        }
+        menu.Items.Add(layout);
+
         var agents = new MenuItem { Header = T("Configurar agentes…", "Set up agents…") };
         agents.Click += (_, _) => store.ShowAgents();
         menu.Items.Add(agents);
@@ -155,12 +162,15 @@ public partial class PopupWindow : Window
 
         foreach (var id in store.VisibleProviders)
         {
-            var item = new MenuItem { Header = id.DisplayName() + T(" na bandeja", " in tray") };
+            var agent = new MenuItem { Header = id.DisplayName() };
+            var tray = new MenuItem { Header = T("Na bandeja", "In the tray") };
             foreach (var option in TrayOptions.For(id))
             {
-                item.Items.Add(Check(option.Label(id), settings.DisplayFor(id) == option, () => store.SetDisplay(id, option)));
+                tray.Items.Add(Check(option.Label(id), settings.DisplayFor(id) == option, () => store.SetDisplay(id, option)));
             }
-            menu.Items.Add(item);
+            agent.Items.Add(tray);
+            if (settings.Layout == PopupLayout.Tabs) agent.Items.Add(TabLimitMenu(id, T("Na aba", "In its tab")));
+            menu.Items.Add(agent);
         }
 
         menu.Items.Add(Check(T("Cores de alerta na bandeja", "Alert colors in tray"), settings.ColorAlerts,
@@ -190,6 +200,31 @@ public partial class PopupWindow : Window
         menu.Items.Add(quit);
 
         menu.IsOpen = true;
+    }
+
+    /// <summary>What an agent's tab shows: the fullest limit or any one of its limits.</summary>
+    private MenuItem TabLimitMenu(ProviderId id, string header)
+    {
+        var item = new MenuItem { Header = header };
+        foreach (var option in TabLimitItems(id)) item.Items.Add(option);
+        return item;
+    }
+
+    private IEnumerable<MenuItem> TabLimitItems(ProviderId id)
+    {
+        var current = store.Settings.TabLimitFor(id);
+        return store.TabLimitOptions(id).Select(key => Check(TabLimit.Title(key), key == current, () => store.SetTabLimit(id, key)));
+    }
+
+    /// <summary>Right-clicking an agent's tab picks what the tab shows.</summary>
+    private void OnTabRightClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: TabViewModel tab } element || PopupTabs.ProviderOf(tab.Key) is not { } id) return;
+        var menu = new ContextMenu { PlacementTarget = element, Placement = PlacementMode.Bottom };
+        menu.Items.Add(new MenuItem { Header = T("Mostrar na aba", "Show in this tab"), IsEnabled = false });
+        foreach (var option in TabLimitItems(id)) menu.Items.Add(option);
+        menu.IsOpen = true;
+        e.Handled = true;
     }
 
     private static MenuItem Check(string header, bool isChecked, Action action)

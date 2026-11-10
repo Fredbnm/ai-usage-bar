@@ -46,7 +46,7 @@ internal sealed class PopupViewModel
             LoadingVisibility = loading ? Visibility.Visible : Visibility.Collapsed,
             RefreshCommand = new RelayCommand(async () => await store.RefreshAsync(force: true)),
             Providers = [.. store.VisibleProviders
-                .Where(id => !onAgents && id.Key() == current)
+                .Where(id => store.ShowsAllProviders || (!onAgents && id.Key() == current))
                 .Select(id => ProviderViewModel.Build(id, store.State(id)))],
         };
     }
@@ -98,7 +98,7 @@ internal sealed record TabViewModel(
         foreach (var id in store.VisibleProviders)
         {
             var state = store.State(id);
-            var summary = TabSummary.Make(state.Snapshot, state.Error is not null);
+            var summary = TabSummary.Make(state.Snapshot, state.Error is not null, store.Settings.TabLimitFor(id));
             var isCurrent = id.Key() == current;
             var spoken = summary.Text is "!" or "–"
                 ? T("sem dados", "no data")
@@ -225,8 +225,8 @@ internal sealed class AgentsViewModel
         {
             Heading = T("AGENTES DE IA", "AI AGENTS"),
             Welcome = T(
-                "Aqui estão os agentes que o medidor sabe ler. Os que já têm login neste PC aparecem sozinhos; para os outros, siga a dica.",
-                "These are the agents the meter can read. The ones already signed in on this PC show up on their own; for the others, follow the hint."),
+                "Aqui estão os agentes que o medidor sabe ler. Os que você já usa neste PC aparecem sozinhos; para os outros, siga a dica.",
+                "These are the agents the meter can read. The ones you already use on this PC show up on their own; for the others, follow the hint."),
             WelcomeVisibility = firstRun ? Visibility.Visible : Visibility.Collapsed,
             Rows = [.. rows.Select(row => AgentRowViewModel.Build(store, row))],
             // After the first run the same button goes back, which matters with
@@ -253,20 +253,29 @@ internal sealed record AgentRowViewModel(
     public static AgentRowViewModel Build(UsageStore store, AgentRow row)
     {
         var descriptor = row.Id.Descriptor();
-        var connected = row.Status == SetupStatus.Connected;
+        var signedIn = row.Status == SetupStatus.Connected;
+        var (status, hint, icon, brush) = (signedIn, row.HasData) switch
+        {
+            (false, _) => (T("Login não encontrado", "No login found"), descriptor.SetupHint(), "", LimitViewModel.SeverityBrush(Severity.Warning)),
+            (true, true) => (T("Conectado", "Connected") + (row.Plan is { } plan ? $" · {plan}" : ""), "", "", LimitViewModel.SeverityBrush(Severity.Normal)),
+            (true, false) => (
+                T("Login encontrado, mas sem dados de uso", "Login found, but no usage data"),
+                T($"Talvez esta conta não tenha o {descriptor.DisplayName}. Marque Mostrar para acompanhar mesmo assim.",
+                  $"This account may not have {descriptor.DisplayName}. Tick Show to track it anyway."),
+                "",
+                TabViewModel.Resource("SecondaryText")),
+        };
         return new AgentRowViewModel(
             descriptor.DisplayName,
-            connected
-                ? T("Conectado", "Connected") + (row.Plan is { } plan ? $" · {plan}" : "")
-                : T("Login não encontrado", "No login found"),
-            descriptor.SetupHint(),
-            connected ? Visibility.Collapsed : Visibility.Visible,
-            connected ? "" : "",
-            LimitViewModel.SeverityBrush(connected ? Severity.Normal : Severity.Warning),
-            !row.Hidden,
-            connected ? Visibility.Visible : Visibility.Collapsed,
+            status,
+            hint,
+            hint.Length == 0 ? Visibility.Collapsed : Visibility.Visible,
+            icon,
+            brush,
+            row.IsShown,
+            signedIn ? Visibility.Visible : Visibility.Collapsed,
             T("Mostrar", "Show"),
-            new RelayCommand(() => store.SetProviderHidden(row.Id, !row.Hidden)));
+            new RelayCommand(() => store.SetProviderHidden(row.Id, row.IsShown)));
     }
 }
 

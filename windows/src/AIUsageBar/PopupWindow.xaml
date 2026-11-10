@@ -72,7 +72,7 @@
                         <DataTemplate>
                             <Button Style="{StaticResource TabButton}" Width="{Binding Width}" Command="{Binding SelectCommand}"
                                     Tag="{Binding UnderlineBrush}" AutomationProperties.Name="{Binding AutomationName}"
-                                    ToolTip="{Binding AutomationName}">
+                                    ToolTip="{Binding AutomationName}" MouseRightButtonUp="OnTabRightClick">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Image Width="16" Height="16" Source="{Binding Icon}" Opacity="{Binding IconOpacity}"
                                            RenderOptions.BitmapScalingMode="HighQuality" />

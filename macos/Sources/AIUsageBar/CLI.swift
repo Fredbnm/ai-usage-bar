@@ -6,7 +6,7 @@ import UsageCore
 /// the menu bar:
 ///
 ///     AIUsageBar --dump [--raw]
-///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run] [--update-available 9.9.9]
+///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
 ///     AIUsageBar --install-update [--no-relaunch]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
@@ -32,6 +32,9 @@ struct CLICommand {
     let raw: Bool
     let language: AppLanguage?
     let updateAvailable: AppVersion?
+    /// `provider=key`: what one agent's tab shows (a `TabLimit` key).
+    let tabLimit: (ProviderID, String)?
+    let layout: PopupLayout?
 
     init?(arguments: [String]) {
         func value(after flag: String) -> String? {
@@ -58,6 +61,12 @@ struct CLICommand {
         raw = arguments.contains("--raw")
         language = value(after: "--lang").flatMap(AppLanguage.init(rawValue:))
         updateAvailable = value(after: "--update-available").flatMap(AppVersion.init)
+        layout = value(after: "--layout").flatMap(PopupLayout.init(rawValue:))
+        tabLimit = value(after: "--tab-limit").flatMap { pair in
+            let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+            guard parts.count == 2, let id = ProviderID(rawValue: parts[0]) else { return nil }
+            return (id, parts[1])
+        }
     }
 
     @MainActor
@@ -107,6 +116,8 @@ struct CLICommand {
         if let language { AppLanguage.current = language }
         if let tab { store.previewTab(tab) }
         if firstRun { store.previewFirstRun() }
+        if let (id, key) = tabLimit { store.previewTabLimit(key, for: id) }
+        if let layout { store.popupLayout = layout }
 
         switch mode {
         case .dump:

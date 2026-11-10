@@ -15,12 +15,20 @@ final class UsageStore: ObservableObject {
     /// Services shown in the popover, in display order.
     @Published private(set) var visibleProviders: [ProviderID] = []
     @Published private(set) var menuBarDisplays: [ProviderID: MenuBarDisplay] = [:]
+    /// The limit each agent's tab shows (`TabLimit` keys); missing means the fullest one.
+    @Published private(set) var tabLimits: [ProviderID: String] = [:]
     /// The first-run "Agents" tab was closed with Done.
     @Published private(set) var onboardingDismissed: Bool
     /// Agents the user switched off in the Agents tab (raw values).
     @Published private(set) var hiddenProviders: Set<String>
+    /// Agents the user switched on in the Agents tab, shown even before they return any usage (raw values).
+    @Published private(set) var shownProviders: Set<String>
     /// The tab asked for; `currentTab` resolves it against what is connected.
     @Published private var requestedTab: String?
+    /// Tabs (one agent at a time) or every agent on one screen.
+    @Published var popupLayout: PopupLayout {
+        didSet { if !isPreview { defaults.set(popupLayout.rawValue, forKey: Keys.popupLayout) } }
+    }
     @Published var menuBarStyle: MenuBarStyle {
         didSet { defaults.set(menuBarStyle.rawValue, forKey: Keys.menuBarStyle) }
     }
@@ -40,6 +48,8 @@ final class UsageStore: ObservableObject {
 
     private let providers: [any UsageProvider]
     private let defaults: UserDefaults
+    /// `--snapshot` changes settings to draw them; those changes are not saved.
+    private var isPreview = false
     private var timer: Timer?
 
     private enum Keys {
@@ -48,12 +58,15 @@ final class UsageStore: ObservableObject {
         static func cache(_ id: ProviderID) -> String { "cache.\(id.rawValue)" }
         static func cachedAt(_ id: ProviderID) -> String { "cachedAt.\(id.rawValue)" }
         static func menuBar(_ id: ProviderID) -> String { "menuBar.\(id.rawValue)" }
+        static func tab(_ id: ProviderID) -> String { "tab.\(id.rawValue)" }
         static let menuBarStyle = "menuBar.style"
+        static let popupLayout = "popup.layout"
         static let colorAlerts = "menuBar.colorAlerts"
         static let language = "language"
         static let onboardingDismissed = "onboardingDismissed"
         static let selectedProvider = "selectedProvider"
         static let hiddenProviders = "hiddenProviders"
+        static let shownProviders = "shownProviders"
     }
 
     init(
@@ -69,8 +82,10 @@ final class UsageStore: ObservableObject {
             || defaults.object(forKey: Keys.menuBar(.claude)) != nil
         onboardingDismissed = defaults.object(forKey: Keys.onboardingDismissed) as? Bool ?? hadSettings
         hiddenProviders = Set(defaults.stringArray(forKey: Keys.hiddenProviders) ?? [])
+        shownProviders = Set(defaults.stringArray(forKey: Keys.shownProviders) ?? [])
         requestedTab = defaults.string(forKey: Keys.selectedProvider)
         menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
+        popupLayout = defaults.string(forKey: Keys.popupLayout).flatMap(PopupLayout.init(rawValue:)) ?? .default
         colorAlerts = defaults.object(forKey: Keys.colorAlerts) as? Bool ?? true
         if let saved = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
             language = saved
@@ -87,6 +102,7 @@ final class UsageStore: ObservableObject {
         for id in ProviderID.allCases {
             let saved = defaults.string(forKey: Keys.menuBar(id)).flatMap(MenuBarDisplay.init(rawValue:))
             menuBarDisplays[id] = saved.flatMap { id.menuBarDisplayOptions.contains($0) ? $0 : nil } ?? id.defaultMenuBarDisplay
+            tabLimits[id] = defaults.string(forKey: Keys.tab(id))
         }
         updateVisibleProviders()
         loadCache()
@@ -98,10 +114,13 @@ final class UsageStore: ObservableObject {
         defaults = .standard
         onboardingDismissed = true
         hiddenProviders = []
+        shownProviders = []
         requestedTab = nil
         menuBarStyle = .default
+        popupLayout = .default
         colorAlerts = true
         language = AppLanguage.current
+        isPreview = true
         visibleProviders = snapshots.map(\.provider)
         for id in ProviderID.allCases { menuBarDisplays[id] = id.defaultMenuBarDisplay }
         for snapshot in snapshots {
@@ -129,7 +148,10 @@ final class UsageStore: ObservableObject {
     struct AgentRow: Identifiable {
         var id: ProviderID
         var status: SetupStatus
-        var isHidden: Bool
+        /// In the popover and the menu bar.
+        var isShown: Bool
+        /// Its usage loaded at least once on this computer.
+        var hasData: Bool
         var plan: String?
     }
 
@@ -138,7 +160,10 @@ final class UsageStore: ObservableObject {
         PopupTabs.resolve(requested: requestedTab, connected: visibleProviders, onboardingDone: onboardingDismissed)
     }
 
-    var showTabStrip: Bool { PopupTabs.showStrip(connectedCount: visibleProviders.count) }
+    var showTabStrip: Bool { popupLayout == .tabs && PopupTabs.showStrip(connectedCount: visibleProviders.count) }
+
+    /// "All AIs together": every agent on one screen, unless the Agents tab was asked for.
+    var showsAllProviders: Bool { popupLayout == .list && currentTab != PopupTabs.agentsKey }
 
     var currentProvider: ProviderID? { ProviderID(rawValue: currentTab) }
 
@@ -171,9 +196,18 @@ final class UsageStore: ObservableObject {
     /// Previews the first-run state without saving it.
     func previewFirstRun() { onboardingDismissed = false }
 
+    /// The Agents tab's "Show" box. Ticking it shows the agent even when its usage
+    /// does not load (with the error), unticking hides it even when it works.
     func setProviderHidden(_ id: ProviderID, _ hidden: Bool) {
-        if hidden { hiddenProviders.insert(id.rawValue) } else { hiddenProviders.remove(id.rawValue) }
+        if hidden {
+            hiddenProviders.insert(id.rawValue)
+            shownProviders.remove(id.rawValue)
+        } else {
+            hiddenProviders.remove(id.rawValue)
+            shownProviders.insert(id.rawValue)
+        }
         defaults.set(Array(hiddenProviders), forKey: Keys.hiddenProviders)
+        defaults.set(Array(shownProviders), forKey: Keys.shownProviders)
         updateVisibleProviders()
         Task { await refresh(force: true) }
     }
@@ -183,7 +217,8 @@ final class UsageStore: ObservableObject {
         ProviderID.allCases.map { id in
             let status = providers.first { $0.id == id }?.detect()
                 ?? (state(for: id).snapshot == nil ? .needsLogin : .connected)
-            return AgentRow(id: id, status: status, isHidden: hiddenProviders.contains(id.rawValue), plan: state(for: id).snapshot?.planName)
+            let snapshot = state(for: id).snapshot
+            return AgentRow(id: id, status: status, isShown: visibleProviders.contains(id), hasData: snapshot != nil, plan: snapshot?.planName)
         }
     }
 
@@ -196,6 +231,27 @@ final class UsageStore: ObservableObject {
     func setMenuBarDisplay(_ display: MenuBarDisplay, for id: ProviderID) {
         menuBarDisplays[id] = display
         defaults.set(display.rawValue, forKey: Keys.menuBar(id))
+    }
+
+    // MARK: Tab settings
+
+    func tabLimit(for id: ProviderID) -> String {
+        tabLimits[id] ?? TabLimit.highest
+    }
+
+    func setTabLimit(_ key: String, for id: ProviderID) {
+        tabLimits[id] = key
+        defaults.set(key, forKey: Keys.tab(id))
+    }
+
+    /// What the agent's tab can show, for its settings menu.
+    func tabLimitOptions(for id: ProviderID) -> [String] {
+        TabLimit.options(items: state(for: id).snapshot?.items ?? [], saved: tabLimit(for: id))
+    }
+
+    /// Overrides the tab settings without saving them (for `--snapshot --tab-limit`).
+    func previewTabLimit(_ key: String, for id: ProviderID) {
+        tabLimits[id] = key
     }
 
     /// Overrides the settings without saving them (for previews).
@@ -273,12 +329,14 @@ final class UsageStore: ObservableObject {
         if !fresh { await refresh(force: true) }
     }
 
+    /// Also fetches agents that are signed in but not shown yet, so one appears as soon as its usage loads.
     func refresh(force: Bool = false) async {
         updateVisibleProviders()
         let now = Date()
+        let candidates = Set(candidateProviders.map(\.id))
         let targets = providers.filter { provider in
             let state = state(for: provider.id)
-            guard visibleProviders.contains(provider.id), !state.isLoading else { return false }
+            guard candidates.contains(provider.id), !state.isLoading else { return false }
             if !force, let backoff = state.backoffUntil, backoff > now { return false }
             return true
         }
@@ -296,6 +354,7 @@ final class UsageStore: ObservableObject {
                 apply(result, to: id)
             }
         }
+        updateVisibleProviders()
     }
 
     private func apply(_ result: Result<ProviderFetchResult, Error>, to id: ProviderID) {
@@ -320,8 +379,18 @@ final class UsageStore: ObservableObject {
         states[id] = state
     }
 
+    /// Signed in on this computer and not switched off by the user.
+    private var candidateProviders: [any UsageProvider] {
+        providers.filter { !hiddenProviders.contains($0.id.rawValue) && $0.isAvailable() }
+    }
+
+    /// A login alone is not enough to show an agent: the gh CLI, for one, can be signed in without a
+    /// Copilot plan. An agent shows up once its usage has loaded on this computer (it stays after
+    /// that, also when its login later expires), or when the user ticked Show for it.
     private func updateVisibleProviders() {
-        let visible = providers.filter { !hiddenProviders.contains($0.id.rawValue) && $0.isAvailable() }.map(\.id)
+        let visible = candidateProviders
+            .filter { states[$0.id]?.snapshot != nil || shownProviders.contains($0.id.rawValue) }
+            .map(\.id)
         if visible != visibleProviders { visibleProviders = visible }
     }
 

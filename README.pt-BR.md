@@ -4,7 +4,7 @@
 
 > **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
 
-Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com o próprio ícone oficial (a estrelinha do Claude, a flor do Codex, o mascote do Copilot…) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio, para você ver tudo de relance:
+Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com o próprio ícone oficial (a estrelinha do Claude, a flor do Codex, o mascote do Copilot…) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio (ou o que você escolher), para você ver tudo de relance. Prefere todas numa tela só? ⚙ → **Pop-up** → **Todas as IAs juntas**.
 
 **Claude**
 - **Sessão atual** (janela de 5 h): quanto já foi usado e quando reinicia
@@ -30,7 +30,7 @@ Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage`
 
 ### Conectando seus agentes
 
-A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes compatíveis: ✓ conectado, ou uma dica de como entrar (no Copilot: entre no GitHub Copilot no VS Code ou rode `gh auth login`; no Codex: `codex login`; no Gemini: rode `gemini` e entre com o Google). Ela abre sozinha na primeira vez que o app é iniciado. O app nunca pede login: ele reaproveita os logins que suas ferramentas já têm, então basta entrar em outro lugar e a aba aparece em poucos minutos. Desmarque **Mostrar** para esconder um agente que você não quer acompanhar.
+A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes compatíveis: ✓ conectado, ou uma dica de como entrar (no Copilot: entre no GitHub Copilot no VS Code ou rode `gh auth login`; no Codex: `codex login`; no Gemini: rode `gemini` e entre com o Google). Ela abre sozinha na primeira vez que o app é iniciado. O app nunca pede login: ele reaproveita os logins que suas ferramentas já têm, então basta entrar em outro lugar e a aba aparece em poucos minutos. Um agente aparece sozinho quando o uso dele carrega. Um login que não traz uso fica desmarcado, como "Login encontrado, mas sem dados de uso": por exemplo, o `gh` logado numa conta sem Copilot. Marque **Mostrar** para acompanhar mesmo assim, com o aviso, ou desmarque para esconder um agente que você não quer acompanhar.
 
 <p align="center">
   <img src="docs/screenshot-light.png" width="320" alt="Pop-up no tema claro">
@@ -39,7 +39,7 @@ A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes comp
 
 ### Capturas de tela (Windows)
 
-Uma aba por agente, cada uma com o ícone oficial do agente e o limite mais cheio; a aba **＋** lista todos os agentes compatíveis e como conectar os que ainda não estão logados.
+Uma aba por agente, cada uma com o ícone oficial do agente e o limite mais cheio (ou o que você escolher); a aba **＋** lista todos os agentes compatíveis e como conectar os que ainda não estão logados.
 
 <p align="center">
   <img src="docs/screenshot-windows.png" width="300" alt="Pop-up no Windows na aba do Claude, com abas para Claude, Codex e Copilot">
@@ -64,7 +64,7 @@ Em ⚙︎ no pop-up:
 - **Ícone da IA com anel** (padrão): o ícone de cada IA dentro de um anel que se preenche com o uso.
 - **Só o percentual**: sem ícone, só uma bolinha em pizza que se preenche e o número, como na primeira versão.
 
-**O que cada IA mostra**
+**O que cada IA mostra** (⚙ → a IA → **Na barra de menu**)
 
 | Serviço | Opções |
 |---|---|
@@ -75,6 +75,10 @@ Em ⚙︎ no pop-up:
 | Grok Bot | **Semanal** (padrão) · **Não mostrar** |
 
 Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
+
+**Pop-up** (⚙ → **Pop-up**): **Uma aba por agente** (padrão) ou **Todas as IAs juntas**, todos os agentes um embaixo do outro numa tela só.
+
+**Na aba** (⚙ → a IA → **Na aba**, ou clique com o botão direito na aba): o número em cada aba. **Maior uso** (padrão) mostra o limite que estiver mais cheio. Você pode fixar qualquer limite daquela IA: o semanal de todos os modelos do Claude ou o de um modelo, a sessão do Codex, as requisições do mês no Copilot, a cota diária de um modelo do Gemini.
 
 **Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra, sem o laranja e o vermelho. O pop-up continua mostrando as cores.
 
@@ -127,7 +131,7 @@ A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 
 
 1. Rode o `AIUsageBar-Windows-Setup.exe` (instala só para o seu usuário, sem administrador). Se o SmartScreen aparecer, clique em **Mais informações** → **Executar assim mesmo**: o app ainda não tem certificado da Microsoft.
 2. Cada IA ganha o **próprio ícone na bandeja**, perto do relógio. O Windows pode colocar ícones novos na área escondida (**^**); arraste-os para a barra de tarefas para deixá-los visíveis.
-3. Clique com o botão esquerdo para abrir o pop-up e com o direito para atualizar ou sair. As opções (estilo, o que cada IA mostra, cores de alerta, idioma, abrir com o Windows) ficam em ⚙ no pop-up.
+3. Clique com o botão esquerdo para abrir o pop-up e com o direito para atualizar ou sair. As opções (estilo, abas ou todas as IAs juntas, o que cada IA mostra na bandeja e na aba, cores de alerta, idioma, abrir com o Windows) ficam em ⚙ no pop-up; clique com o botão direito numa aba para escolher o número dela.
 
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Pop-up no Windows"></p>
 
@@ -210,6 +214,7 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # uma aba específica
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # a aba Agentes da primeira vez
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --update-available 9.9.9                                      # o aviso de "Nova versão"
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --grok-fixture docs/sample-grok-usage.json --layout list        # todas as IAs juntas; --tab-limit claude=weekly_all escolhe o número de uma aba
 "$APP" --install-update --no-relaunch   # a atualização do app pela linha de comando: instala uma versão mais nova por cima desta cópia
 ```
 
