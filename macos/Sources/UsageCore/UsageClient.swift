@@ -89,7 +89,7 @@ public struct UsageClient: Sendable {
         request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(Self.betaHeader, forHTTPHeaderField: "anthropic-beta")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("claude-usage-bar", forHTTPHeaderField: "User-Agent")
+        request.setValue("ai-usage-bar", forHTTPHeaderField: "User-Agent")
         return try await HTTP.send(request)
     }
 }

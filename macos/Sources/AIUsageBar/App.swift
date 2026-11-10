@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ClaudeUsageBarApp: App {
+struct AIUsageBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     // The UI lives in the status item managed by AppDelegate; SwiftUI just

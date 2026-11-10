@@ -1,26 +1,27 @@
-APP := dist/Claude Usage.app
+APP := dist/AI Usage Bar.app
 
 .PHONY: test build install run dump icon clean
 
 test:
 	swift test
 
-# dist/Claude Usage.app + dist/ClaudeUsage-<versão>.dmg
+# dist/AI Usage Bar.app + dist/AIUsageBar-<version>.dmg
 build:
 	./scripts/build.sh
 
 # Copies the app to /Applications and opens it.
 install: build
+	-pkill -x AIUsageBar
 	-pkill -x ClaudeUsageBar
-	rm -rf "/Applications/Claude Usage.app"
+	rm -rf "/Applications/AI Usage Bar.app"
 	cp -R "$(APP)" /Applications/
-	open "/Applications/Claude Usage.app"
+	open "/Applications/AI Usage Bar.app"
 
 run:
-	swift run ClaudeUsageBar
+	swift run AIUsageBar
 
 dump:
-	swift run ClaudeUsageBar --dump
+	swift run AIUsageBar --dump
 
 icon:
 	./scripts/make-icon.sh

@@ -5,8 +5,8 @@ import UsageCore
 /// Headless modes for debugging and for checking the UI without clicking
 /// the menu bar:
 ///
-///     ClaudeUsageBar --dump [--raw]
-///     ClaudeUsageBar --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark] [--lang en|pt]
+///     AIUsageBar --dump [--raw]
+///     AIUsageBar --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark] [--lang en|pt]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
 /// `--snapshot` also writes `out-menubar.png` with the status item image.
@@ -50,13 +50,13 @@ struct CLICommand {
             if let fixturePath {
                 guard let data = FileManager.default.contents(atPath: fixturePath),
                       let snapshot = ClaudeProvider.snapshot(fromResponse: data, plan: "Max 5x")
-                else { return fail("Não consegui ler a fixture \(fixturePath)") }
+                else { return fail("Could not read fixture \(fixturePath)") }
                 snapshots.append(snapshot)
             }
             if let grokFixturePath {
                 guard let data = FileManager.default.contents(atPath: grokFixturePath),
                       let snapshot = GrokBotProvider.snapshot(fromResponse: data)
-                else { return fail("Não consegui ler a fixture \(grokFixturePath)") }
+                else { return fail("Could not read fixture \(grokFixturePath)") }
                 snapshots.append(snapshot)
             }
             store = UsageStore(preview: snapshots)
@@ -99,13 +99,13 @@ struct CLICommand {
         try? await Task.sleep(nanoseconds: 400_000_000)
 
         guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else {
-            fail("Falha ao renderizar o pop-up")
+            fail("Could not render the popover")
             return
         }
         host.cacheDisplay(in: host.bounds, to: rep)
         window.orderOut(nil)
         guard let png = rep.representation(using: .png, properties: [:]) else {
-            fail("Falha ao gerar o PNG")
+            fail("Could not encode the PNG")
             return
         }
         write(png, to: path)
@@ -120,16 +120,16 @@ struct CLICommand {
     @MainActor
     private func menuBarVariants(store: UsageStore) -> Data? {
         let variants: [(String, MenuBarStyle, [ProviderID: MenuBarDisplay], Bool)] = [
-            ("Claude sessão + semanal | Grok Bot", .icon, [.claude: .both, .grokBot: .weekly], true),
-            ("Claude só sessão | Grok Bot", .icon, [.claude: .session, .grokBot: .weekly], true),
-            ("Claude só semanal | Grok Bot", .icon, [.claude: .weekly, .grokBot: .weekly], true),
-            ("Só Claude, sessão + semanal", .icon, [.claude: .both, .grokBot: .hidden], true),
-            ("Só Grok Bot", .icon, [.claude: .hidden, .grokBot: .weekly], true),
-            ("Percentual: sessão + semanal | Grok", .percent, [.claude: .both, .grokBot: .weekly], true),
-            ("Percentual: só sessão | Grok Bot", .percent, [.claude: .session, .grokBot: .weekly], true),
-            ("Percentual: só Claude, sessão", .percent, [.claude: .session, .grokBot: .hidden], true),
-            ("Ícone, sem cores de alerta", .icon, [.claude: .both, .grokBot: .weekly], false),
-            ("Percentual, sem cores de alerta", .percent, [.claude: .both, .grokBot: .weekly], false),
+            ("Claude session + weekly | Grok Bot", .icon, [.claude: .both, .grokBot: .weekly], true),
+            ("Claude session only | Grok Bot", .icon, [.claude: .session, .grokBot: .weekly], true),
+            ("Claude weekly only | Grok Bot", .icon, [.claude: .weekly, .grokBot: .weekly], true),
+            ("Claude only, session + weekly", .icon, [.claude: .both, .grokBot: .hidden], true),
+            ("Grok Bot only", .icon, [.claude: .hidden, .grokBot: .weekly], true),
+            ("Percentage: session + weekly | Grok", .percent, [.claude: .both, .grokBot: .weekly], true),
+            ("Percentage: session only | Grok", .percent, [.claude: .session, .grokBot: .weekly], true),
+            ("Percentage: Claude only, session", .percent, [.claude: .session, .grokBot: .hidden], true),
+            ("Icon, alert colors off", .icon, [.claude: .both, .grokBot: .weekly], false),
+            ("Percentage, alert colors off", .percent, [.claude: .both, .grokBot: .weekly], false),
         ]
         let scale: CGFloat = 3
         let barHeight: CGFloat = 24
@@ -174,9 +174,9 @@ struct CLICommand {
     private func write(_ data: Data, to path: String) {
         do {
             try data.write(to: URL(fileURLWithPath: path))
-            print("Imagem salva em \(path)")
+            print("Saved \(path)")
         } catch {
-            fail("Não consegui salvar \(path): \(error.localizedDescription)")
+            fail("Could not save \(path): \(error.localizedDescription)")
         }
     }
 

@@ -14,7 +14,7 @@ enum MenuBarIcon {
     private enum Metrics {
         /// The menu bar is 22 pt tall; leave a point above and below.
         static let ring: CGFloat = 19
-        /// "Só o percentual" style: the pie gauge from version 0.1.
+        /// "Percentage only" style: the pie gauge from version 0.1.
         static let pie: CGFloat = 14
         static let pieOutline: CGFloat = 1.5
         static let pieInset: CGFloat = 2.25

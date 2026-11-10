@@ -50,6 +50,7 @@ final class UsageStore: ObservableObject {
     init(providers: [any UsageProvider] = [ClaudeProvider(), GrokBotProvider()], defaults: UserDefaults = .standard) {
         self.providers = providers
         self.defaults = defaults
+        Self.migrateFromClaudeUsage(into: defaults)
         menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
         colorAlerts = defaults.object(forKey: Keys.colorAlerts) as? Bool ?? true
         if let saved = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
@@ -83,6 +84,21 @@ final class UsageStore: ObservableObject {
         for id in ProviderID.allCases { menuBarDisplays[id] = id.defaultMenuBarDisplay }
         for snapshot in snapshots {
             states[snapshot.provider] = ProviderState(snapshot: snapshot, lastUpdated: updated)
+        }
+    }
+
+    /// Up to 0.5 the app was "Claude Usage" (bundle id local.claude-usage-bar):
+    /// carry its settings and cache over once, on the first launch under the new id.
+    private static func migrateFromClaudeUsage(into defaults: UserDefaults) {
+        let marker = "migratedFromClaudeUsage"
+        guard !defaults.bool(forKey: marker) else { return }
+        defaults.set(true, forKey: marker)
+        guard defaults.object(forKey: Keys.language) == nil,
+              let legacy = UserDefaults(suiteName: "local.claude-usage-bar")
+        else { return }
+        let prefixes = ["menuBar", "cache.", "cachedAt.", "language"]
+        for (key, value) in legacy.dictionaryRepresentation() where prefixes.contains(where: key.hasPrefix) {
+            defaults.set(value, forKey: key)
         }
     }
 
