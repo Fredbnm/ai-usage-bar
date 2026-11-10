@@ -8,7 +8,7 @@ namespace AIUsageBar;
 /// Headless modes for debugging and CI:
 /// <code>
 /// AIUsageBar.exe --dump [--raw]
-/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--grok-fixture grok.json] [--dark] [--lang en|pt]
+/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run]
 /// </code>
 /// <c>--snapshot</c> also writes <c>out-tray.png</c> with every tray icon combination.
 /// The app is a GUI program, so run it with <c>Start-Process -Wait</c> (or from cmd) to see the output.
@@ -45,7 +45,7 @@ internal sealed class CliCommand
 
     private async Task<int> DumpAsync()
     {
-        IUsageProvider[] providers = [new ClaudeProvider(), new GrokBotProvider(new DpapiUnprotector())];
+        IUsageProvider[] providers = [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new GeminiProvider(), new GrokBotProvider(new DpapiUnprotector())];
         foreach (var provider in providers.Where(p => p.IsAvailable()))
         {
             Console.WriteLine($"== {provider.Id.DisplayName()}");
@@ -69,22 +69,48 @@ internal sealed class CliCommand
         return 0;
     }
 
-    private int Snapshot()
+    /// <summary>The snapshots of <c>--fixture</c>, <c>--copilot-fixture</c> and <c>--grok-fixture</c>, in display order.</summary>
+    internal static List<ProviderSnapshot> FixtureSnapshots(string[] args)
     {
-        var output = Option("--snapshot") ?? throw new ArgumentException("--snapshot needs a file name");
+        string? Option(string name)
+        {
+            var index = Array.IndexOf(args, name);
+            return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+        }
+
         var snapshots = new List<ProviderSnapshot>();
         if (Option("--fixture") is { } claude &&
             ClaudeProvider.SnapshotFromResponse(File.ReadAllBytes(claude), "Max 5x") is { } claudeSnapshot)
         {
             snapshots.Add(claudeSnapshot);
         }
+        if (Option("--codex-fixture") is { } codex && CodexUsage.Snapshot(File.ReadAllBytes(codex)) is { } codexSnapshot)
+        {
+            snapshots.Add(codexSnapshot);
+        }
+        if (Option("--copilot-fixture") is { } copilot && CopilotUsage.Snapshot(File.ReadAllBytes(copilot)) is { } copilotSnapshot)
+        {
+            snapshots.Add(copilotSnapshot);
+        }
+        if (Option("--gemini-fixture") is { } gemini && GeminiUsage.Snapshot(File.ReadAllBytes(gemini), "Free") is { } geminiSnapshot)
+        {
+            snapshots.Add(geminiSnapshot);
+        }
         if (Option("--grok-fixture") is { } grok && GrokUsage.Snapshot(File.ReadAllBytes(grok)) is { } grokSnapshot)
         {
             snapshots.Add(grokSnapshot);
         }
+        return snapshots;
+    }
 
-        Theme.Apply(forceDark: args.Contains("--dark"));
-        var store = new UsageStore(new AppSettings { LanguageValue = Localization.Current }, snapshots);
+    private int Snapshot()
+    {
+        var output = Option("--snapshot") ?? throw new ArgumentException("--snapshot needs a file name");
+        var snapshots = FixtureSnapshots(args);
+
+        var settings = new AppSettings { LanguageValue = Localization.Current, OnboardingDismissed = !args.Contains("--first-run") };
+        var store = new UsageStore(settings, snapshots);
+        if (Option("--tab") is { } tab) store.PreviewTab(tab);
         var window = new PopupWindow(store);
         window.RenderToPng(output);
         window.Close();

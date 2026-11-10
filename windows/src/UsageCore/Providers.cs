@@ -16,6 +16,13 @@ public interface IUsageProvider
     /// </summary>
     bool IsAvailable();
 
+    /// <summary>
+    /// For the Agents tab: whether the login is there. Defaults to
+    /// <see cref="IsAvailable"/>; Claude overrides it because it is always
+    /// shown even without a login.
+    /// </summary>
+    SetupStatus Detect() => IsAvailable() ? SetupStatus.Connected : SetupStatus.NeedsLogin;
+
     Task<ProviderFetchResult> FetchAsync(CancellationToken cancellation = default);
 
     ProviderSnapshot? SnapshotFromCache(byte[] cache);
@@ -81,6 +88,9 @@ public sealed class ClaudeProvider(string? credentialsPath = null) : IUsageProvi
 
     /// <summary>Always shown: a missing login is reported instead of hidden.</summary>
     public bool IsAvailable() => true;
+
+    public SetupStatus Detect() =>
+        File.Exists(credentialsPath ?? ClaudeCredentialsStore.DefaultPath) ? SetupStatus.Connected : SetupStatus.NeedsLogin;
 
     public async Task<ProviderFetchResult> FetchAsync(CancellationToken cancellation = default)
     {

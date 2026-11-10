@@ -1,0 +1,17 @@
+{
+  "login": "octocat",
+  "copilot_plan": "individual_pro",
+  "quota_reset_date": "2026-12-01",
+  "quota_snapshots": {
+    "premium_interactions": {
+      "entitlement": 300,
+      "remaining": 117,
+      "percent_remaining": 39.0,
+      "unlimited": false,
+      "overage_count": 0,
+      "overage_permitted": false
+    },
+    "chat": { "unlimited": true, "percent_remaining": 100.0 },
+    "completions": { "unlimited": true, "percent_remaining": 100.0 }
+  }
+}

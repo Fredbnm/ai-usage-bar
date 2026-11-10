@@ -165,12 +165,12 @@ enum MenuBarIcon {
 
     /// Centres the glyph on its visual centre, scaled so its farthest point
     /// touches the circle inside the ring, and paints it in `color`.
-    private static func drawGlyph(_ glyph: Glyph?, provider: ProviderID, in rect: NSRect, color: NSColor) {
+    static func drawGlyph(_ glyph: Glyph?, provider: ProviderID, in rect: NSRect, color: NSColor, letterSize: CGFloat = 8.5) {
         guard let glyph, glyph.radius > 0 else {
             // No installed app to borrow artwork from: the service's initial.
-            let letter = String(provider.displayName.prefix(1)) as NSString
+            let letter = provider.initial as NSString
             let attributes: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 8.5, weight: .bold),
+                .font: NSFont.systemFont(ofSize: letterSize, weight: .bold),
                 .foregroundColor: color,
             ]
             let size = letter.size(withAttributes: attributes)
@@ -237,9 +237,12 @@ enum MenuBarIcon {
 }
 
 extension ProviderID {
-    var appBundleIdentifier: String {
+    /// The desktop app whose icon artwork is borrowed. Copilot, Codex and Gemini live inside
+    /// editors or terminals and have none, so it falls back to its initial.
+    var appBundleIdentifier: String? {
         switch self {
         case .claude: "com.anthropic.claudefordesktop"
+        case .codex, .copilot, .gemini: nil
         case .grokBot: "com.anysphere.sand"
         }
     }

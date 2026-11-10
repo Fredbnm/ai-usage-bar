@@ -10,7 +10,7 @@ using SkiaSharp;
 
 if (args.Length == 0 || args[0].StartsWith("--", StringComparison.Ordinal))
 {
-    Console.Error.WriteLine("usage: Preview out.png [--claude-fixture f] [--grok-fixture f] [--claude-icon png] [--grok-icon png] [--lang en|pt]");
+    Console.Error.WriteLine("usage: Preview out.png [--claude-fixture f] [--copilot-fixture f] [--grok-fixture f] [--claude-icon png] [--grok-icon png] [--lang en|pt]");
     return 1;
 }
 
@@ -27,6 +27,10 @@ if (Option("--claude-fixture") is { } claudeFixture &&
     ClaudeProvider.SnapshotFromResponse(File.ReadAllBytes(claudeFixture), "Max 5x") is { } claude)
 {
     snapshots.Add(claude);
+}
+if (Option("--copilot-fixture") is { } copilotFixture && CopilotUsage.Snapshot(File.ReadAllBytes(copilotFixture)) is { } copilot)
+{
+    snapshots.Add(copilot);
 }
 if (Option("--grok-fixture") is { } grokFixture && GrokUsage.Snapshot(File.ReadAllBytes(grokFixture)) is { } grok)
 {

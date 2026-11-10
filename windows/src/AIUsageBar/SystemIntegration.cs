@@ -65,6 +65,13 @@ internal static class InstalledApps
     /// <summary>The app's executable (or icon file), from the uninstall entries or known folders.</summary>
     public static string? IconSource(ProviderId provider)
     {
+        // These live inside editors: their official icons come from the editor extension.
+        switch (provider)
+        {
+            case ProviderId.Copilot: return ExtensionIcon.FindCopilot();
+            case ProviderId.Codex: return ExtensionIcon.FindCodex();
+            case ProviderId.Gemini: return ExtensionIcon.FindGemini();
+        }
         foreach (var hive in new[] { Registry.CurrentUser, Registry.LocalMachine })
         foreach (var path in UninstallKeys)
         {
@@ -89,7 +96,55 @@ internal static class InstalledApps
                 // Unreadable registry branches are skipped.
             }
         }
-        return KnownPaths(provider).FirstOrDefault(File.Exists);
+        return KnownPaths(provider).FirstOrDefault(File.Exists) ?? StorePackageLogo(StorePackageNames(provider));
+    }
+
+    /// <summary>Package names (before the first "_") the app may have as a Microsoft Store / MSIX install.</summary>
+    private static string[] StorePackageNames(ProviderId provider) => provider switch
+    {
+        ProviderId.Claude => ["Claude"],
+        ProviderId.GrokBot => ["GrokBot", "Grok Bot"],
+        _ => [],
+    };
+
+    /// <summary>
+    /// Store apps do not register an uninstall entry. The package registry
+    /// (readable without admin rights) names the install folder, and its
+    /// AppxManifest.xml names the logo; the biggest scale of it is used.
+    /// </summary>
+    private static string? StorePackageLogo(string[] names)
+    {
+        if (names.Length == 0) return null;
+        try
+        {
+            using var packages = Registry.CurrentUser.OpenSubKey(
+                @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages");
+            if (packages is null) return null;
+            foreach (var key in packages.GetSubKeyNames())
+            {
+                if (!names.Any(name => key.StartsWith(name + "_", StringComparison.OrdinalIgnoreCase))) continue;
+                using var package = packages.OpenSubKey(key);
+                if (package?.GetValue("PackageRootFolder") is not string root || !Directory.Exists(root)) continue;
+
+                var manifest = System.Xml.Linq.XDocument.Load(Path.Combine(root, "AppxManifest.xml"));
+                var logo = manifest.Descendants().FirstOrDefault(e => e.Name.LocalName == "VisualElements")
+                    ?.Attributes().FirstOrDefault(a => a.Name.LocalName == "Square150x150Logo")?.Value;
+                if (logo is null) continue;
+
+                var path = Path.Combine(root, logo.Replace('/', Path.DirectorySeparatorChar));
+                var directory = Path.GetDirectoryName(path)!;
+                var name = Path.GetFileNameWithoutExtension(path);
+                foreach (var candidate in new[] { $"{name}.scale-400.png", $"{name}.scale-200.png", Path.GetFileName(path) })
+                {
+                    if (File.Exists(Path.Combine(directory, candidate))) return Path.Combine(directory, candidate);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Not a Store install, or unreadable: the initial is shown instead.
+        }
+        return null;
     }
 
     /// <summary>The white artwork of the app's own icon, as on macOS. Nothing is bundled.</summary>
@@ -99,7 +154,23 @@ internal static class InstalledApps
         Glyph? glyph = null;
         try
         {
-            if (IconSource(provider) is { } source)
+            var source = IconSource(provider);
+            if (source is not null && source.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                // Copilot's icon is dark artwork on a light square, Gemini's a colored shape; Codex's and the
+                // Store apps' logos are white on a tile.
+                using var png = SKBitmap.Decode(source);
+                if (png is not null)
+                {
+                    glyph = GlyphExtractor.Artwork(png, provider switch
+                    {
+                        ProviderId.Copilot => ArtworkKind.Dark,
+                        ProviderId.Gemini => ArtworkKind.Silhouette,
+                        _ => ArtworkKind.White,
+                    });
+                }
+            }
+            else if (source is not null)
             {
                 using var icon = source.EndsWith(".ico", StringComparison.OrdinalIgnoreCase)
                     ? new System.Drawing.Icon(source, 256, 256)
@@ -125,9 +196,9 @@ internal static class InstalledApps
     {
         try
         {
-            if (provider == ProviderId.Claude)
+            if (provider.Descriptor().HelpUrl is { } url)
             {
-                Shell("https://claude.ai/settings/usage");
+                Shell(url.AbsoluteUri);
             }
             else if (IconSource(ProviderId.GrokBot) is { } exe && exe.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             {

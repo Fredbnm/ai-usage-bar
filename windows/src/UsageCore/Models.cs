@@ -75,17 +75,94 @@ public sealed record SnapshotNote(NoteKind Kind, int Count = 0, DateTimeOffset? 
 }
 
 /// <summary>A service whose plan usage the app shows.</summary>
-public enum ProviderId { Claude, GrokBot }
+public enum ProviderId { Claude, Codex, Copilot, Gemini, GrokBot }
+
+/// <summary>
+/// Everything that differs per service and is not parsing: names, tray
+/// choices, where "open" leads. Tabs, tray, settings and onboarding read
+/// from here, so adding a service means adding one entry.
+/// </summary>
+public sealed record ProviderDescriptor(
+    ProviderId Id,
+    string DisplayName,
+    string ShortName,
+    string LoginSource,
+    string Key,
+    IReadOnlyList<TrayDisplay> TrayOptions,
+    TrayDisplay DefaultTray,
+    Func<string> WeeklyLabel,
+    Func<string> OpenTip,
+    Func<string> SetupHint,
+    Uri? HelpUrl);
+
+public static class ProviderCatalog
+{
+    public static readonly IReadOnlyList<ProviderDescriptor> All =
+    [
+        new(ProviderId.Claude, "Claude", "Claude", "Claude Code", "claude",
+            [TrayDisplay.Session, TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Session,
+            () => T("Semanal (todos os modelos)", "Weekly (all models)"),
+            () => T("Ver uso no claude.ai", "View usage on claude.ai"),
+            () => T("Entre com o comando claude no terminal ou pelo app do Claude.",
+                    "Sign in with the claude command in a terminal or in the Claude app."),
+            new Uri("https://claude.ai/settings/usage")),
+        new(ProviderId.Codex, "Codex", "Codex", "Codex", "codex",
+            [TrayDisplay.Session, TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Session,
+            () => T("Semanal", "Weekly"),
+            () => T("Ver uso no ChatGPT", "View usage on ChatGPT"),
+            () => T("Entre com o comando codex login no terminal ou na extensão Codex do VS Code.",
+                    "Sign in with codex login in a terminal, or in the Codex extension for VS Code."),
+            new Uri("https://chatgpt.com/codex/settings/usage")),
+        new(ProviderId.Copilot, "GitHub Copilot", "Copilot", "GitHub Copilot", "copilot",
+            [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
+            () => T("Mensal", "Monthly"),
+            () => T("Gerenciar o Copilot no github.com", "Manage Copilot on github.com"),
+            () => T("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
+                    "Sign in to GitHub Copilot in VS Code, or run gh auth login."),
+            new Uri("https://github.com/settings/copilot")),
+        new(ProviderId.Gemini, "Gemini", "Gemini", "Gemini CLI", "gemini",
+            [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
+            () => T("Diário", "Daily"),
+            () => T("Abrir o Gemini", "Open Gemini"),
+            () => T("Rode gemini no terminal e escolha entrar com o Google.",
+                    "Run gemini in a terminal and choose to sign in with Google."),
+            new Uri("https://gemini.google.com/app")),
+        new(ProviderId.GrokBot, "Grok Bot", "Grok", "Grok Bot", "grokBot",
+            [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
+            () => T("Semanal", "Weekly"),
+            () => T("Abrir o Grok Bot", "Open Grok Bot"),
+            () => T("Instale o Grok Bot, abra-o e entre na sua conta.",
+                    "Install Grok Bot, open it and sign in."),
+            null),
+    ];
+
+    public static ProviderDescriptor For(ProviderId id) => All.First(d => d.Id == id);
+}
 
 public static class ProviderIdExtensions
 {
-    public static string DisplayName(this ProviderId id) => id == ProviderId.Claude ? "Claude" : "Grok Bot";
+    public static ProviderDescriptor Descriptor(this ProviderId id) => ProviderCatalog.For(id);
+
+    public static string DisplayName(this ProviderId id) => id.Descriptor().DisplayName;
+
+    /// <summary>
+    /// What the tray draws when there is no app icon to borrow. Two letters where
+    /// the first one is taken: "Co" and "Cx" would otherwise look like Claude, and
+    /// "Ge" like Grok Bot.
+    /// </summary>
+    public static string Initial(this ProviderId id) => id switch
+    {
+        ProviderId.Copilot => "Co",
+        ProviderId.Codex => "Cx",
+        ProviderId.Gemini => "Ge",
+        _ => id.DisplayName()[..1],
+    };
 
     /// <summary>The app whose login is reused, as named in messages.</summary>
-    public static string LoginSource(this ProviderId id) => id == ProviderId.Claude ? "Claude Code" : "Grok Bot";
+    public static string LoginSource(this ProviderId id) => id.Descriptor().LoginSource;
 
     /// <summary>Stable key for settings and cache files.</summary>
-    public static string Key(this ProviderId id) => id == ProviderId.Claude ? "claude" : "grokBot";
+    public static string Key(this ProviderId id) => id.Descriptor().Key;
 }
 
 /// <summary>Everything the UI needs to draw one service.</summary>

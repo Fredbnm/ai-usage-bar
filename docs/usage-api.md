@@ -110,7 +110,7 @@ Each service's choice is stored in `menuBar.<service>`:
 | `both` | session on top, weekly below | session |
 | `hidden` | the block is not shown | — |
 
-Claude offers all four options (default `both`); Grok Bot offers `weekly` (default) and `hidden`. If the chosen limit is missing from the response, use the other one; if neither is there, use the highest. Without data, show `–` (loading) or `!` (error). The ring or pie color follows the limit's severity (normal, warning or critical) unless `menuBar.colorAlerts` is `false`, in which case everything stays in the menu bar color.
+Claude and Codex offer all four options (default `both`); Grok Bot, GitHub Copilot and Gemini offer `weekly` (default; for Copilot it is the monthly premium-request allowance, labelled "Monthly"; for Gemini the first model's daily quota, labelled "Daily") and `hidden`. If the chosen limit is missing from the response, use the other one; if neither is there, use the highest. Without data, show `–` (loading) or `!` (error). The ring or pie color follows the limit's severity (normal, warning or critical) unless `menuBar.colorAlerts` is `false`, in which case everything stays in the menu bar color.
 
 **Windows** has no shared menu bar: each service is its own tray icon (a 16–32 px square), so it shows one value only. Choices there are `session`, `weekly` or `hidden` per service, and the style is `Icon` (glyph in the ring) or `Percent` (the number in the ring, without `%`). The tooltip lists every limit. Settings live in `%APPDATA%\AIUsageBar\settings.json`.
 
@@ -173,3 +173,152 @@ Example with made-up numbers: [`sample-grok-usage.json`](sample-grok-usage.json)
 | `onDemandSettings.enabled` | On-demand usage is on. |
 
 There is also `DashboardService/GetGrokBotUsageBreakdown`, which splits usage by day, source and bot, in parts per million of the weekly limit (`weeklyLimitPpm`), of the billing cycle (`billingCyclePpm`) or in cents (`billedCents`). The app does not use it yet.
+
+## 6. GitHub Copilot
+
+> **Status: not verified against a real account.** `copilot_internal/user` is what GitHub's own editor plugins call. It is not documented by GitHub; the field names below come from third-party tools that use it (CodexBar, opencode-mystatus and similar), and [`sample-copilot-usage.json`](sample-copilot-usage.json) is an illustration of that shape with made-up numbers, not a captured response. Check a real response (`AIUsageBar --dump --raw`) before relying on it, and treat any change as a format change (`decoding` error).
+
+Copilot has no desktop app of its own; the login belongs to an editor plugin or to the `gh` CLI.
+
+### Login
+
+Read-only, first match wins; only `github.com` entries count (not GitHub Enterprise hosts):
+
+1. `apps.json`, then `hosts.json` in the Copilot plugin folder: `%LOCALAPPDATA%\github-copilot\` on Windows, `~/.config/github-copilot/` on macOS and Linux. `apps.json` is `{"github.com:<client id>": {"user": "…", "oauth_token": "ghu_…"}}`, `hosts.json` is `{"github.com": {"user": "…", "oauth_token": "…"}}`. Take `oauth_token`.
+2. The `GH_TOKEN`, then `GITHUB_TOKEN` environment variable.
+3. The output of `gh auth token --hostname github.com` (spawns a process: cache the result for about 10 minutes, one minute when nothing was found, because availability is checked on every refresh; on macOS add `/opt/homebrew/bin` and `/usr/local/bin` to `PATH`, since a Finder-launched app has a minimal one).
+
+Which token types the endpoint accepts is **unconfirmed**: the editor plugin's `ghu_` token is the expected one; `gh` and personal tokens may be refused (HTTP 401/403 → `unauthorized`). Never write, refresh, cache or log the token.
+
+If none is found the service is hidden (like Grok Bot), and the Agents tab shows how to sign in.
+
+### Request
+
+```
+GET https://api.github.com/copilot_internal/user
+Authorization: token <token>
+Accept: application/json
+Editor-Version: vscode/1.99.0
+X-GitHub-Api-Version: 2022-11-28
+```
+
+HTTP statuses are handled as in section 2. A 403 can also mean the account has no Copilot seat.
+
+### Response
+
+| Field | Use |
+|---|---|
+| `copilot_plan` | Plan: `individual_pro` → "Pro", `individual_pro_plus` → "Pro+", `business` → "Business", `free` → "Free" (drop `individual_`/`copilot_`, `_plus` → `+`, other `_` → space, capitalize). |
+| `quota_reset_date` | When the monthly allowance resets (`2026-12-01`, a date without time: read as UTC). |
+| `quota_snapshots.premium_interactions` | **Premium requests**, the limit that runs out. Shown as `kind` `premium_requests`, group `weekly` (so the monthly ring uses it). |
+| `quota_snapshots.chat`, `.completions` | Shown (kinds `chat`, `completions`, group `other`) only when not unlimited. |
+| `<quota>.unlimited` | `true` = skip this quota, there is nothing to measure. |
+| `<quota>.percent_remaining` | Percent **left**: used = `100 − percent_remaining`. Preferred. |
+| `<quota>.entitlement`, `<quota>.remaining` | Fallback when there is no percent: used = `(entitlement − remaining) / entitlement × 100`. |
+| `<quota>.overage_count` | Premium requests beyond the allowance; the app does not show it yet. |
+| `monthly_quotas`, `limited_user_quotas`, `limited_user_reset_date` | **Free plan** shape, used only when `quota_snapshots` gives nothing: limit and remaining per `chat` / `completions`; used = `(limit − remaining) / limit × 100`. |
+
+If no quota can be read (organization-managed seats may not report one) the response gives no snapshot and the app reports a format error. Percentages are clamped to 0–999. Severity uses the usual thresholds (75% warning, 90% critical). The cached response holds the usage data only.
+
+## 7. Tabs and first-run setup (UI contract)
+
+Once there is more than one agent the popup shows **one agent at a time**:
+
+- **Strip:** shown only when two or more agents are connected, so a single agent looks exactly as before. One tab per connected agent (`ProviderID.shortName`: "Claude", "Copilot", "Grok") plus a trailing **＋** tab, which keeps a narrow slot while the agent tabs share the rest equally.
+- **Tab icon:** 16 pt, beside the name, the same glyph as the tray / menu bar (white artwork cut out of the installed app's icon), drawn in the theme's text color at reduced opacity when not selected. With no app to borrow from (Copilot) it is the agent's initial ("Co") in a thin circle. When the name does not fit, it goes first (icon and number stay): Windows hides the name of unselected tabs with four or more agents; macOS drops it whenever the tab is too narrow.
+- **Tab summary:** the agent's *fullest* limit as a percentage, in the severity color; `!` (warning) when the agent failed and has nothing to show, `–` while loading, and `⚠` after the number when it has data but the last refresh failed. Spoken label: "Claude, 83% used" / "no data".
+- **Which tab shows (`resolve`):** nothing connected, or onboarding not done → Agents. Otherwise the requested tab if it is still connected (or Agents if asked), else the first connected agent. The last agent tab is saved (`SelectedProvider` / `selectedProvider`).
+- **Keys:** Left/Right arrows move between tabs, wrapping (also Ctrl+Tab on Windows). On Windows, a provider's own tray icon opens the popup on its tab.
+- **Agents tab:** every supported agent, connected or not. Connected: ✓, "Connected · <plan>", and a **Show** checkbox (`HiddenProviders` / `hiddenProviders`; a hidden agent leaves the tabs, the tray and the refresh). Not connected: ⚠, "No login found" and the agent's setup hint. A **Done** button closes the first run (`OnboardingDismissed` / `onboardingDismissed`) and selects the first agent; afterwards the same button reads **Back**, which matters with one agent because there is no strip to leave by. Reachable from the gear menu → "Set up agents…".
+- **First run:** `OnboardingDismissed` is false only for a fresh install. A settings file or cache saved by an older version counts as already onboarded, so updating never forces the setup tab.
+- **Detection (`detect`):** `connected` when the login is found. It defaults to "is available"; Claude overrides it because it is always shown (it checks the Keychain/credentials file). Statuses are re-read on every refresh, so signing in elsewhere makes the tab appear without a restart.
+- **Popup height** changes with the selected tab; on Windows the popup is re-anchored to the taskbar after a tab switch.
+
+## 8. Taskbar widget (Windows only)
+
+An optional summary drawn over the Windows taskbar (settings `ShowTaskbarWidget`, `TaskbarPlacement`, `TaskbarStyle`, `TaskbarOffset`; off by default). Windows 11 offers no supported API for taskbar content (deskbands are gone), so it is a borderless, tool-window, always-on-top window placed over free taskbar space.
+
+- **Content:** one chip per connected agent: the tray icon renderer's ringed official icon (24 dip) and, for style `RingAndPercent`, the percentage (`<1%`, `–` while loading, `!` on error), orange/red from severity when alert colors are on. The ring follows the same limit as the tray icon; an agent whose tray choice is `Hidden` still shows, using its default.
+- **Hover card (350 ms):** the popup's agent card (plan, limits, resets, notes, breakdown) above the widget (below it when the taskbar is on top). Moving between chips switches it; it closes 250 ms after the mouse leaves widget and card.
+- **Interaction:** click opens the popup on that agent's tab; dragging more than 4 px moves the widget (`TaskbarOffset`, in dips, saved on release, clamped to the taskbar); right-click: refresh, position, style, reset position, hide.
+- **Placement (`TaskbarLayout.Place`):** vertically centred. `LeftOfTray`: ends 8 dip before the tray area (`TrayNotifyWnd`, estimated as min(width/4, 320 px) when unknown). `LeftEdge`: starts 8 dip from the left and moves right past every taskbar button it would overlap, so with a centred taskbar it sits between Widgets and Start, and with a left-aligned one after the last app. The buttons come from UI Automation (`Shell_TrayWnd` descendants: class `Taskbar.TaskListButtonAutomationPeer` or ids `StartButton`, `SearchButton`, `TaskViewButton`, `WidgetsButton`), scanned in the background every 5 s and only for `LeftEdge`; if none are exposed the plain edge is used.
+- **Staying put:** a 1 s timer re-reads the taskbar rectangle (`Shell_TrayWnd`), DPI and monitor, and re-asserts topmost without taking focus. It hides when the taskbar is vertical, when the taskbar is mostly outside its monitor (auto-hide), and when `SHQueryUserNotificationState` is 2 (full-screen app), 3 (full-screen Direct3D) or 4 (presentation mode). Primary taskbar only.
+- **Icons:** the agents' official artwork, cut out at runtime and never bundled: Claude and Grok Bot from the installed app (uninstall entry, usual folders, or a Microsoft Store package: the package root comes from `HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages`, the logo from `AppxManifest.xml`'s `Square150x150Logo`, largest scale); GitHub Copilot from GitHub's editor extension (`github.copilot-chat-*`, else `github.copilot-*`, newest version, in `~/.vscode`, `~/.vscode-insiders` or `~/.cursor` `/extensions`; the file named by `"icon"` in its `package.json`, never outside the extension folder). Copilot's icon is dark artwork on a light square, so its glyph is extracted by *darkness* (Claude's and Grok Bot's are white artwork, extracted by *whiteness*). Without an icon the initial is drawn ("Co" for Copilot).
+- **Debug:** `AIUsageBar.exe --widget-demo --fixture … --copilot-fixture … [--left-edge] [--ring-only] [--dark] [--lang pt]` runs the real tray and widget on sample data, reading no logins and using no network.
+
+
+## 9. Codex (OpenAI)
+
+> **Status: not verified against a real account.** The usage endpoint is what ChatGPT's Codex usage page calls. It is not documented by OpenAI; the field names below come from third-party tools that use it (CodexBar and similar). [`sample-codex-usage.json`](sample-codex-usage.json) is an illustration of that shape with made-up numbers, not a captured response. Check a real response (`AIUsageBar --dump --raw`) before relying on it, and treat any change as a format change (`decoding` error).
+
+### Login
+
+The Codex CLI and the Codex editor extension share one login: `~/.codex/auth.json` (`%USERPROFILE%\.codex\auth.json` on Windows), or `$CODEX_HOME/auth.json` when that variable is set.
+
+```json
+{ "OPENAI_API_KEY": null, "tokens": { "access_token": "<JWT>", "refresh_token": "…", "id_token": "…", "account_id": "…" } }
+```
+
+- Take `tokens.access_token` and `tokens.account_id`. A file with only `OPENAI_API_KEY` (API-key login) has no ChatGPT plan to measure: treat it as no login (the service is hidden).
+- `access_token` is a JWT: its `exp` claim says when it expires. Codex renews it when it runs; **do not use the refresh token**. An expired token gives the "open Codex once" message (`unauthorized`, expired).
+- Never write, refresh, cache or log the token.
+
+### Request
+
+```
+GET https://chatgpt.com/backend-api/wham/usage
+Authorization: Bearer <access_token>
+ChatGPT-Account-Id: <account_id>        (when there is one)
+```
+
+HTTP statuses are handled as in section 2.
+
+### Response
+
+| Field | Use |
+|---|---|
+| `plan_type` | Plan: `plus` → "Plus", `pro` → "Pro", `team` → "Team" (underscores to spaces, capitalised). |
+| `rate_limit.primary_window`, `.secondary_window` | The two windows (`primary` / `secondary` and camelCase spellings are accepted). |
+| `…used_percent` | Used, 0 to 100. |
+| `…limit_window_seconds` | Window length: **6 days or more = weekly** (`kind` `weekly`, group `weekly`), otherwise the **5-hour session** (`kind` `session`, group `session`). Without it, the first window is the session and the second the week. |
+| `…reset_at` / `…reset_after_seconds` | When the window resets: epoch seconds, or seconds from now. |
+| `rate_limit.limit_reached` | `true` with a window at 99.5% or more: show it as critical. |
+
+If no window can be read the response gives no snapshot and the app reports a format error. Percentages are clamped to 0–999; severity uses the usual thresholds (75% warning, 90% critical). The cached response holds the usage data only. Tray choices are those of Claude: `session`, `weekly`, `both` on macOS (default `both`), `session` / `weekly` on Windows.
+
+## 10. Gemini (Gemini CLI)
+
+> **Status: not verified against a real account.** Gemini CLI's quota comes from the Code Assist backend (`cloudcode-pa.googleapis.com`). It is not documented by Google; the field names below come from third-party tools that call it (CodexBar, gemini-cli-usage and similar). [`sample-gemini-usage.json`](sample-gemini-usage.json) is an illustration of that shape with made-up numbers. Check a real response before relying on it.
+
+### Login
+
+Only the **Sign in with Google** login leaves a file: `~/.gemini/oauth_creds.json` (`%USERPROFILE%\.gemini\oauth_creds.json`). API-key and Vertex AI logins have no quota to read here: the service is hidden.
+
+```json
+{ "access_token": "ya29…", "refresh_token": "1//…", "expiry_date": 1795000000000, "id_token": "…" }
+```
+
+- Take `access_token`. `expiry_date` is milliseconds since the epoch: when it is in the past, show the "open the Gemini CLI once" message (`unauthorized`, expired). The CLI renews its own token when it runs; **do not use the refresh token**.
+- Never write, refresh, cache or log the token.
+
+### Requests (two POSTs, both `Authorization: Bearer <access_token>`, JSON)
+
+1. `https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist` with `{"metadata":{"ideType":"IDE_UNSPECIFIED","platform":"PLATFORM_UNSPECIFIED","pluginType":"GEMINI"}}`. Take `cloudaicompanionProject` (a string, or an object with `id`) and `currentTier.id` for the plan: `free-tier` → "Free", `standard-tier` → "Standard", `legacy-tier` → "Legacy". Without a project, `GOOGLE_CLOUD_PROJECT` is used, else the body of the next call is `{}`.
+2. `https://cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota` with `{"project": "<project>"}`.
+
+### Response of `retrieveUserQuota`
+
+| Field | Use |
+|---|---|
+| `buckets[]` | One entry per model and token type. |
+| `…modelId` | e.g. `gemini-2.5-pro`. Shown as "2.5 Pro" (`gemini-` dropped, dashes to spaces, capitalised). |
+| `…remainingFraction` | Share **left**, 0 to 1: used = `(1 − remainingFraction) × 100`. A bucket without it is skipped. |
+| `…resetTime` | When it resets (RFC 3339). |
+
+One limit per model (`kind` `daily_scoped`, shown "Daily · 2.5 Pro"); when a model has several buckets the fullest counts. Pro models first, then Flash, then Flash-Lite, then any other, at most five. The first one has group `weekly`, which is what the tray ring and the tab summary follow (labelled "Daily"); the others have group `other`. The cached response holds the quota data only (the project id is not kept).
+
+## 11. Where the icons come from
+
+Every agent's icon is its own official artwork, taken at runtime from what is installed, never bundled. Claude and Grok Bot: from the app (section 8 lists the places, including Microsoft Store packages on Windows). GitHub Copilot, Codex and Gemini live in editors, so the icon is read from the official extension in `~/.vscode`, `~/.vscode-insiders` or `~/.cursor` `/extensions`: the newest folder whose name starts with `github.copilot-chat-` (then `github.copilot-`), `openai.chatgpt-` (the Codex extension; not `openai.codex-audio-`) or `google.geminicodeassist-` (then `google.gemini-`), and inside it the file named by `"icon"` in its `package.json`, never a path leaving the extension folder (Copilot falls back to `assets/copilot.png`). "Newest" compares the first dotted number after the id (`openai.chatgpt-26.1021.22027-win32-x64` is 26.1021.22027).
+
+How the artwork is cut out depends on the icon: **white on a colored tile** (Claude, Grok Bot, Codex) by *whiteness*; **dark on a light square** (Copilot) by *darkness*; **colored on a transparent or plain background** (Gemini) as a *silhouette*: the alpha when the corner is transparent, otherwise the distance from the corner's color. Without an icon the initial is drawn, with two letters where one would clash: "Co" (Copilot) and "Cx" (Codex) next to Claude's "C", "Ge" (Gemini) next to Grok Bot's "G".

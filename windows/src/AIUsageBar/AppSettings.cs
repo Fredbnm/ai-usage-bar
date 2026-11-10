@@ -12,6 +12,25 @@ internal sealed class AppSettings
     public bool ColorAlerts { get; set; } = true;
     public Dictionary<string, TrayDisplay> Displays { get; set; } = [];
 
+    /// <summary>The first-run "Agents" tab was closed with Done.</summary>
+    public bool OnboardingDismissed { get; set; }
+
+    /// <summary>Key of the agent tab shown last.</summary>
+    public string? SelectedProvider { get; set; }
+
+    /// <summary>The widget drawn over the taskbar (off by default: it is an option).</summary>
+    public bool ShowTaskbarWidget { get; set; }
+
+    public TaskbarPlacement TaskbarPlacement { get; set; } = TaskbarPlacement.LeftOfTray;
+
+    public TaskbarStyle TaskbarStyle { get; set; } = TaskbarStyle.RingAndPercent;
+
+    /// <summary>How far the user dragged the widget from its anchor, in device-independent pixels (right is positive).</summary>
+    public double TaskbarOffset { get; set; }
+
+    /// <summary>Agents the user switched off in the Agents tab (keys).</summary>
+    public List<string> HiddenProviders { get; set; } = [];
+
     [JsonIgnore]
     public AppLanguage LanguageValue
     {
@@ -41,7 +60,11 @@ internal sealed class AppSettings
         {
             if (File.Exists(FilePath))
             {
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), Options) ?? new AppSettings();
+                var text = File.ReadAllText(FilePath);
+                var loaded = JsonSerializer.Deserialize<AppSettings>(text, Options) ?? new AppSettings();
+                // Saved by an older version: this is not a first run.
+                if (!text.Contains(nameof(OnboardingDismissed), StringComparison.OrdinalIgnoreCase)) loaded.OnboardingDismissed = true;
+                return loaded;
             }
         }
         catch (Exception)
