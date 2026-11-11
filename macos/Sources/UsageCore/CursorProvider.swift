@@ -4,14 +4,33 @@ import SQLite3
 /// The Cursor editor's login, from VS Code's global state database
 /// (`state.vscdb`). Read only: the token is read for each request, kept in
 /// memory and never written, refreshed or logged.
+///
+/// Recent versions keep the token encrypted with Electron `safeStorage`
+/// (`cursor-safe-storage:v1:<base64>`), whose key is the Keychain item
+/// "Cursor Safe Storage"; older ones store the JWT as is.
 public struct CursorLogin: Equatable, Sendable, CustomStringConvertible {
     public static let accessTokenKey = "cursorAuth/accessToken"
     public static let membershipTypeKey = "cursorAuth/stripeMembershipType"
+    public static let keychainService = "Cursor Safe Storage"
+    public static let keychainAccount = "Cursor Key"
+    static let encryptedPrefix = "cursor-safe-storage:v1:"
 
+    /// As stored: the JWT, or its encrypted form (see `encryptedToken`).
     public var accessToken: String
     public var membershipType: String?
 
     public var planName: String? { CursorUsage.planName(membershipType) }
+
+    /// The `safeStorage` blob ("v10…") when the token is stored encrypted.
+    public var encryptedToken: Data? {
+        guard accessToken.hasPrefix(Self.encryptedPrefix) else { return nil }
+        return Data(base64Encoded: String(accessToken.dropFirst(Self.encryptedPrefix.count)))
+    }
+
+    /// Blocking (may show the macOS Keychain prompt): call off the main thread.
+    static func readSafeStoragePassword() throws -> Data {
+        try ElectronSafeStorage.readPassword(service: keychainService, account: keychainAccount)
+    }
 
     /// Never prints the token.
     public var description: String { "CursorLogin(plan: \(planName ?? "?"), token: <redacted>)" }
@@ -219,9 +238,11 @@ public struct CursorProvider: UsageProvider {
     public static let bundleIdentifier = "com.todesktop.230313mzl4w4u92"
 
     private let database: URL
+    private let keyCache: SafeStorageKeyCache
 
-    public init(database: URL = CursorLogin.defaultDatabase) {
+    public init(database: URL = CursorLogin.defaultDatabase, keyCache: SafeStorageKeyCache = .cursor) {
         self.database = database
+        self.keyCache = keyCache
     }
 
     /// Cursor is installed and signed in. A database that is busy for a moment still counts.
@@ -238,11 +259,12 @@ public struct CursorProvider: UsageProvider {
     public func fetch() async throws -> ProviderFetchResult {
         let database = database
         let login = try await runBlocking { try CursorLogin.load(from: database) }
-        if let expires = JWT.expiration(of: login.accessToken), expires < Date() {
+        let token = try await accessToken(of: login)
+        if let expires = JWT.expiration(of: token), expires < Date() {
             throw UsageError.unauthorized(expired: true)
         }
 
-        let data = try await CursorClient().fetchCurrentPeriodUsage(accessToken: login.accessToken)
+        let data = try await CursorClient().fetchCurrentPeriodUsage(accessToken: token)
         guard let snapshot = CursorUsage.snapshot(fromResponse: data, plan: login.planName) else { throw UsageError.decoding }
         let cache = try ProviderCache(plan: login.planName, raw: data).encoded()
         return ProviderFetchResult(snapshot: snapshot, cache: cache)
@@ -250,5 +272,18 @@ public struct CursorProvider: UsageProvider {
 
     public func snapshot(fromCache data: Data) -> ProviderSnapshot? {
         ProviderCache.decode(data).flatMap { CursorUsage.snapshot(fromResponse: $0.raw, plan: $0.plan) }
+    }
+
+    private func accessToken(of login: CursorLogin) async throws -> String {
+        guard login.accessToken.hasPrefix(CursorLogin.encryptedPrefix) else { return login.accessToken }
+        guard let blob = login.encryptedToken else { throw UsageError.decoding }
+        let key = try await keyCache.key(loading: { try CursorLogin.readSafeStoragePassword() })
+        do {
+            return try ElectronSafeStorage.decryptString(blob, key: key)
+        } catch {
+            // The key may have been rotated: read it again next time.
+            await keyCache.reset()
+            throw error
+        }
     }
 }

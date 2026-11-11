@@ -162,6 +162,22 @@ final class CursorTests: XCTestCase {
         XCTAssertNil(login.planName)
     }
 
+    func testRecognizesATokenEncryptedWithSafeStorage() throws {
+        // "v10" + AES-128-CBC of "hello grok bot" (see GrokBotTests).
+        let blobBase64 = "djEwKuXxtj0WL0ulbfO9IIBuqw=="
+        let url = try makeDatabase()
+        try put(CursorLogin.accessTokenKey, "cursor-safe-storage:v1:\(blobBase64)", in: url)
+
+        let login = try CursorLogin.load(from: url)
+        let blob = try XCTUnwrap(login.encryptedToken)
+        XCTAssertEqual(blob, Data(base64Encoded: blobBase64))
+        let key = ElectronSafeStorage.deriveKey(password: Data("test-password".utf8))
+        XCTAssertEqual(try ElectronSafeStorage.decryptString(blob, key: key), "hello grok bot")
+        XCTAssertTrue(CursorProvider(database: url).isAvailable())
+
+        XCTAssertNil(CursorLogin(accessToken: "header.payload.signature", membershipType: nil).encryptedToken)
+    }
+
     func testASignedOutCursorIsNotAvailable() throws {
         let url = try makeDatabase()
         try put("workbench.panel.width", "300", in: url)

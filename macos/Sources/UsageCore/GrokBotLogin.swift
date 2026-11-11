@@ -23,10 +23,18 @@ public enum GrokBotLogin {
 
     /// Blocking (may show the macOS Keychain prompt): call off the main thread.
     static func readSafeStoragePassword() throws -> Data {
+        try ElectronSafeStorage.readPassword(service: keychainService, account: keychainAccount)
+    }
+}
+
+extension ElectronSafeStorage {
+    /// The `safeStorage` password an Electron app keeps in the Keychain.
+    /// Blocking (may show the macOS Keychain prompt): call off the main thread.
+    static func readPassword(service: String, account: String) throws -> Data {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: keychainAccount,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: account,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
@@ -49,6 +57,8 @@ public enum GrokBotLogin {
 /// once per launch, not on every refresh.
 public actor SafeStorageKeyCache {
     public static let shared = SafeStorageKeyCache()
+    /// Cursor's key is a different Keychain item from Grok Bot's.
+    public static let cursor = SafeStorageKeyCache()
 
     private var key: Data?
 
