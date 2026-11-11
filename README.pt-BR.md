@@ -161,6 +161,8 @@ make build     # gera dist/AI Usage Bar.app e dist/AIUsageBar-<versão>.dmg
 make install   # copia para /Applications e abre
 ```
 
+O .dmg abre numa janela com um fundo que mostra para onde arrastar o app. Quem monta essa janela é o [dmgbuild](https://dmgbuild.readthedocs.io): o `make build` o instala num virtualenv próprio na primeira vez, o que exige Python 3.10 ou mais novo e acesso à internet. Sem isso, sai um .dmg simples com o mesmo conteúdo. O fundo é o `macos/Support/dmg-background.tiff`; para mudá-lo, edite `scripts/make-dmg-background.swift` e rode `scripts/make-dmg-background.sh`.
+
 A versão sai do arquivo `macos/VERSION`. Para assinar com um certificado Developer ID, use `SIGN_IDENTITY="Developer ID Application: …" make build`.
 
 ### Windows

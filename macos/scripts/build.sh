@@ -37,12 +37,33 @@ else
 fi
 
 echo "▸ Creating the .dmg installer…"
-STAGING="$(mktemp -d)"
-trap 'rm -rf "$STAGING"' EXIT
-cp -R "$APP" "$STAGING/"
-ln -s /Applications "$STAGING/Applications"
 rm -f "$DMG"
-hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null
+# dmgbuild lays out the window (background, icon positions) without scripting
+# Finder, so it works the same on CI. It lives in its own virtualenv, made once.
+DMGBUILD_VERSION="1.6.7"
+DMGBUILD_ENV="${TMPDIR:-/tmp}/aiusagebar-dmgbuild-$DMGBUILD_VERSION"
+if [[ ! -x "$DMGBUILD_ENV/bin/dmgbuild" ]]; then
+  rm -rf "$DMGBUILD_ENV"
+  if ! { python3 -m venv "$DMGBUILD_ENV" && "$DMGBUILD_ENV/bin/pip" install --quiet --disable-pip-version-check "dmgbuild==$DMGBUILD_VERSION"; }; then
+    rm -rf "$DMGBUILD_ENV"
+  fi
+fi
+if [[ -x "$DMGBUILD_ENV/bin/dmgbuild" ]]; then
+  "$DMGBUILD_ENV/bin/dmgbuild" -s scripts/dmg-settings.py \
+    -D app="$APP" -D background=Support/dmg-background.tiff -D volume_icon=Support/AppIcon.icns \
+    "$APP_NAME" "$DMG" >/dev/null
+elif [[ "${CI:-}" == "true" ]]; then
+  echo "✗ Could not install dmgbuild (needs Python 3.10+); a release needs the styled window." >&2
+  exit 1
+else
+  # Offline or an old Python: the same contents, without the styled window.
+  echo "! dmgbuild unavailable (needs Python 3.10+ and pip); making a plain .dmg"
+  STAGING="$(mktemp -d)"
+  trap 'rm -rf "$STAGING"' EXIT
+  cp -R "$APP" "$STAGING/"
+  ln -s /Applications "$STAGING/Applications"
+  hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null
+fi
 
 echo "✓ App:        macos/$APP"
 echo "✓ Installer:  macos/$DMG"
