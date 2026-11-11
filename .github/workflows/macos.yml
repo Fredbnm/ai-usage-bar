@@ -37,6 +37,7 @@ jobs:
         # until the other one adds its files, "latest" has nothing for it to install.
         if: github.ref_type != 'tag'
         continue-on-error: true
+        timeout-minutes: 10
         env:
           # The app asks GitHub anonymously; shared CI machines often run out of that limit.
           GITHUB_TOKEN: ${{ github.token }}
