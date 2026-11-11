@@ -71,7 +71,6 @@ jobs:
           }
           & $iscc "/DAppVersion=$env:VERSION" installer/AIUsageBar.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
-          Copy-Item publish/win-x64/AIUsageBar.exe dist/AIUsageBar-Windows-Portable.exe
           Get-ChildItem dist
 
       - uses: actions/upload-artifact@v4
@@ -79,9 +78,9 @@ jobs:
           name: AIUsageBar-Windows
           path: windows/dist/*.exe
 
-      # Pretends to be an old version and lets the app update itself from the latest
-      # published release, the way a user's copy would: once as a portable .exe and once
-      # installed by Setup. Passes when the exe on disk matches the release's exe.
+      # Installs this build, pretends it is an old version and lets it update itself from the
+      # latest published release, the way a user's copy would. Passes when the installed exe
+      # has been replaced by one that reports the release's version.
       - name: Self-update from the latest release
         # Not on tags: whichever system finishes first publishes the new release, and
         # until the other one adds its files, "latest" has nothing for it to install.
@@ -92,29 +91,25 @@ jobs:
           # The app asks GitHub anonymously; shared CI machines often run out of that limit.
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $latest = Join-Path $env:RUNNER_TEMP 'latest.exe'
-          Invoke-WebRequest "https://github.com/$env:GITHUB_REPOSITORY/releases/latest/download/AIUsageBar-Windows-Portable.exe" -OutFile $latest
-          $want = (Get-FileHash $latest).Hash
-
-          function Test-SelfUpdate([string]$exe, [string]$label) {
-            $process = Start-Process -FilePath $exe -ArgumentList '--install-update', '--no-relaunch', '--as-version', '0.0.1' -Wait -PassThru
-            if ($process.ExitCode -ne 0) { throw "${label}: --install-update exited with $($process.ExitCode)" }
-            foreach ($i in 1..90) {
-              $hash = try { (Get-FileHash $exe -ErrorAction Stop).Hash } catch { $null }
-              if ($hash -eq $want) { Write-Host "${label}: replaced by the latest release"; return }
-              Start-Sleep -Seconds 2
-            }
-            throw "${label}: the exe was not replaced"
-          }
-
-          $portable = Join-Path $env:RUNNER_TEMP 'portable\AIUsageBar.exe'
-          New-Item -ItemType Directory -Force (Split-Path $portable) | Out-Null
-          Copy-Item publish/win-x64/AIUsageBar.exe $portable
-          Test-SelfUpdate $portable 'portable'
-          if (Test-Path "$portable.update") { throw 'portable: the downloaded .update file was left behind' }
+          $release = Invoke-RestMethod "https://api.github.com/repos/$env:GITHUB_REPOSITORY/releases/latest" -Headers @{ Authorization = "Bearer $env:GITHUB_TOKEN" }
+          $want = [version]$release.tag_name.TrimStart('v')
 
           Start-Process -FilePath dist/AIUsageBar-Windows-Setup.exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -Wait
-          Test-SelfUpdate (Join-Path $env:LOCALAPPDATA 'Programs\AI Usage Bar\AIUsageBar.exe') 'installed'
+          $exe = Join-Path $env:LOCALAPPDATA 'Programs\AI Usage Bar\AIUsageBar.exe'
+          # This build may carry the same version number as the release, so "replaced" also means a different file.
+          $built = (Get-FileHash $exe).Hash
+
+          $process = Start-Process -FilePath $exe -ArgumentList '--install-update', '--no-relaunch', '--as-version', '0.0.1' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "--install-update exited with $($process.ExitCode)" }
+          foreach ($i in 1..90) {
+            Start-Sleep -Seconds 2
+            $hash = try { (Get-FileHash $exe -ErrorAction Stop).Hash } catch { $null }
+            if (-not $hash -or $hash -eq $built) { continue }
+            $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+            $version = [version]"$($info.FileMajorPart).$($info.FileMinorPart).$($info.FileBuildPart)"
+            if ($version -eq $want) { Write-Host "installed: replaced by the latest release ($want)"; exit 0 }
+          }
+          throw "installed: the exe was not replaced by $want"
 
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
