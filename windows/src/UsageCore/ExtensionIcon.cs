@@ -10,11 +10,11 @@ namespace AIUsageBar.Core;
 /// </summary>
 public static partial class ExtensionIcon
 {
-    /// <summary>Editors that install VS Code extensions under the user profile.</summary>
+    /// <summary>Editors that install VS Code extensions under the user profile (VSCodium's is <c>.vscode-oss</c>).</summary>
     public static IReadOnlyList<string> DefaultExtensionRoots()
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return [.. new[] { ".vscode", ".vscode-insiders", ".cursor" }.Select(d => Path.Combine(home, d, "extensions"))];
+        return [.. new[] { ".vscode", ".vscode-insiders", ".cursor", ".vscode-oss" }.Select(d => Path.Combine(home, d, "extensions"))];
     }
 
     /// <summary>
@@ -95,6 +95,10 @@ public static partial class ExtensionIcon
 
     public static string? FindCodex(IEnumerable<string>? roots = null) =>
         Find(["openai.chatgpt-"], roots);
+
+    /// <summary>The Claude Code extension: Claude's star, white on its orange disc.</summary>
+    public static string? FindClaudeCode(IEnumerable<string>? roots = null) =>
+        Find(["anthropic.claude-code-"], roots);
 
     public static string? FindGemini(IEnumerable<string>? roots = null) =>
         Find(["google.geminicodeassist-", "google.gemini-"], roots);

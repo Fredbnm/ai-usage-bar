@@ -11,7 +11,7 @@ The app has no login of its own: it reuses Claude Code's login, read only.
 | System | Where Claude Code keeps its login |
 |---|---|
 | macOS | Keychain, generic password with service `Claude Code-credentials`. Read it with `/usr/bin/security find-generic-password -s "Claude Code-credentials" -w`. |
-| Linux / Windows | File `~/.claude/.credentials.json` (`%USERPROFILE%\.claude\.credentials.json` on Windows). If `CLAUDE_CONFIG_DIR` is set, use `$CLAUDE_CONFIG_DIR/.credentials.json`. *Not verified on these systems yet.* |
+| Linux / Windows | File `~/.claude/.credentials.json` (`%USERPROFILE%\.claude\.credentials.json` on Windows). If `CLAUDE_CONFIG_DIR` is set, use `$CLAUDE_CONFIG_DIR/.credentials.json`. Implemented in `windows/` and `linux/`; *not verified on real machines yet.* |
 
 Contents (only the fields used):
 
@@ -114,6 +114,8 @@ Claude and Codex offer all four options (default `both`); Grok Bot, GitHub Copil
 
 **Windows** has no shared menu bar: each service is its own tray icon (a 16–32 px square), so it shows one value only. Choices there are `session`, `weekly` or `hidden` per service, and the style is `Icon` (glyph in the ring) or `Percent` (the number in the ring, without `%`). The tooltip lists every limit. Settings live in `%APPDATA%\AIUsageBar\settings.json`.
 
+**Linux** works like Windows: one StatusNotifierItem per service (KDE, Cinnamon, Xfce, Budgie, MATE, LXQt, and GNOME with the AppIndicator extension), with the same choices and styles, plus `IconColor` (`Automatic`, `White`, `Black`) because panels do not report their color: `Automatic` follows the light/dark setting on KDE and assumes a dark panel elsewhere. Settings live in `~/.config/AIUsageBar/settings.json`, the cache in `~/.cache/AIUsageBar`.
+
 Text follows the `language` preference (`en` or `pt`). On a fresh install it starts from the system language: Portuguese if the first preferred language starts with `pt`, English otherwise.
 
 ## 5. Grok Bot
@@ -126,7 +128,7 @@ Grok Bot (`/Applications/Grok Bot.app`, bundle `com.anysphere.sand`) is an Elect
 |---|---|
 | macOS | `~/Library/Application Support/Grok Bot/sand-secrets.json`, with values encrypted by Electron's `safeStorage`. The key is in the Keychain: service `Grok Bot Safe Storage`, account `Grok Bot Key`. |
 | Windows | `%APPDATA%\Grok Bot\sand-secrets.json`. The key is in `%APPDATA%\Grok Bot\Local State`: `os_crypt.encrypted_key` is base64(`DPAPI` + blob); `CryptUnprotectData` for the current user returns a 32-byte AES key. Implemented in `windows/`, *not verified on a real PC yet*. |
-| Linux | *Not verified.* Electron uses libsecret/kwallet, and the file should sit in the app's `userData` folder. |
+| Linux | `~/.config/Grok Bot/sand-secrets.json` (Electron's `userData`, under `$XDG_CONFIG_HOME` when set). Values start with `v10` (written without a keyring: fixed password `peanuts`) or `v11` (password in the desktop keyring, read with `secret-tool lookup application "Grok Bot"`; `grok-bot` and `grokbot` are tried too). Implemented in `linux/`, *not verified: no Linux Grok Bot was at hand.* |
 
 File structure (only the fields used):
 
@@ -141,6 +143,7 @@ File structure (only the fields used):
 - Older files keep `cursor-access-token` at the top level, sometimes as `scoped:v1:<64 hex>:<base64>`. `plaintext:v1:<base64>` values are not encrypted.
 - Decryption on macOS (Chromium `OSCrypt`): the base64 blob starts with `v10`. The rest is AES-128-CBC with PKCS#7, key = PBKDF2-HMAC-SHA1(Keychain password, `saltysalt`, 1003 iterations, 16 bytes) and an IV of 16 spaces (`0x20`).
 - Decryption on Windows: the blob is `v10` + 12-byte nonce + ciphertext + 16-byte tag, AES-256-GCM with the DPAPI-protected key above.
+- Decryption on Linux: the blob is `v10` or `v11` + AES-128-CBC with PKCS#7, key = PBKDF2-HMAC-SHA1(password, `saltysalt`, **1** iteration, 16 bytes), IV of 16 spaces; the password is `peanuts` for `v10` and the keyring's for `v11`.
 - The token is a JWT. Its `exp` claim says when it expires; do not use the refresh token.
 - Reading the key makes macOS show a permission prompt. Read it once per run and keep the key **in memory only**.
 

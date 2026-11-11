@@ -7,7 +7,7 @@ public enum UsageErrorKind
     NotLoggedIn,
     Unauthorized,
     UnauthorizedExpired,
-    /// <summary>Windows would not decrypt a stored key (DPAPI).</summary>
+    /// <summary>Windows would not decrypt a stored key (DPAPI), or the Linux keyring did not answer.</summary>
     SecretUnavailable,
     RateLimited,
     Http,
@@ -49,6 +49,9 @@ public sealed class UsageException(UsageErrorKind kind, int statusCode = 0, Exce
             UsageErrorKind.Unauthorized => T(
                 $"O servidor recusou o login atual. Saia e entre de novo no {app}.",
                 $"The server rejected the current login. Sign out and back in to {app}."),
+            UsageErrorKind.SecretUnavailable when OperatingSystem.IsLinux() => T(
+                $"O chaveiro do sistema não liberou a chave do {app}. Desbloqueie o chaveiro (o secret-tool, do pacote libsecret-tools, precisa estar instalado) e clique em atualizar.",
+                $"The system keyring did not release the {app} key. Unlock the keyring (secret-tool, from libsecret-tools, must be installed) and click refresh."),
             UsageErrorKind.SecretUnavailable => T(
                 $"O Windows não liberou a chave do {app}. Abra o {app} uma vez e clique em atualizar.",
                 $"Windows did not release the {app} key. Open {app} once and click refresh."),

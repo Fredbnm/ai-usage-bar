@@ -9,3 +9,8 @@ windows/**/obj/
 windows/publish/
 windows/dist/
 windows/screens/
+linux/**/bin/
+linux/**/obj/
+linux/publish/
+linux/dist/
+linux/screens/

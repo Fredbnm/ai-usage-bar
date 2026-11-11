@@ -102,6 +102,82 @@ public class GrokBotTests
         }
     }
 
+    /// <summary>Stands in for the Linux keyring.</summary>
+    private sealed class FakeKeyring(string application, string password) : IKeyringReader
+    {
+        public int Lookups { get; private set; }
+
+        public string? Password(string name)
+        {
+            Lookups++;
+            return name == application ? password : null;
+        }
+    }
+
+    [Fact]
+    public void LinuxSafeStorageRoundTrip()
+    {
+        // "v10": written without a keyring, fixed password.
+        var v10 = LinuxSafeStorage.Encrypt("no keyring", "v10", LinuxSafeStorage.FixedPassword);
+        Assert.False(LinuxSafeStorage.NeedsKeyring(v10));
+        Assert.Equal("no keyring", LinuxSafeStorage.Decrypt(v10, keyringPassword: null));
+
+        // "v11": the password comes from the keyring.
+        var v11 = LinuxSafeStorage.Encrypt("from the keyring", "v11", "s3cret");
+        Assert.True(LinuxSafeStorage.NeedsKeyring(v11));
+        Assert.Equal("from the keyring", LinuxSafeStorage.Decrypt(v11, "s3cret"));
+        Assert.Equal(UsageErrorKind.SecretUnavailable, Assert.Throws<UsageException>(() => LinuxSafeStorage.Decrypt(v11, null)).Kind);
+        Assert.Equal(UsageErrorKind.Decoding, Assert.Throws<UsageException>(() => LinuxSafeStorage.Decrypt(v11, "wrong")).Kind);
+        Assert.Equal(UsageErrorKind.Decoding, Assert.Throws<UsageException>(() => LinuxSafeStorage.Decrypt("v12abc"u8.ToArray(), "x")).Kind);
+    }
+
+    /// <summary>
+    /// A known Chromium value: "v10" + AES-128-CBC of "hello" with the fixed password, as Chrome on Linux
+    /// writes it without a keyring. Guards the key derivation against drifting away from Chromium's.
+    /// </summary>
+    [Fact]
+    public void LinuxSafeStorageMatchesChromiumsKeyDerivation()
+    {
+        var key = Rfc2898DeriveBytes.Pbkdf2("peanuts"u8, "saltysalt"u8, 1, HashAlgorithmName.SHA1, 16);
+        Assert.Equal("fd621fe5a2b402539dfa147ca9272778", Convert.ToHexStringLower(key));
+    }
+
+    [Fact]
+    public void ReadsTheTokenWithTheLinuxKeyring()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "grokbot-linux-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var blob = LinuxSafeStorage.Encrypt("the-linux-token", "v11", "keyring-password");
+            File.WriteAllText(GrokBotPaths.SecretsFile(directory),
+                JsonSerializer.Serialize(new Dictionary<string, object> { ["cursor-access-token"] = Convert.ToBase64String(blob) }));
+
+            var keyring = new FakeKeyring("grok-bot", "keyring-password");
+            var provider = new GrokBotProvider(null, directory, keyring);
+            Assert.Equal("the-linux-token", provider.AccessToken());
+            var lookups = keyring.Lookups;
+            Assert.Equal("the-linux-token", provider.AccessToken());
+            Assert.Equal(lookups, keyring.Lookups); // kept in memory for the run
+
+            var noEntry = new GrokBotProvider(null, directory, new FakeKeyring("someone-else", "x"));
+            Assert.Equal(UsageErrorKind.SecretUnavailable, Assert.Throws<UsageException>(noEntry.AccessToken).Kind);
+
+            // Written without a keyring ("v10"): no lookup at all.
+            File.WriteAllText(GrokBotPaths.SecretsFile(directory), JsonSerializer.Serialize(new Dictionary<string, object>
+            {
+                ["cursor-access-token"] = Convert.ToBase64String(LinuxSafeStorage.Encrypt("basic-token", "v10", LinuxSafeStorage.FixedPassword)),
+            }));
+            var unused = new FakeKeyring("grok-bot", "x");
+            Assert.Equal("basic-token", new GrokBotProvider(null, directory, unused).AccessToken());
+            Assert.Equal(0, unused.Lookups);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void ReadsJwtExpiration()
     {

@@ -7,3 +7,7 @@ docs/*.json linguist-documentation
 *.png binary
 *.ico binary
 *.icns binary
+# Shell scripts run on Linux and macOS: keep LF even in a Windows checkout.
+*.sh text eol=lf
+linux/packaging/AppRun text eol=lf
+linux/packaging/*.desktop text eol=lf

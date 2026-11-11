@@ -1,0 +1,96 @@
+name: Linux
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then version="${GITHUB_REF_NAME#v}"; else version="$(tr -d '[:space:]' < VERSION)"; fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # The shared core (providers, parsing, tray icons) is the Windows app's; here it runs on Linux.
+      - name: Tests
+        run: dotnet test ../windows/tests/UsageCore.Tests -c Release
+
+      - name: Build AppImage and portable archive
+        run: ./scripts/build.sh
+
+      - name: Screenshots from sample data
+        continue-on-error: true
+        run: |
+          ./scripts/screens.sh publish/single/AIUsageBar screens
+          # The AppImage itself starts and renders (no FUSE on the runner: extract and run).
+          APPIMAGE_EXTRACT_AND_RUN=1 dist/AIUsageBar-Linux-x86_64.AppImage --snapshot screens/appimage.png --fixture ../docs/sample-usage.json
+          ls -l screens
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: AIUsageBar-Linux-screenshots
+          path: linux/screens/*.png
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AIUsageBar-Linux
+          path: |
+            linux/dist/*.AppImage
+            linux/dist/*.tar.gz
+
+      # Pretends to be an old version and lets the app update itself from the latest published
+      # release, the way a user's copy would: once as an AppImage and once as the portable build.
+      # Passes when the file on disk matches the release's file.
+      - name: Self-update from the latest release
+        # Not on tags: whichever system finishes first publishes the new release, and
+        # until the others add their files, "latest" has nothing for this one to install.
+        if: github.ref_type != 'tag'
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          # The app asks GitHub anonymously; shared CI machines often run out of that limit.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          base="https://github.com/$GITHUB_REPOSITORY/releases/latest/download"
+          work="$RUNNER_TEMP/update-test" && rm -rf "$work" && mkdir -p "$work/appimage" "$work/portable" "$work/latest"
+          if ! curl -fsSL -o "$work/latest/app.AppImage" "$base/AIUsageBar-Linux-x86_64.AppImage"; then
+            echo "The latest release has no Linux build yet: nothing to update from."
+            exit 0
+          fi
+          curl -fsSL -o "$work/latest/app.tar.gz" "$base/AIUsageBar-Linux-x64.tar.gz"
+          tar -xzf "$work/latest/app.tar.gz" -C "$work/latest"
+
+          cp dist/AIUsageBar-Linux-x86_64.AppImage "$work/appimage/AIUsageBar.AppImage"
+          APPIMAGE_EXTRACT_AND_RUN=1 "$work/appimage/AIUsageBar.AppImage" --install-update --no-relaunch --as-version 0.0.1
+          cmp "$work/appimage/AIUsageBar.AppImage" "$work/latest/app.AppImage" && echo "AppImage: replaced by the latest release"
+
+          cp publish/single/AIUsageBar "$work/portable/AIUsageBar"
+          "$work/portable/AIUsageBar" --install-update --no-relaunch --as-version 0.0.1
+          cmp "$work/portable/AIUsageBar" "$work/latest/ai-usage-bar/AIUsageBar" && echo "Portable: replaced by the latest release"
+          if ls "$work"/*/*.update* 2>/dev/null; then echo "A downloaded .update file was left behind"; exit 1; fi
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            linux/dist/AIUsageBar-Linux-x86_64.AppImage
+            linux/dist/AIUsageBar-Linux-x64.tar.gz

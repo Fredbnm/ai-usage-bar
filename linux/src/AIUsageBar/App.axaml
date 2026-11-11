@@ -1,0 +1,76 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="AIUsageBar.App"
+             Name="AI Usage Bar">
+    <Application.Resources>
+        <!-- Placeholders: Theme.Apply replaces these to follow the desktop's light/dark setting. -->
+        <SolidColorBrush x:Key="PopupBackground" Color="#F9F9F9" />
+        <SolidColorBrush x:Key="PopupBorder" Color="#E0E0E0" />
+        <SolidColorBrush x:Key="PrimaryText" Color="#1A1A1A" />
+        <SolidColorBrush x:Key="SecondaryText" Color="#5F5F5F" />
+        <SolidColorBrush x:Key="TrackBrush" Color="#1A000000" />
+        <SolidColorBrush x:Key="Divider" Color="#E5E5E5" />
+        <SolidColorBrush x:Key="BadgeBackground" Color="#0F000000" />
+        <SolidColorBrush x:Key="HoverBackground" Color="#0F000000" />
+        <SolidColorBrush x:Key="ErrorBackground" Color="#26FF8C00" />
+        <SolidColorBrush x:Key="WarningBrush" Color="#FF8C00" />
+        <SolidColorBrush x:Key="CriticalBrush" Color="#E81123" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#3584E4" />
+        <SolidColorBrush x:Key="UpdateBackground" Color="#263584E4" />
+        <SolidColorBrush x:Key="NeutralBarBrush" Color="#808080" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme DensityStyle="Compact" />
+
+        <!-- Flat icon button (refresh, open, settings). -->
+        <Style Selector="Button.icon">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.icon:pointerover">
+            <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
+        </Style>
+        <Style Selector="Button.icon PathIcon">
+            <Setter Property="Width" Value="15" />
+            <Setter Property="Height" Value="15" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        </Style>
+        <Style Selector="Button.icon.small PathIcon">
+            <Setter Property="Width" Value="13" />
+            <Setter Property="Height" Value="13" />
+        </Style>
+
+        <!-- One tab per agent: icon, name, fullest limit and the underline (in the tab's content). -->
+        <Style Selector="Button.tab">
+            <Setter Property="Padding" Value="2,5,2,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="4,4,0,0" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.tab:pointerover">
+            <Setter Property="Background" Value="{DynamicResource HoverBackground}" />
+        </Style>
+    </Application.Styles>
+</Application>

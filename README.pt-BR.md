@@ -4,7 +4,7 @@
 
 > **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
 
-Um medidor do seu limite de uso de IA que fica na barra de menu do macOS ou na bandeja do Windows. Cada IA aparece com o próprio ícone oficial (a estrelinha do Claude, a flor do Codex, o mascote do Copilot…) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio (ou o que você escolher), para você ver tudo de relance. Prefere todas numa tela só? ⚙ → **Pop-up** → **Todas as IAs juntas**.
+Um medidor do seu limite de uso de IA que fica na barra de menu do macOS, na bandeja do Windows ou na bandeja do Linux. Cada IA aparece com o próprio ícone oficial (a estrelinha do Claude, a flor do Codex, o mascote do Copilot…) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio (ou o que você escolher), para você ver tudo de relance. Prefere todas numa tela só? ⚙ → **Pop-up** → **Todas as IAs juntas**.
 
 **Claude**
 - **Sessão atual** (janela de 5 h): quanto já foi usado e quando reinicia
@@ -84,7 +84,7 @@ Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escur
 
 **Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
 
-Os ícones são a arte oficial de cada IA, extraída na hora do que está instalado no computador: o medidor mantém só a arte e descarta o fundo colorido, e a desenha na cor da barra de menu ou da barra de tarefas. O Claude e o Grok Bot vêm dos próprios apps (no Windows, também de instalações pela Microsoft Store); o GitHub Copilot, o Codex e o Gemini vivem em editores, então os ícones deles vêm das extensões oficiais para editor (`github.copilot-chat`, a extensão do Codex da OpenAI `openai.chatgpt` e a `google.geminicodeassist` do Google; também presentes no VS Code Insiders e no Cursor). Nenhuma imagem de marca vem no repositório. Se um ícone não for encontrado, aparece a inicial do serviço.
+Os ícones são a arte oficial de cada IA, extraída na hora do que está instalado no computador: o medidor mantém só a arte e descarta o fundo colorido, e a desenha na cor da barra de menu ou da barra de tarefas. O Claude e o Grok Bot vêm dos próprios apps (no Windows, também de instalações pela Microsoft Store; no Linux, onde não há app oficial do Claude, a estrelinha do Claude vem da extensão do Claude Code); o GitHub Copilot, o Codex e o Gemini vivem em editores, então os ícones deles vêm das extensões oficiais para editor (`github.copilot-chat`, a extensão do Codex da OpenAI `openai.chatgpt` e a `google.geminicodeassist` do Google; também presentes no VS Code Insiders e no Cursor). Nenhuma imagem de marca vem no repositório. Se um ícone não for encontrado, aparece a inicial do serviço.
 
 <p align="center">
   <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
@@ -96,7 +96,7 @@ Os ícones são a arte oficial de cada IA, extraída na hora do que está instal
 |---|---|---|
 | macOS 13+ (Apple Silicon e Intel) | ✅ App nativo (Swift/SwiftUI), instalador `.dmg` | [`macos/`](macos/) |
 | Windows 10/11 (x64) | 🧪 Novo: app nativo (C#/WPF), instalador e `.exe` portátil. Compilado e testado pelo CI, ainda não num PC de verdade | [`windows/`](windows/) |
-| Linux | Planejado | — |
+| Linux (x64) | 🧪 Novo: app nativo (C#/Avalonia), AppImage e `.tar.gz` portátil. Compilado e testado pelo CI e num desktop X11 virtual, ainda não num de verdade | [`linux/`](linux/) |
 
 Cada sistema tem um app nativo e um instalador próprios. Tudo de que um novo port precisa está em [`docs/usage-api.md`](docs/usage-api.md): de onde vem cada login, quais endpoints chamar e como ler as respostas. Use [`docs/sample-usage.json`](docs/sample-usage.json), [`docs/sample-codex-usage.json`](docs/sample-codex-usage.json), [`docs/sample-copilot-usage.json`](docs/sample-copilot-usage.json), [`docs/sample-gemini-usage.json`](docs/sample-gemini-usage.json) e [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) como dados de teste.
 
@@ -109,6 +109,8 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 | macOS | [`AIUsageBar-macOS.dmg`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-macOS.dmg) |
 | Windows (instalador) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
 | Windows (portátil) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
+| Linux (AppImage) | [`AIUsageBar-Linux-x86_64.AppImage`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x86_64.AppImage) |
+| Linux (portátil) | [`AIUsageBar-Linux-x64.tar.gz`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x64.tar.gz) |
 
 ## Atualizações
 
@@ -116,6 +118,7 @@ A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 
 
 - **macOS:** o app se substitui onde está (normalmente em Aplicativos). Se o seu usuário não pode gravar nessa pasta, o botão abre a página de download. Se você usa o Grok Bot, o macOS pede o "Permitir sempre" de novo depois de uma atualização (veja [Limitações](#limitações)).
 - **Windows:** a cópia instalada roda o novo instalador em silêncio e mantém a sua escolha de "Abrir ao iniciar o Windows"; o .exe portátil se substitui na própria pasta.
+- **Linux:** o AppImage se substitui, e o executável portátil também; depois o medidor reabre. Se o seu usuário não pode gravar na pasta deles, o botão abre a página de download.
 - A verificação chama só a API pública de releases do GitHub (`api.github.com/repos/matheusvelloso/ai-usage-bar/releases/latest`) e só baixa arquivos das releases deste repositório; nada sobre você ou o seu uso é enviado. Versões anteriores à 0.8.0 não têm isso, então atualize essas uma vez à mão.
 
 ## Instalar no Mac
@@ -136,6 +139,18 @@ A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Pop-up no Windows"></p>
 
 Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo. Prefere não instalar? O `AIUsageBar-Windows-Portable.exe` roda direto.
+
+## Instalar no Linux
+
+1. Baixe o `AIUsageBar-Linux-x86_64.AppImage`, torne-o executável (`chmod +x AIUsageBar-Linux-x86_64.AppImage`, ou Propriedades → Permitir executar) e abra. Na primeira vez, o **AI Usage Bar** entra no menu de aplicativos.
+2. Cada IA ganha o **próprio ícone na bandeja**, como no Windows. Clique num deles para abrir o pop-up; o menu dele tem abrir, atualizar e sair. As opções ficam em ⚙ no pop-up, inclusive **Abrir ao entrar no sistema** e **Cor dos ícones na bandeja** (para painéis cuja cor o app adivinha errado).
+3. O **GNOME** só mostra ícones na bandeja com a extensão [AppIndicator and KStatusNotifierItem Support](https://extensions.gnome.org/extension/615/appindicator-support/) (o Ubuntu já vem com ela ligada). Sem bandeja, o pop-up abre ao iniciar com uma dica, e abrir o **AI Usage Bar** de novo pelo menu de aplicativos o traz de volta. KDE Plasma, Cinnamon, Xfce, Budgie, MATE e LXQt mostram os ícones sem nada a mais.
+
+<p align="center"><img src="docs/screenshot-linux.png" width="320" alt="Pop-up no Linux, tema escuro"></p>
+
+O AppImage precisa de FUSE, que as distribuições para desktop têm (no Ubuntu 22.04 em diante o runtime estático do AppImage dispensa o `libfuse2`). Sem FUSE, ou prefere uma pasta comum? O `AIUsageBar-Linux-x64.tar.gz` traz um único executável independente: extraia onde quiser e rode `./AIUsageBar`. Os dois seguem o tema claro/escuro e a cor de destaque do desktop, e usam X11 (XWayland numa sessão Wayland). No X11 o pop-up abre junto do ícone clicado; no Wayland, que não diz aos apps onde está o ponteiro, ele abre no canto do painel (no alto à direita no GNOME, embaixo à direita nos outros).
+
+Ao abrir, o app cria `~/.local/share/applications/ai-usage-bar.desktop` e o ícone dele (e os mantém apontando para o arquivo se você o mover); **Abrir ao entrar no sistema** grava `~/.config/autostart/ai-usage-bar.desktop`. As configurações ficam em `~/.config/AIUsageBar` e as últimas respostas de uso em `~/.cache/AIUsageBar`. Para desinstalar, apague esses arquivos.
 
 ### Widget na barra de tarefas (Windows, opcional)
 
@@ -178,6 +193,19 @@ dotnet publish src/AIUsageBar -c Release -r win-x64 --self-contained -p:PublishS
 
 O instalador é feito com o [Inno Setup](https://jrsoftware.org/isinfo.php) a partir de `windows/installer/AIUsageBar.iss` (veja `.github/workflows/windows.yml`).
 
+### Linux
+
+Precisa do .NET 10 SDK. O app do Linux ([Avalonia](https://avaloniaui.net)) compartilha o núcleo do app do Windows (`windows/src/UsageCore`): provedores, logins, lógica das abas e desenho dos ícones da bandeja são o mesmo código.
+
+```bash
+cd linux
+dotnet run --project src/AIUsageBar                    # roda a partir do código
+./scripts/build.sh                                      # dist/AIUsageBar-Linux-x86_64.AppImage e dist/AIUsageBar-Linux-x64.tar.gz
+./scripts/screens.sh publish/single/AIUsageBar screens  # o pop-up em todos os estados, com os dados de exemplo
+```
+
+O `build.sh` baixa o [appimagetool](https://github.com/AppImage/appimagetool) na primeira vez (defina `APPIMAGETOOL` para usar a sua cópia). A versão vem de `linux/VERSION`.
+
 ## Como funciona
 
 Cada serviço é um "provedor" (`UsageProvider`) que lê o login de um app já instalado e consulta o mesmo endpoint que esse app usa na própria tela de uso. A consulta acontece a cada 3 minutos, ao abrir o pop-up e quando o Mac acorda. A última resposta fica salva para aparecer na hora em que o app abre.
@@ -192,6 +220,8 @@ Cada serviço é um "provedor" (`UsageProvider`) que lê o login de um app já i
 
 No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json`, o do Codex de `%USERPROFILE%\.codex\auth.json`, o do Gemini de `%USERPROFILE%\.gemini\oauth_creds.json`, o do Copilot de `%LOCALAPPDATA%\github-copilot\apps.json` e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
 
+No Linux os logins estão onde as ferramentas os guardam lá: `~/.claude/.credentials.json` (ou `$CLAUDE_CONFIG_DIR`), `~/.codex/auth.json`, `~/.gemini/oauth_creds.json`, `~/.config/github-copilot/apps.json` (depois `GH_TOKEN` / `GITHUB_TOKEN`, depois `gh auth token`) e `~/.config/Grok Bot/sand-secrets.json`. No Linux, o Electron criptografa esse último com uma chave fixa (sem chaveiro) ou com uma senha guardada no chaveiro do desktop, que o app lê com o `secret-tool` (pacote `libsecret-tools`). Os ícones vêm da extensão do Claude Code (a estrelinha do Claude), das extensões do Copilot, do Codex e do Gemini (`~/.vscode`, `~/.vscode-insiders`, `~/.cursor`, `~/.vscode-oss`) e do tema de ícones (Grok Bot, ou um pacote do Claude para desktop).
+
 Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um token para outro lugar além do próprio serviço. O cache guarda apenas as respostas de uso.
 
 ## Limitações
@@ -204,6 +234,7 @@ Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um
 - **Grok Bot e Keychain:** o macOS libera a chave do Grok Bot para *esta build* do app. Como o app é assinado só localmente (ad-hoc), cada versão nova, inclusive a instalada pela atualização do app, pede o "Permitir sempre" de novo. Com um certificado Developer ID isso deixa de acontecer.
 - **Sem assinatura da Apple nem da Microsoft ainda**, por isso o passo do botão direito → Abrir no macOS e o aviso do SmartScreen no Windows.
 - **O Windows é novo.** O CI compila, roda os testes e renderiza o pop-up com dados de exemplo, mas ele ainda não rodou num PC de verdade com logins reais. Relatos são bem-vindos.
+- **O Linux é mais novo ainda.** O CI compila, roda os testes do núcleo no Linux e renderiza o pop-up; ele também rodou num desktop X11 virtual com uma bandeja de teste (ícones, menus, cliques, posição do pop-up, instância única, primeira abertura sem bandeja). Ainda não rodou num GNOME ou KDE de verdade com logins reais. O Grok Bot no Linux foi escrito a partir de como o Electron guarda segredos lá, sem um Grok Bot para Linux onde testar. Relatos são bem-vindos.
 
 ## Depuração
 
@@ -230,6 +261,17 @@ Start-Process AIUsageBar.exe -ArgumentList '--install-update','--no-relaunch' -W
 Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # bandeja e widget reais com dados de exemplo (sem logins nem rede); acrescente --left-edge, --ring-only, --dark
 ```
 
+Linux (o terminal mostra a saída direto):
+
+```bash
+./AIUsageBar --dump                 # mostra o uso atual em texto (--raw acrescenta as respostas cruas, sem tokens)
+./AIUsageBar --snapshot pop.png --fixture docs/sample-usage.json --dark   # renderiza o pop-up sem tela; grava também pop-tray.png
+./AIUsageBar --demo --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json   # bandeja e pop-up reais com dados de exemplo (sem logins nem rede)
+./AIUsageBar --install-update --no-relaunch   # a atualização do app pela linha de comando (o CI acrescenta --as-version 0.0.1)
+```
+
+O AppImage aceita as mesmas opções; numa máquina sem FUSE, ponha `--appimage-extract-and-run` antes delas.
+
 ## Estrutura
 
 ```
@@ -240,6 +282,7 @@ docs/
   sample-copilot-usage.json  resposta de exemplo do Copilot (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   sample-gemini-usage.json   resposta de exemplo de cota do Gemini (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   screenshot-windows*.png    pop-up do Windows, aba Agentes e widget da barra de tarefas
+  screenshot-linux.png       pop-up do Linux
   sample-grok-usage.json  resposta de exemplo do Grok Bot (números fictícios)
 macos/
   Sources/UsageCore/      provedores (Claude, Codex, Copilot, Gemini, Grok Bot), logins, clientes HTTP, lógica das abas, textos em PT/EN (testado)
@@ -253,8 +296,12 @@ windows/
   tests/                  testes do núcleo
   tools/Preview/          renderiza todas as combinações de ícone da bandeja num PNG, em qualquer sistema
   installer/              script do Inno Setup
+linux/
+  src/AIUsageBar/         ícones da bandeja (StatusNotifierItem) + pop-up (Avalonia); usa windows/src/UsageCore
+  packaging/              ponto de entrada do AppImage, arquivo .desktop, README da versão portátil
+  scripts/                build (AppImage + .tar.gz) e capturas com os dados de exemplo
 docs/index.html           site (GitHub Pages) com os links de download
-.github/workflows/        builds, testes e releases de macOS e Windows
+.github/workflows/        builds, testes e releases de macOS, Windows e Linux
 ```
 
 ## Licença
