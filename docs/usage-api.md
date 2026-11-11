@@ -1,6 +1,6 @@
 # Usage data: contract for the apps
 
-This document describes everything an app on any system needs to show each service's usage: **Claude** (sections 1–3) and **Grok Bot** (section 5). The macOS app (`macos/Sources/UsageCore`) is the reference implementation; each service is a `UsageProvider` there.
+This document describes everything an app on any system needs to show each service's usage: **Claude** (sections 1–3), **Grok Bot** (section 5), **GitHub Copilot** (section 6), **Codex** (section 9), **Gemini** (section 10) and **Cursor** (section 12). The macOS app (`macos/Sources/UsageCore`) is the reference implementation; each service is a `UsageProvider` there.
 
 > ⚠️ **None of these endpoints are public.** They are the ones Claude Code itself (`/usage`) and Grok Bot itself (its Usage screen) call. They can change without notice, so decode everything leniently (optional fields, ignore what you do not know, skip invalid list items).
 
@@ -324,4 +324,56 @@ One limit per model (`kind` `daily_scoped`, shown "Daily · 2.5 Pro"); when a mo
 
 Every agent's icon is its own official artwork, taken at runtime from what is installed, never bundled. Claude and Grok Bot: from the app (section 8 lists the places, including Microsoft Store packages on Windows). GitHub Copilot, Codex and Gemini live in editors, so the icon is read from the official extension in `~/.vscode`, `~/.vscode-insiders` or `~/.cursor` `/extensions`: the newest folder whose name starts with `github.copilot-chat-` (then `github.copilot-`), `openai.chatgpt-` (the Codex extension; not `openai.codex-audio-`) or `google.geminicodeassist-` (then `google.gemini-`), and inside it the file named by `"icon"` in its `package.json`, never a path leaving the extension folder (Copilot falls back to `assets/copilot.png`). "Newest" compares the first dotted number after the id (`openai.chatgpt-26.1021.22027-win32-x64` is 26.1021.22027).
 
-How the artwork is cut out depends on the icon: **white on a colored tile** (Claude, Grok Bot, Codex) by *whiteness*; **dark on a light square** (Copilot) by *darkness*; **colored on a transparent or plain background** (Gemini) as a *silhouette*: the alpha when the corner is transparent, otherwise the distance from the corner's color. Without an icon the initial is drawn, with two letters where one would clash: "Co" (Copilot) and "Cx" (Codex) next to Claude's "C", "Ge" (Gemini) next to Grok Bot's "G".
+How the artwork is cut out depends on the icon: **white on a colored tile** (Claude, Grok Bot, Codex) by *whiteness*; **dark on a light square** (Copilot) by *darkness*; **colored on a transparent or plain background** (Gemini) as a *silhouette*: the alpha when the corner is transparent, otherwise the distance from the corner's color. Without an icon the initial is drawn, with two letters where one would clash: "Co" (Copilot), "Cx" (Codex) and "Cu" (Cursor) next to Claude's "C", "Ge" (Gemini) next to Grok Bot's "G".
+
+Cursor is an app of its own: its icon comes from the installed app, like Claude's and Grok Bot's (macOS: bundle id `com.todesktop.230313mzl4w4u92`; Windows: the uninstall entry named "Cursor" or "Cursor (User)", else `%LOCALAPPDATA%\Programs\cursor\Cursor.exe`; Linux: the icon theme's `co.anysphere.cursor` or `cursor`), cut out by *whiteness*.
+
+## 12. Cursor (legacy monthly plans)
+
+> **Status: not verified against a real account.** `GetCurrentPeriodUsage` is what Cursor's own Settings → Usage screen calls. It is not documented by Anysphere; the field names below come from third-party tools that call it (OpenUsage, CodexBar, 9router and similar), and [`sample-cursor-usage.json`](sample-cursor-usage.json) is an illustration of that shape with made-up numbers. Check a real response (`AIUsageBar --dump --raw`) before relying on it.
+
+Cursor's legacy plans (Pro, Pro+, Ultra, Teams bought before the X Subscription) bill a **monthly** cycle: an included dollar amount, split in two pools (Auto, Cursor's own models; API, models billed at API prices), then on-demand spending. The current X Subscription plans answer the same call with their **weekly** pool, the one Grok Bot shows (section 5); the Cursor tab then reads "Weekly".
+
+### Login
+
+Cursor is a VS Code fork: its login sits in VS Code's global state database, a SQLite file, table `ItemTable (key TEXT, value BLOB)`.
+
+| System | Database |
+|---|---|
+| macOS | `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` |
+| Windows | `%APPDATA%\Cursor\User\globalStorage\state.vscdb` |
+| Linux | `~/.config/Cursor/User/globalStorage/state.vscdb` (under `$XDG_CONFIG_HOME` when set) |
+
+- `SELECT value FROM ItemTable WHERE key = 'cursorAuth/accessToken'` is the token (a JWT, stored as is; a JSON-quoted string is accepted too). No row, or an empty one, means not signed in: the service is hidden.
+- `cursorAuth/stripeMembershipType` names the plan: `pro` → "Pro", `pro_plus` → "Pro+", `ultra` → "Ultra", `free` → "Hobby", `free_trial` → "Pro Trial", anything else capitalised.
+- Open the database **read-only**, with a busy timeout (2 s): Cursor writes to it while it runs. Busy or locked after that is a passing `loginUnreadable` error ("could not read the Cursor login right now"); any other SQLite error (not a database, no such table) counts as not signed in. The apps use the system's SQLite (`SQLite3` on macOS, `winsqlite3.dll` on Windows 10 and later, `libsqlite3.so.0` on Linux); nothing is bundled.
+- The JWT's `exp` says when it expires: an expired token gives the "open Cursor once" message (`unauthorized`, expired) without calling the server. Cursor renews it when it runs; **do not use `cursorAuth/refreshToken`**. Never write, refresh, cache or log the token.
+
+### Request (Connect RPC over JSON)
+
+```
+POST https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage
+Authorization: Bearer <token>
+Content-Type: application/json
+Connect-Protocol-Version: 1
+x-ghost-mode: true
+
+{}
+```
+
+HTTP statuses are handled as in section 2.
+
+### Response
+
+proto3 JSON, as in section 5: camelCase (snake_case is accepted too), zero values are left out, 64-bit integers arrive as strings. **Money is in US cents.**
+
+| Field | Use |
+|---|---|
+| `billingCycleStart`, `billingCycleEnd` | The cycle, as epoch milliseconds in a string (RFC 3339 is accepted too). Shorter than 10 days = the weekly pool of the new plans (`kind` `weekly`), otherwise the monthly cycle (`kind` `monthly`). `billingCycleEnd` is when every limit resets. |
+| `planUsage.totalPercentUsed` | The dashboard's headline, 0 to 100: the first limit ("Monthly", group `weekly`, which the tray ring and the "Monthly" menu bar choice follow). Missing means 0; an answer with `includedSpend` and `limit` but no percentages uses `includedSpend / limit`. |
+| `planUsage.autoPercentUsed`, `apiPercentUsed` | The two pools, when either is present: "Monthly · Auto" and "Monthly · API" (`kind` `monthly_scoped`, group `other`), the missing one as 0. |
+| `planUsage.includedSpend`, `limit`, `bonusSpend` | Note "US$ 12,40 usados de US$ 20,00 incluídos no plano" / "$12.40 used of $20.00 included in the plan", plus " + $3.10 bonus" when there is bonus usage; only when `limit` > 0. (`totalSpend` = included + bonus is not used.) |
+| `spendLimitUsage` | On-demand spending: with `individualLimit` > 0, "On-demand: $`individualUsed` of $`individualLimit`"; else with `pooledLimit` > 0, "Team on-demand: $`pooledUsed` of $`pooledLimit`"; else, when `individualUsed` (or `totalSpend`) > 0, "On-demand: $amount". `limitType` (`user`, `team`) is not used. |
+| `displayMessage`, `displayThreshold`, `…DisplayMessage` | Not used. |
+
+Neither `planUsage` nor an on-demand note → no snapshot (format error). Percentages below 0 become 0; severity uses the usual thresholds (75% warning, 90% critical). Amounts are shown with two decimals in the app's language ("US$ 1.234,50" / "$1,234.50"). The plan name comes from the login, so the cache keeps it next to the raw response (never the token). Resets a week or more away show their date instead of the weekday ("Resets Dec 8 at 12:00 AM · in 27 d 11 h").

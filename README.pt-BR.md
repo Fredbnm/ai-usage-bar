@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português** · **[Site e downloads](https://matheusvelloso.github.io/ai-usage-bar/)**
 
-> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
+> **Projeto independente.** Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Cursor, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. O app usa endpoints internos e não documentados desses serviços, que podem mudar ou deixar de funcionar a qualquer momento. Use por sua conta e risco.
 
 Um medidor do seu limite de uso de IA que fica na barra de menu do macOS, na bandeja do Windows ou na bandeja do Linux. Cada IA aparece com o próprio ícone oficial (a estrelinha do Claude, a flor do Codex, o mascote do Copilot…) dentro de um anel que se preenche com o uso; um clique abre o pop-up com os detalhes de cada serviço. Com duas ou mais IAs conectadas, o pop-up ganha **uma aba por agente**, cada uma mostrando o limite mais cheio (ou o que você escolher), para você ver tudo de relance. Prefere todas numa tela só? ⚙ → **Pop-up** → **Todas as IAs juntas**.
 
@@ -19,6 +19,11 @@ Um medidor do seu limite de uso de IA que fica na barra de menu do macOS, na ban
 - **Requisições premium** do mês: quanto já foi usado e quando a cota reinicia
 - Chat e completações de código nos planos em que são limitados (ex.: Copilot Free)
 
+**Cursor** (planos antigos, cobrados por mês)
+- **Mensal**: o uso incluído no plano neste ciclo de cobrança e, separados, os grupos **Auto** e **API**; quanto já foi usado e quando o ciclo reinicia
+- Quanto do valor incluído já foi gasto (em US$), o bônus e o uso sob demanda, quando houver
+- Nos planos novos da X Subscription o mesmo uso aparece como **Semanal** (é o grupo semanal que o Grok Bot também mostra)
+
 **Gemini** (Gemini CLI)
 - Cota **Diária** por modelo (2.5 Pro primeiro, depois Flash e Flash-Lite): quanto já foi usado e quando reinicia
 
@@ -26,11 +31,11 @@ Um medidor do seu limite de uso de IA que fica na barra de menu do macOS, na ban
 - **Semanal**: quanto já foi usado e quando reinicia
 - Resets guardados disponíveis e uso sob demanda, quando houver
 
-Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage` do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, das cotas que o Gemini CLI informa e da tela de Uso do Grok Bot. O Codex, o Copilot, o Gemini e o Grok Bot só aparecem se estiverem logados neste computador.
+Os números são os mesmos de claude.ai → Configurações → Uso, do `/usage` do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, da tela de Uso do Cursor, das cotas que o Gemini CLI informa e da tela de Uso do Grok Bot. O Codex, o Copilot, o Cursor, o Gemini e o Grok Bot só aparecem se estiverem logados neste computador.
 
 ### Conectando seus agentes
 
-A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes compatíveis: ✓ conectado, ou uma dica de como entrar (no Copilot: entre no GitHub Copilot no VS Code ou rode `gh auth login`; no Codex: `codex login`; no Gemini: rode `gemini` e entre com o Google). Ela abre sozinha na primeira vez que o app é iniciado. O app nunca pede login: ele reaproveita os logins que suas ferramentas já têm, então basta entrar em outro lugar e a aba aparece em poucos minutos. Um agente aparece sozinho quando o uso dele carrega. Um login que não traz uso fica desmarcado, como "Login encontrado, mas sem dados de uso": por exemplo, o `gh` logado numa conta sem Copilot. Marque **Mostrar** para acompanhar mesmo assim, com o aviso, ou desmarque para esconder um agente que você não quer acompanhar.
+A aba **＋** (ou ⚙ → **Configurar agentes…**) lista todos os agentes compatíveis: ✓ conectado, ou uma dica de como entrar (no Copilot: entre no GitHub Copilot no VS Code ou rode `gh auth login`; no Codex: `codex login`; no Cursor: abra o Cursor e entre na sua conta; no Gemini: rode `gemini` e entre com o Google). Ela abre sozinha na primeira vez que o app é iniciado. O app nunca pede login: ele reaproveita os logins que suas ferramentas já têm, então basta entrar em outro lugar e a aba aparece em poucos minutos. Um agente aparece sozinho quando o uso dele carrega. Um login que não traz uso fica desmarcado, como "Login encontrado, mas sem dados de uso": por exemplo, o `gh` logado numa conta sem Copilot. Marque **Mostrar** para acompanhar mesmo assim, com o aviso, ou desmarque para esconder um agente que você não quer acompanhar.
 
 <p align="center">
   <img src="docs/screenshot-light.png" width="320" alt="Pop-up no tema claro">
@@ -71,6 +76,7 @@ Em ⚙︎ no pop-up:
 | Claude | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão: sessão em cima, semanal embaixo) · **Não mostrar** |
 | Codex | **Só a sessão atual** · **Só a semanal** · **Sessão atual + semanal** (padrão) · **Não mostrar** |
 | GitHub Copilot | **Mensal** (padrão) · **Não mostrar** |
+| Cursor | **Mensal** (padrão, o uso incluído no ciclo) · **Não mostrar** |
 | Gemini | **Diário** (padrão, a cota do modelo Pro) · **Não mostrar** |
 | Grok Bot | **Semanal** (padrão) · **Não mostrar** |
 
@@ -78,13 +84,13 @@ Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escur
 
 **Pop-up** (⚙ → **Pop-up**): **Uma aba por agente** (padrão) ou **Todas as IAs juntas**, todos os agentes um embaixo do outro numa tela só.
 
-**Na aba** (⚙ → a IA → **Na aba**, ou clique com o botão direito na aba): o número em cada aba. **Maior uso** (padrão) mostra o limite que estiver mais cheio. Você pode fixar qualquer limite daquela IA: o semanal de todos os modelos do Claude ou o de um modelo, a sessão do Codex, as requisições do mês no Copilot, a cota diária de um modelo do Gemini.
+**Na aba** (⚙ → a IA → **Na aba**, ou clique com o botão direito na aba): o número em cada aba. **Maior uso** (padrão) mostra o limite que estiver mais cheio. Você pode fixar qualquer limite daquela IA: o semanal de todos os modelos do Claude ou o de um modelo, a sessão do Codex, as requisições do mês no Copilot, o total do mês ou o grupo API do Cursor, a cota diária de um modelo do Gemini.
 
 **Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra, sem o laranja e o vermelho. O pop-up continua mostrando as cores.
 
 **Idioma**: Português ou English. Vale para o pop-up, a engrenagem, os avisos e os horários (24 h em português, AM/PM em inglês). Numa instalação nova, o app começa no idioma do macOS.
 
-Os ícones são a arte oficial de cada IA, extraída na hora do que está instalado no computador: o medidor mantém só a arte e descarta o fundo colorido, e a desenha na cor da barra de menu ou da barra de tarefas. O Claude e o Grok Bot vêm dos próprios apps (no Windows, também de instalações pela Microsoft Store; no Linux, onde não há app oficial do Claude, a estrelinha do Claude vem da extensão do Claude Code); o GitHub Copilot, o Codex e o Gemini vivem em editores, então os ícones deles vêm das extensões oficiais para editor (`github.copilot-chat`, a extensão do Codex da OpenAI `openai.chatgpt` e a `google.geminicodeassist` do Google; também presentes no VS Code Insiders e no Cursor). Nenhuma imagem de marca vem no repositório. Se um ícone não for encontrado, aparece a inicial do serviço.
+Os ícones são a arte oficial de cada IA, extraída na hora do que está instalado no computador: o medidor mantém só a arte e descarta o fundo colorido, e a desenha na cor da barra de menu ou da barra de tarefas. O Claude, o Cursor e o Grok Bot vêm dos próprios apps (no Windows, também de instalações pela Microsoft Store; no Linux, onde não há app oficial do Claude, a estrelinha do Claude vem da extensão do Claude Code); o GitHub Copilot, o Codex e o Gemini vivem em editores, então os ícones deles vêm das extensões oficiais para editor (`github.copilot-chat`, a extensão do Codex da OpenAI `openai.chatgpt` e a `google.geminicodeassist` do Google; também presentes no VS Code Insiders e no Cursor). Nenhuma imagem de marca vem no repositório. Se um ícone não for encontrado, aparece a inicial do serviço.
 
 <p align="center">
   <img src="docs/menubar.png" width="820" alt="Combinações da barra de menu, no tema claro e no escuro">
@@ -127,7 +133,7 @@ A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 
 3. Se você usa o Grok Bot, o macOS pergunta se o app pode acessar **"Grok Bot Safe Storage"** no Keychain. Escolha **Permitir sempre** (veja [Como funciona](#como-funciona)).
 4. Para abrir junto com o Mac: ⚙︎ no pop-up → **Abrir ao iniciar o Mac**.
 
-**Requisitos:** o Claude Code logado neste Mac (pelo app do Claude ou pelo `claude` no terminal). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (`codex login`). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o `gh` CLI. Para o Gemini, o Gemini CLI logado com o Google (`gemini`). Para o Grok Bot, o app Grok Bot instalado e logado.
+**Requisitos:** o Claude Code logado neste Mac (pelo app do Claude ou pelo `claude` no terminal). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (`codex login`). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o `gh` CLI. Para o Cursor, o Cursor instalado e logado. Para o Gemini, o Gemini CLI logado com o Google (`gemini`). Para o Grok Bot, o app Grok Bot instalado e logado.
 
 ## Instalar no Windows
 
@@ -214,12 +220,13 @@ Cada serviço é um "provedor" (`UsageProvider`) que lê o login de um app já i
 | Claude | Keychain, item `Claude Code-credentials`, lido via `/usr/bin/security` | `GET api.anthropic.com/api/oauth/usage` |
 | Codex | `~/.codex/auth.json` (ou `$CODEX_HOME/auth.json`): o token de acesso do ChatGPT e o id da conta que o Codex CLI e a extensão guardam | `GET chatgpt.com/backend-api/wham/usage` |
 | GitHub Copilot | O token que o plugin do Copilot no editor guarda em `~/.config/github-copilot/apps.json` (ou `hosts.json`), depois `GH_TOKEN` / `GITHUB_TOKEN`, depois `gh auth token` | `GET api.github.com/copilot_internal/user` |
+| Cursor | `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb`: o token que o Cursor guarda no banco de estado do VS Code (SQLite, chave `cursorAuth/accessToken`), lido só para leitura | `POST api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage` |
 | Gemini | `~/.gemini/oauth_creds.json`: o token de acesso do Google que o Gemini CLI guarda | `POST cloudcode-pa.googleapis.com/v1internal:loadCodeAssist`, depois `:retrieveUserQuota` |
 | Grok Bot | `~/Library/Application Support/Grok Bot/sand-secrets.json`, criptografado pelo Electron com a chave do item **Grok Bot Safe Storage** do Keychain | `POST api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus` |
 
-No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json`, o do Codex de `%USERPROFILE%\.codex\auth.json`, o do Gemini de `%USERPROFILE%\.gemini\oauth_creds.json`, o do Copilot de `%LOCALAPPDATA%\github-copilot\apps.json` e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
+No Windows os endpoints são os mesmos; o login do Claude Code vem de `%USERPROFILE%\.claude\.credentials.json`, o do Codex de `%USERPROFILE%\.codex\auth.json`, o do Gemini de `%USERPROFILE%\.gemini\oauth_creds.json`, o do Copilot de `%LOCALAPPDATA%\github-copilot\apps.json`, o do Cursor de `%APPDATA%\Cursor\User\globalStorage\state.vscdb` (lido com o SQLite que já vem no Windows, `winsqlite3.dll`) e o do Grok Bot de `%APPDATA%\Grok Bot\sand-secrets.json`, cuja chave o Electron protege com a DPAPI no `Local State`. Esses caminhos seguem como os apps funcionam nos outros sistemas, mas ainda não foram conferidos num PC de verdade.
 
-No Linux os logins estão onde as ferramentas os guardam lá: `~/.claude/.credentials.json` (ou `$CLAUDE_CONFIG_DIR`), `~/.codex/auth.json`, `~/.gemini/oauth_creds.json`, `~/.config/github-copilot/apps.json` (depois `GH_TOKEN` / `GITHUB_TOKEN`, depois `gh auth token`) e `~/.config/Grok Bot/sand-secrets.json`. No Linux, o Electron criptografa esse último com uma chave fixa (sem chaveiro) ou com uma senha guardada no chaveiro do desktop, que o app lê com o `secret-tool` (pacote `libsecret-tools`). Os ícones vêm da extensão do Claude Code (a estrelinha do Claude), das extensões do Copilot, do Codex e do Gemini (`~/.vscode`, `~/.vscode-insiders`, `~/.cursor`, `~/.vscode-oss`) e do tema de ícones (Grok Bot, ou um pacote do Claude para desktop).
+No Linux os logins estão onde as ferramentas os guardam lá: `~/.claude/.credentials.json` (ou `$CLAUDE_CONFIG_DIR`), `~/.codex/auth.json`, `~/.gemini/oauth_creds.json`, `~/.config/github-copilot/apps.json` (depois `GH_TOKEN` / `GITHUB_TOKEN`, depois `gh auth token`), `~/.config/Cursor/User/globalStorage/state.vscdb` (lido com a `libsqlite3` do sistema) e `~/.config/Grok Bot/sand-secrets.json`. No Linux, o Electron criptografa esse último com uma chave fixa (sem chaveiro) ou com uma senha guardada no chaveiro do desktop, que o app lê com o `secret-tool` (pacote `libsecret-tools`). Os ícones vêm da extensão do Claude Code (a estrelinha do Claude), das extensões do Copilot, do Codex e do Gemini (`~/.vscode`, `~/.vscode-insiders`, `~/.cursor`, `~/.vscode-oss`) e do tema de ícones (Cursor, Grok Bot, ou um pacote do Claude para desktop).
 
 Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um token para outro lugar além do próprio serviço. O cache guarda apenas as respostas de uso.
 
@@ -227,6 +234,7 @@ Os tokens são **só lidos**, em memória: o app nunca grava, renova ou envia um
 
 - **Os endpoints não são públicos.** São os que o próprio Claude Code e o próprio Grok Bot usam, e podem mudar sem aviso. O app ignora campos desconhecidos; se o formato mudar de vez, ele avisa que precisa de atualização.
 - **Os endpoints do Codex e do Gemini não são oficiais e ainda não foram verificados com uma conta real.** Seus campos são conhecidos por ferramentas de terceiros, não pela documentação da OpenAI nem do Google, e nenhum dos dois logins existia na máquina onde foram escritos, então só foram testados com exemplos fictícios. O Codex e o Gemini CLI renovam os próprios tokens quando rodam; este app nunca renova, então, se um deles ficar parado até o token expirar, o medidor pede para abri-lo uma vez. O Gemini CLI também aceita login por chave de API e por Vertex, que não têm cota para ler aqui.
+- **O endpoint do Cursor não é oficial e ainda não foi verificado com uma conta real.** O `GetCurrentPeriodUsage` é o que a tela de uso do próprio Cursor chama; seus campos são conhecidos por ferramentas de terceiros, e não havia um Cursor instalado na máquina onde ele foi escrito, então só foi testado com exemplos fictícios. O Cursor renova o próprio token quando roda; se ficar parado até o token expirar, o medidor pede para abri-lo uma vez.
 - **Codex, Copilot e Gemini no macOS são novos e ainda não rodaram num Mac com logins de verdade.** Foram escritos para espelhar as versões do Windows e os testes delas.
 - **O endpoint do Copilot não é oficial e ainda não foi verificado com uma conta real.** O `copilot_internal/user` é o que os próprios plugins de editor do GitHub chamam; seus campos são conhecidos por ferramentas de terceiros, não pela documentação do GitHub. Nem todo tipo de token do GitHub é aceito por ele (o token do plugin de editor é o mais seguro). Licenças gerenciadas por uma organização podem não informar cota premium.
 - **Os logins expiram.** Claude Code e Grok Bot renovam os próprios tokens quando são usados. Se um deles ficar horas parado, o medidor mostra o último valor e pede para abrir aquele app uma vez.
@@ -242,7 +250,7 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --dump                 # imprime o uso atual em texto
 "$APP" --dump --raw           # … e as respostas brutas (sem tokens)
 "$APP" --snapshot pop.png     # renderiza o pop-up e, em pop-menubar.png, todas as combinações da barra
-"$APP" --snapshot pop.png --fixture docs/sample-usage.json --codex-fixture docs/sample-codex-usage.json --copilot-fixture docs/sample-copilot-usage.json --gemini-fixture docs/sample-gemini-usage.json --grok-fixture docs/sample-grok-usage.json --dark --lang pt
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --codex-fixture docs/sample-codex-usage.json --copilot-fixture docs/sample-copilot-usage.json --cursor-fixture docs/sample-cursor-usage.json --gemini-fixture docs/sample-gemini-usage.json --grok-fixture docs/sample-grok-usage.json --dark --lang pt
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # uma aba específica
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # a aba Agentes da primeira vez
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --update-available 9.9.9                                      # o aviso de "Nova versão"
@@ -255,7 +263,7 @@ Windows (é um app com interface, então use `Start-Process -Wait` para ver a sa
 ```powershell
 Start-Process AIUsageBar.exe -ArgumentList '--dump' -Wait -NoNewWindow
 Start-Process AIUsageBar.exe -ArgumentList '--snapshot','pop.png','--fixture','docs\sample-usage.json' -Wait   # grava também pop-tray.png
-# acrescente '--copilot-fixture','docs\sample-copilot-usage.json', '--tab','copilot', '--first-run' ou '--update-available','9.9.9' para renderizar outros estados
+# acrescente '--copilot-fixture','docs\sample-copilot-usage.json', '--cursor-fixture','docs\sample-cursor-usage.json', '--tab','cursor', '--first-run' ou '--update-available','9.9.9' para renderizar outros estados
 Start-Process AIUsageBar.exe -ArgumentList '--install-update','--no-relaunch' -Wait   # a atualização do app pela linha de comando (o CI acrescenta '--as-version','0.0.1')
 Start-Process AIUsageBar.exe -ArgumentList '--widget-demo','--fixture','docs\sample-usage.json','--copilot-fixture','docs\sample-copilot-usage.json'   # bandeja e widget reais com dados de exemplo (sem logins nem rede); acrescente --left-edge, --ring-only, --dark
 ```
@@ -279,12 +287,13 @@ docs/
   sample-usage.json       resposta de exemplo do Claude (números fictícios)
   sample-codex-usage.json    resposta de exemplo do Codex (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   sample-copilot-usage.json  resposta de exemplo do Copilot (números fictícios; nomes de campos vindos de ferramentas de terceiros)
+  sample-cursor-usage.json   resposta de exemplo do Cursor num plano mensal (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   sample-gemini-usage.json   resposta de exemplo de cota do Gemini (números fictícios; nomes de campos vindos de ferramentas de terceiros)
   screenshot-windows*.png    pop-up do Windows, aba Agentes e widget da barra de tarefas
   screenshot-linux.png       pop-up do Linux
   sample-grok-usage.json  resposta de exemplo do Grok Bot (números fictícios)
 macos/
-  Sources/UsageCore/      provedores (Claude, Codex, Copilot, Gemini, Grok Bot), logins, clientes HTTP, lógica das abas, textos em PT/EN (testado)
+  Sources/UsageCore/      provedores (Claude, Codex, Copilot, Cursor, Gemini, Grok Bot), logins, clientes HTTP, lógica das abas, textos em PT/EN (testado)
   Sources/AIUsageBar/     ícone na barra (AppKit) + pop-up (SwiftUI)
   Tests/                  testes da camada de dados
   Support/                Info.plist e ícone

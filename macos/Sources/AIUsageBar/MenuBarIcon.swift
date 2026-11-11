@@ -243,6 +243,7 @@ extension ProviderID {
         switch self {
         case .claude: "com.anthropic.claudefordesktop"
         case .codex, .copilot, .gemini: nil
+        case .cursor: CursorProvider.bundleIdentifier
         case .grokBot: "com.anysphere.sand"
         }
     }

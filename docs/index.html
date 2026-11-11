@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Usage Bar</title>
-  <meta name="description" content="See your Claude, Codex, GitHub Copilot, Gemini and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows and Linux tray.">
+  <meta name="description" content="See your Claude, Codex, GitHub Copilot, Cursor, Gemini and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows and Linux tray.">
   <link rel="icon" href="icon.png">
   <style>
     :root {
@@ -152,7 +152,7 @@
     <div class="hero">
       <div>
         <h1 data-i18n="hero.title">Your AI limits, one glance away.</h1>
-        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude, Codex, GitHub Copilot, Gemini and Grok Bot plans you have used, right in the macOS menu bar or the Windows and Linux tray, and when each limit resets.</p>
+        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude, Codex, GitHub Copilot, Cursor, Gemini and Grok Bot plans you have used, right in the macOS menu bar or the Windows and Linux tray, and when each limit resets.</p>
         <div class="cta">
           <a class="button" id="primary-download" href="#download" data-i18n="hero.cta">Download</a>
           <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar" data-i18n="hero.source">View source</a>
@@ -213,7 +213,7 @@
   <section id="features">
     <div class="wrap">
       <h2 data-i18n="features.title">What it shows</h2>
-      <p class="intro" data-i18n="features.intro">The same numbers as claude.ai → Settings → Usage, Claude Code's /usage, ChatGPT's Codex usage page, GitHub's Copilot settings, the quotas the Gemini CLI reports and Grok Bot's own Usage screen.</p>
+      <p class="intro" data-i18n="features.intro">The same numbers as claude.ai → Settings → Usage, Claude Code's /usage, ChatGPT's Codex usage page, GitHub's Copilot settings, Cursor's own Usage screen, the quotas the Gemini CLI reports and Grok Bot's own Usage screen.</p>
       <div class="features">
         <div class="feature">
           <h3>Claude</h3>
@@ -226,6 +226,10 @@
         <div class="feature">
           <h3>GitHub Copilot</h3>
           <p data-i18n="features.copilot">Premium requests used this month and when the allowance resets, plus chat and code completions on plans where they are limited. Uses an unofficial GitHub endpoint.</p>
+        </div>
+        <div class="feature">
+          <h3>Cursor</h3>
+          <p data-i18n="features.cursor">For legacy plans billed monthly: the cycle's included usage, its Auto and API pools, dollars spent and on-demand spending, and when the cycle resets. Uses an unofficial Cursor endpoint.</p>
         </div>
         <div class="feature">
           <h3>Gemini</h3>
@@ -313,13 +317,13 @@
           </ol>
         </div>
       </div>
-      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Codex, the Codex CLI or extension signed in with ChatGPT (codex login). For GitHub Copilot, a Copilot plan and a signed-in editor plugin (VS Code, JetBrains) or the gh CLI. For Gemini, the Gemini CLI signed in with Google (gemini). For Grok Bot, the Grok Bot app installed and signed in. The Windows and Linux versions are new; please report anything odd on GitHub.</p>
+      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Codex, the Codex CLI or extension signed in with ChatGPT (codex login). For GitHub Copilot, a Copilot plan and a signed-in editor plugin (VS Code, JetBrains) or the gh CLI. For Cursor, Cursor installed and signed in. For Gemini, the Gemini CLI signed in with Google (gemini). For Grok Bot, the Grok Bot app installed and signed in. The Windows and Linux versions are new; please report anything odd on GitHub.</p>
     </div>
   </section>
 
   <footer>
     <div class="wrap">
-      <p data-i18n="footer.disclaimer">Independent project. Not affiliated with, sponsored or endorsed by Anthropic, OpenAI, GitHub/Microsoft, Google, xAI/SpaceXAI, Anysphere (Cursor) or Apple. Claude, Codex, GitHub Copilot, Gemini, Grok, Grok Bot, macOS, Windows and Linux are trademarks of their respective owners. It relies on undocumented endpoints that may change at any time.</p>
+      <p data-i18n="footer.disclaimer">Independent project. Not affiliated with, sponsored or endorsed by Anthropic, OpenAI, GitHub/Microsoft, Google, xAI/SpaceXAI, Anysphere (Cursor) or Apple. Claude, Codex, GitHub Copilot, Cursor, Gemini, Grok, Grok Bot, macOS, Windows and Linux are trademarks of their respective owners. It relies on undocumented endpoints that may change at any time.</p>
       <div class="row">
         <span>© 2026 matheusvelloso · <a href="https://github.com/matheusvelloso/ai-usage-bar/blob/main/LICENSE">MIT License</a></span>
         <span>
@@ -336,7 +340,7 @@
       "nav.download": "Baixar",
       "nav.features": "Recursos",
       "hero.title": "Seus limites de IA a um olhar de distância.",
-      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude, do Codex, do GitHub Copilot, do Gemini e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows e do Linux, e quando cada limite reinicia.",
+      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude, do Codex, do GitHub Copilot, do Cursor, do Gemini e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows e do Linux, e quando cada limite reinicia.",
       "hero.cta": "Baixar",
       "hero.source": "Ver código",
       "hero.free": "Gratuito e de código aberto (MIT). macOS 13+, Windows 10/11 e Linux.",
@@ -352,10 +356,11 @@
       "download.linux.button": "Baixar AppImage",
       "download.all": "Todas as versões e notas de lançamento",
       "features.title": "O que ele mostra",
-      "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, das cotas que o Gemini CLI informa e da tela de Uso do próprio Grok Bot.",
+      "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, da tela de Uso do próprio Cursor, das cotas que o Gemini CLI informa e da tela de Uso do próprio Grok Bot.",
       "features.claude": "Sessão atual de 5 horas, limite semanal de todos os modelos, limites semanais por modelo (como o Fable) e onde foi o uso da semana: Claude Code, Chat, Cowork.",
       "features.codex": "Sessão atual de 5 horas e limite semanal, e quando cada um reinicia. Usa um endpoint não oficial do ChatGPT, ainda não verificado com uma conta real.",
       "features.gemini": "Cota diária por modelo (2.5 Pro primeiro, depois Flash e Flash-Lite) e quando ela reinicia. Usa um endpoint não oficial do Google, ainda não verificado com uma conta real.",
+      "features.cursor": "Para os planos antigos, cobrados por mês: o uso incluído no ciclo, os grupos Auto e API, quanto já foi gasto em dólares e o uso sob demanda, e quando o ciclo reinicia. Usa um endpoint não oficial do Cursor.",
       "features.copilot": "Requisições premium usadas no mês e quando a cota reinicia, além de chat e completações de código nos planos em que são limitados. Usa um endpoint não oficial do GitHub.",
       "features.tabs.title": "Uma aba por agente",
       "features.tabs": "Com duas ou mais IAs conectadas, o pop-up ganha uma aba para cada uma, mostrando o limite que você escolher, ou todas numa tela só, se preferir. Uma aba de configuração guiada lista todos os agentes compatíveis e como entrar; o app reaproveita os logins que você já tem e nunca pede login.",
@@ -384,8 +389,8 @@
       "install.linux.1": "Torne o AppImage executável (chmod +x, ou Propriedades → Permitir executar) e abra. Ele entra sozinho no menu de aplicativos.",
       "install.linux.2": "Os ícones de anel ficam na bandeja. No GNOME, ligue a extensão \"AppIndicator and KStatusNotifierItem Support\"; sem bandeja, abra o app pelo menu para ver o pop-up.",
       "install.linux.3": "Clique num ícone para ver os detalhes. ⚙ no pop-up → Abrir ao entrar no sistema.",
-      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (codex login). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o gh CLI. Para o Gemini, o Gemini CLI logado com o Google (gemini). Para o Grok Bot, o app Grok Bot instalado e logado. As versões de Windows e Linux são novas; avise no GitHub se algo estranho acontecer.",
-      "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI, pela Anysphere (Cursor) ou pela Apple. Claude, Codex, GitHub Copilot, Gemini, Grok, Grok Bot, macOS, Windows e Linux são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
+      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (codex login). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o gh CLI. Para o Cursor, o Cursor instalado e logado. Para o Gemini, o Gemini CLI logado com o Google (gemini). Para o Grok Bot, o app Grok Bot instalado e logado. As versões de Windows e Linux são novas; avise no GitHub se algo estranho acontecer.",
+      "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI, pela Anysphere (Cursor) ou pela Apple. Claude, Codex, GitHub Copilot, Cursor, Gemini, Grok, Grok Bot, macOS, Windows e Linux são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
       "footer.source": "Código-fonte",
       "footer.api": "Contrato de dados",
       "footer.issues": "Relatar um problema",

@@ -82,13 +82,13 @@ internal static class DesktopFile
         [Desktop Entry]
         Type=Application
         Name=AI Usage Bar
-        Comment=Claude, Codex, Copilot, Gemini and Grok Bot usage limits in the tray
-        Comment[pt_BR]=Limites de uso do Claude, Codex, Copilot, Gemini e Grok Bot na bandeja
+        Comment=Claude, Codex, Copilot, Cursor, Gemini and Grok Bot usage limits in the tray
+        Comment[pt_BR]=Limites de uso do Claude, Codex, Copilot, Cursor, Gemini e Grok Bot na bandeja
         Exec={Exec(path)}
         Icon=ai-usage-bar
         Terminal=false
         Categories=Utility;
-        Keywords=Claude;Codex;Copilot;Gemini;Grok;AI;usage;limits;
+        Keywords=Claude;Codex;Copilot;Cursor;Gemini;Grok;AI;usage;limits;
         StartupNotify=false
         {(autostart ? "X-GNOME-Autostart-enabled=true\n" : "")}
         """;
@@ -134,7 +134,7 @@ internal static class MenuEntry
 /// <summary>
 /// Where the agents' own icons come from on Linux. Nothing is bundled: Claude's star comes from the Claude
 /// Code extension (or a Claude desktop package's icon), Copilot, Codex and Gemini from their editor
-/// extensions, Grok Bot from its installed icon. An agent without one shows its initial instead.
+/// extensions, Cursor and Grok Bot from their installed icons. An agent without one shows its initial instead.
 /// </summary>
 internal static class InstalledApps
 {
@@ -173,6 +173,7 @@ internal static class InstalledApps
         ProviderId.Copilot => ExtensionIcon.FindCopilot(),
         ProviderId.Codex => ExtensionIcon.FindCodex(),
         ProviderId.Gemini => ExtensionIcon.FindGemini(),
+        ProviderId.Cursor => ThemeIcon(["co.anysphere.cursor", "cursor"]),
         ProviderId.GrokBot => ThemeIcon(["grok-bot", "grokbot", "Grok Bot", "grok"]),
         _ => null,
     };
@@ -189,7 +190,7 @@ internal static class InstalledApps
                 using (bitmap)
                 {
                     // Copilot's icon is dark artwork on a light square, Gemini's a colored shape; Claude's,
-                    // Codex's and Grok Bot's are white on a tile.
+                    // Codex's, Cursor's and Grok Bot's are light on a tile.
                     glyph = GlyphExtractor.Artwork(bitmap, provider switch
                     {
                         ProviderId.Copilot => ArtworkKind.Dark,

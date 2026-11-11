@@ -199,6 +199,11 @@ final class UsageCoreTests: XCTestCase {
             UsageFormat.reset(tomorrow, now: now, calendar: calendar),
             "Reinicia amanhã às 18:00 · em 1 d 5 h"
         )
+        let nextMonth = calendar.date(from: DateComponents(year: 2026, month: 12, day: 8, hour: 0, minute: 0))!
+        XCTAssertEqual(
+            UsageFormat.reset(nextMonth, now: now, calendar: calendar),
+            "Reinicia dia 08/12 às 00:00 · em 27 d 11 h"
+        )
         XCTAssertEqual(UsageFormat.reset(now.addingTimeInterval(-1), now: now, calendar: calendar), "Reiniciando…")
 
         // 23:59:59.55 must read the same as the 00:00 reset next to it.
@@ -231,6 +236,8 @@ final class UsageCoreTests: XCTestCase {
         XCTAssertEqual(UsageFormat.reset(thursday, now: now, calendar: calendar), "Resets Thu at 12:00 AM · in 1 d 11 h")
         let tomorrow = calendar.date(from: DateComponents(year: 2026, month: 11, day: 11, hour: 18, minute: 0))!
         XCTAssertEqual(UsageFormat.reset(tomorrow, now: now, calendar: calendar), "Resets tomorrow at 6:00 PM · in 1 d 5 h")
+        let nextMonth = calendar.date(from: DateComponents(year: 2026, month: 12, day: 8, hour: 0, minute: 0))!
+        XCTAssertEqual(UsageFormat.reset(nextMonth, now: now, calendar: calendar), "Resets Dec 8 at 12:00 AM · in 27 d 11 h")
         XCTAssertEqual(UsageFormat.updated(now.addingTimeInterval(-10), now: now, calendar: calendar), "Updated just now")
         XCTAssertEqual(UsageFormat.updated(now.addingTimeInterval(-600), now: now, calendar: calendar), "Updated 10 min ago")
         XCTAssertEqual(UsageFormat.shortDate(thursday, calendar: calendar), "Nov 12")

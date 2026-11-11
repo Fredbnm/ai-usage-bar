@@ -5,6 +5,7 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
     case claude
     case codex
     case copilot
+    case cursor
     case gemini
     case grokBot
 
@@ -13,6 +14,7 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
         case .claude: "Claude"
         case .codex: "Codex"
         case .copilot: "GitHub Copilot"
+        case .cursor: "Cursor"
         case .gemini: "Gemini"
         case .grokBot: "Grok Bot"
         }
@@ -24,6 +26,7 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
         case .claude: "Claude"
         case .codex: "Codex"
         case .copilot: "Copilot"
+        case .cursor: "Cursor"
         case .gemini: "Gemini"
         case .grokBot: "Grok"
         }
@@ -35,17 +38,19 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
         case .claude: "Claude Code"
         case .codex: "Codex"
         case .copilot: "GitHub Copilot"
+        case .cursor: "Cursor"
         case .gemini: "Gemini CLI"
         case .grokBot: "Grok Bot"
         }
     }
 
-    /// What the menu bar draws when there is no app icon to borrow. "Co", not
-    /// "C": Copilot would otherwise look like Claude.
+    /// What the menu bar draws when there is no app icon to borrow. "Co", "Cx"
+    /// and "Cu", not "C": they would otherwise look like Claude.
     public var initial: String {
         switch self {
         case .codex: "Cx"
         case .copilot: "Co"
+        case .cursor: "Cu"
         case .gemini: "Ge"
         default: String(displayName.prefix(1))
         }
@@ -66,6 +71,8 @@ public enum ProviderID: String, CaseIterable, Codable, Sendable {
         case .copilot:
             tr("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
                "Sign in to GitHub Copilot in VS Code, or run gh auth login.")
+        case .cursor:
+            tr("Instale o Cursor, abra-o e entre na sua conta.", "Install Cursor, open it and sign in.")
         case .grokBot:
             tr("Instale o Grok Bot, abra-o e entre na sua conta.", "Install Grok Bot, open it and sign in.")
         }
@@ -84,6 +91,12 @@ public enum SnapshotNote: Hashable, Sendable {
     case bankedResets(Int)
     case trialUntil(Date)
     case onDemandEnabled
+    /// Cursor: US cents used of the plan's included amount, plus bonus usage on top.
+    case includedSpend(cents: Int, limit: Int, bonus: Int)
+    /// Cursor: on-demand spending in US cents, against the user's own cap when there is one.
+    case onDemandSpend(cents: Int, limit: Int?)
+    /// Cursor: on-demand spending against the team's pool, in US cents.
+    case teamOnDemandSpend(cents: Int, limit: Int)
 
     public var text: String {
         switch self {
@@ -97,6 +110,20 @@ public enum SnapshotNote: Hashable, Sendable {
             return tr("Teste grátis até \(UsageFormat.shortDate(date))", "Free trial until \(UsageFormat.shortDate(date))")
         case .onDemandEnabled:
             return tr("Uso sob demanda ligado", "On-demand usage on")
+        case .includedSpend(let cents, let limit, let bonus):
+            let used = UsageFormat.dollars(cents)
+            let included = UsageFormat.dollars(limit)
+            let text = tr("\(used) usados de \(included) incluídos no plano", "\(used) used of \(included) included in the plan")
+            guard bonus > 0 else { return text }
+            return text + tr(" + \(UsageFormat.dollars(bonus)) de bônus", " + \(UsageFormat.dollars(bonus)) bonus")
+        case .onDemandSpend(let cents, let limit):
+            let used = UsageFormat.dollars(cents)
+            guard let limit else { return tr("Sob demanda: \(used)", "On-demand: \(used)") }
+            return tr("Sob demanda: \(used) de \(UsageFormat.dollars(limit))", "On-demand: \(used) of \(UsageFormat.dollars(limit))")
+        case .teamOnDemandSpend(let cents, let limit):
+            let used = UsageFormat.dollars(cents)
+            let pool = UsageFormat.dollars(limit)
+            return tr("Sob demanda da equipe: \(used) de \(pool)", "Team on-demand: \(used) of \(pool)")
         }
     }
 }

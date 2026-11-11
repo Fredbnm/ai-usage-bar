@@ -4,6 +4,8 @@ public enum UsageError: Error, Equatable, Sendable {
     case notLoggedIn
     case unauthorized(expired: Bool)
     case keychainDenied
+    /// The login is stored but could not be read just now (Cursor's database was busy).
+    case loginUnreadable
     case rateLimited
     case http(Int)
     case network(String)
@@ -34,6 +36,11 @@ public enum UsageError: Error, Equatable, Sendable {
                     "Não achei o login do GitHub Copilot. Entre no Copilot no VS Code ou rode gh auth login.",
                     "No GitHub Copilot login found. Sign in to Copilot in VS Code, or run gh auth login."
                 )
+            case .cursor:
+                return tr(
+                    "Não achei o login do Cursor. Abra o Cursor e entre na sua conta.",
+                    "No Cursor login found. Open Cursor and sign in."
+                )
             case .grokBot:
                 return tr(
                     "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta.",
@@ -54,6 +61,11 @@ public enum UsageError: Error, Equatable, Sendable {
             return tr(
                 "O macOS não liberou a chave do \(app) no Keychain. Clique em atualizar e escolha “Permitir sempre”.",
                 "macOS did not release the \(app) key from the Keychain. Click refresh and choose “Always Allow”."
+            )
+        case .loginUnreadable:
+            return tr(
+                "Não consegui ler o login do \(app) agora. Tento de novo em breve.",
+                "Could not read the \(app) login right now. Trying again soon."
             )
         case .rateLimited:
             return tr("Muitas consultas seguidas. Tento de novo em 10 minutos.", "Too many requests. Trying again in 10 minutes.")

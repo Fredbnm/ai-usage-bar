@@ -9,6 +9,8 @@ public enum UsageErrorKind
     UnauthorizedExpired,
     /// <summary>Windows would not decrypt a stored key (DPAPI), or the Linux keyring did not answer.</summary>
     SecretUnavailable,
+    /// <summary>The login is stored but could not be read just now (Cursor's database was busy).</summary>
+    LoginUnreadable,
     RateLimited,
     Http,
     Network,
@@ -40,6 +42,9 @@ public sealed class UsageException(UsageErrorKind kind, int statusCode = 0, Exce
             UsageErrorKind.NotLoggedIn when provider == ProviderId.Copilot => T(
                 "Não achei o login do GitHub Copilot. Entre no Copilot no VS Code ou rode gh auth login.",
                 "No GitHub Copilot login found. Sign in to Copilot in VS Code, or run gh auth login."),
+            UsageErrorKind.NotLoggedIn when provider == ProviderId.Cursor => T(
+                "Não achei o login do Cursor. Abra o Cursor e entre na sua conta.",
+                "No Cursor login found. Open Cursor and sign in."),
             UsageErrorKind.NotLoggedIn => T(
                 "Não achei o login do Grok Bot. Abra o Grok Bot e entre na sua conta.",
                 "No Grok Bot login found. Open Grok Bot and sign in."),
@@ -55,6 +60,9 @@ public sealed class UsageException(UsageErrorKind kind, int statusCode = 0, Exce
             UsageErrorKind.SecretUnavailable => T(
                 $"O Windows não liberou a chave do {app}. Abra o {app} uma vez e clique em atualizar.",
                 $"Windows did not release the {app} key. Open {app} once and click refresh."),
+            UsageErrorKind.LoginUnreadable => T(
+                $"Não consegui ler o login do {app} agora. Tento de novo em breve.",
+                $"Could not read the {app} login right now. Trying again soon."),
             UsageErrorKind.RateLimited => T(
                 "Muitas consultas seguidas. Tento de novo em 10 minutos.",
                 "Too many requests. Trying again in 10 minutes."),

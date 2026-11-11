@@ -8,7 +8,7 @@ namespace AIUsageBar;
 /// Headless modes for debugging and CI:
 /// <code>
 /// AIUsageBar.exe --dump [--raw]
-/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
+/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--cursor-fixture cursor.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|cursor|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
 /// </code>
 /// AIUsageBar.exe --install-update [--no-relaunch] [--as-version 0.0.1]
 /// <c>--snapshot</c> also writes <c>out-tray.png</c> with every tray icon combination.
@@ -49,7 +49,7 @@ internal sealed class CliCommand
 
     private async Task<int> DumpAsync()
     {
-        IUsageProvider[] providers = [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new GeminiProvider(), new GrokBotProvider(new DpapiUnprotector())];
+        IUsageProvider[] providers = [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new CursorProvider(), new GeminiProvider(), new GrokBotProvider(new DpapiUnprotector())];
         foreach (var provider in providers.Where(p => p.IsAvailable()))
         {
             Console.WriteLine($"== {provider.Id.DisplayName()}");
@@ -73,7 +73,7 @@ internal sealed class CliCommand
         return 0;
     }
 
-    /// <summary>The snapshots of <c>--fixture</c>, <c>--copilot-fixture</c> and <c>--grok-fixture</c>, in display order.</summary>
+    /// <summary>The snapshots of the <c>--*fixture</c> options, in display order.</summary>
     internal static List<ProviderSnapshot> FixtureSnapshots(string[] args)
     {
         string? Option(string name)
@@ -95,6 +95,10 @@ internal sealed class CliCommand
         if (Option("--copilot-fixture") is { } copilot && CopilotUsage.Snapshot(File.ReadAllBytes(copilot)) is { } copilotSnapshot)
         {
             snapshots.Add(copilotSnapshot);
+        }
+        if (Option("--cursor-fixture") is { } cursor && CursorUsage.Snapshot(File.ReadAllBytes(cursor), "Pro") is { } cursorSnapshot)
+        {
+            snapshots.Add(cursorSnapshot);
         }
         if (Option("--gemini-fixture") is { } gemini && GeminiUsage.Snapshot(File.ReadAllBytes(gemini), "Free") is { } geminiSnapshot)
         {

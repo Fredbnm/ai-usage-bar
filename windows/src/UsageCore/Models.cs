@@ -58,10 +58,13 @@ public sealed record BreakdownItem(string Id, string? DisplayName, double Percen
             .Select(word => char.ToUpperInvariant(word[0]) + word[1..].ToLowerInvariant()));
 }
 
-public enum NoteKind { PooledAllowance, BankedResets, TrialUntil, OnDemandEnabled }
+public enum NoteKind { PooledAllowance, BankedResets, TrialUntil, OnDemandEnabled, IncludedSpend, OnDemandSpend, TeamOnDemandSpend }
 
-/// <summary>Extra facts shown under a service's limits.</summary>
-public sealed record SnapshotNote(NoteKind Kind, int Count = 0, DateTimeOffset? Date = null)
+/// <summary>
+/// Extra facts shown under a service's limits. <see cref="Amount"/>, <see cref="Limit"/> and
+/// <see cref="Extra"/> are US cents (Cursor's spending).
+/// </summary>
+public sealed record SnapshotNote(NoteKind Kind, int Count = 0, DateTimeOffset? Date = null, long Amount = 0, long? Limit = null, long Extra = 0)
 {
     public string Text => Kind switch
     {
@@ -70,12 +73,23 @@ public sealed record SnapshotNote(NoteKind Kind, int Count = 0, DateTimeOffset? 
         NoteKind.BankedResets => T($"{Count} resets guardados disponíveis", $"{Count} banked resets available"),
         NoteKind.TrialUntil => T($"Teste grátis até {UsageFormat.ShortDate(Date!.Value)}", $"Free trial until {UsageFormat.ShortDate(Date!.Value)}"),
         NoteKind.OnDemandEnabled => T("Uso sob demanda ligado", "On-demand usage on"),
+        NoteKind.IncludedSpend => T(
+            $"{UsageFormat.Dollars(Amount)} usados de {UsageFormat.Dollars(Limit ?? 0)} incluídos no plano",
+            $"{UsageFormat.Dollars(Amount)} used of {UsageFormat.Dollars(Limit ?? 0)} included in the plan")
+            + (Extra > 0 ? T($" + {UsageFormat.Dollars(Extra)} de bônus", $" + {UsageFormat.Dollars(Extra)} bonus") : ""),
+        NoteKind.OnDemandSpend when Limit is { } cap => T(
+            $"Sob demanda: {UsageFormat.Dollars(Amount)} de {UsageFormat.Dollars(cap)}",
+            $"On-demand: {UsageFormat.Dollars(Amount)} of {UsageFormat.Dollars(cap)}"),
+        NoteKind.OnDemandSpend => T($"Sob demanda: {UsageFormat.Dollars(Amount)}", $"On-demand: {UsageFormat.Dollars(Amount)}"),
+        NoteKind.TeamOnDemandSpend => T(
+            $"Sob demanda da equipe: {UsageFormat.Dollars(Amount)} de {UsageFormat.Dollars(Limit ?? 0)}",
+            $"Team on-demand: {UsageFormat.Dollars(Amount)} of {UsageFormat.Dollars(Limit ?? 0)}"),
         _ => "",
     };
 }
 
 /// <summary>A service whose plan usage the app shows.</summary>
-public enum ProviderId { Claude, Codex, Copilot, Gemini, GrokBot }
+public enum ProviderId { Claude, Codex, Copilot, Cursor, Gemini, GrokBot }
 
 /// <summary>
 /// Everything that differs per service and is not parsing: names, tray
@@ -120,6 +134,12 @@ public static class ProviderCatalog
             () => T("Entre no GitHub Copilot no VS Code ou rode gh auth login.",
                     "Sign in to GitHub Copilot in VS Code, or run gh auth login."),
             new Uri("https://github.com/settings/copilot")),
+        new(ProviderId.Cursor, "Cursor", "Cursor", "Cursor", "cursor",
+            [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
+            () => T("Mensal", "Monthly"),
+            () => T("Ver uso no cursor.com", "View usage on cursor.com"),
+            () => T("Instale o Cursor, abra-o e entre na sua conta.", "Install Cursor, open it and sign in."),
+            new Uri("https://cursor.com/dashboard?tab=usage")),
         new(ProviderId.Gemini, "Gemini", "Gemini", "Gemini CLI", "gemini",
             [TrayDisplay.Weekly, TrayDisplay.Hidden], TrayDisplay.Weekly,
             () => T("Diário", "Daily"),
@@ -147,13 +167,14 @@ public static class ProviderIdExtensions
 
     /// <summary>
     /// What the tray draws when there is no app icon to borrow. Two letters where
-    /// the first one is taken: "Co" and "Cx" would otherwise look like Claude, and
+    /// the first one is taken: "Co", "Cx" and "Cu" would otherwise look like Claude, and
     /// "Ge" like Grok Bot.
     /// </summary>
     public static string Initial(this ProviderId id) => id switch
     {
         ProviderId.Copilot => "Co",
         ProviderId.Codex => "Cx",
+        ProviderId.Cursor => "Cu",
         ProviderId.Gemini => "Ge",
         _ => id.DisplayName()[..1],
     };

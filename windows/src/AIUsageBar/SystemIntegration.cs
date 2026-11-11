@@ -40,7 +40,7 @@ internal static class StartupRegistration
     }
 }
 
-/// <summary>Finds the installed Claude and Grok Bot apps, for their icons and to open them.</summary>
+/// <summary>Finds the installed Claude, Cursor and Grok Bot apps, for their icons and to open them.</summary>
 internal static class InstalledApps
 {
     private static readonly Dictionary<ProviderId, Glyph?> GlyphCache = [];
@@ -51,15 +51,28 @@ internal static class InstalledApps
         @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
     ];
 
-    private static string AppName(ProviderId provider) => provider == ProviderId.Claude ? "Claude" : "Grok Bot";
+    /// <summary>The names the app's uninstall entry may carry (Cursor's per-user setup adds "(User)").</summary>
+    private static string[] AppNames(ProviderId provider) => provider switch
+    {
+        ProviderId.Claude => ["Claude"],
+        ProviderId.Cursor => ["Cursor", "Cursor (User)"],
+        _ => ["Grok Bot"],
+    };
 
     /// <summary>Usual install folders, when the uninstall entry does not say.</summary>
     private static IEnumerable<string> KnownPaths(ProviderId provider)
     {
         var local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return provider == ProviderId.Claude
-            ? [Path.Combine(local, "AnthropicClaude", "claude.exe"), Path.Combine(local, "Programs", "Claude", "Claude.exe")]
-            : [Path.Combine(local, "Programs", "Grok Bot", "Grok Bot.exe"), Path.Combine(local, "Programs", "grok-bot", "Grok Bot.exe")];
+        return provider switch
+        {
+            ProviderId.Claude => [Path.Combine(local, "AnthropicClaude", "claude.exe"), Path.Combine(local, "Programs", "Claude", "Claude.exe")],
+            ProviderId.Cursor =>
+            [
+                Path.Combine(local, "Programs", "cursor", "Cursor.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "cursor", "Cursor.exe"),
+            ],
+            _ => [Path.Combine(local, "Programs", "Grok Bot", "Grok Bot.exe"), Path.Combine(local, "Programs", "grok-bot", "Grok Bot.exe")],
+        };
     }
 
     /// <summary>The app's executable (or icon file), from the uninstall entries or known folders.</summary>
@@ -83,7 +96,7 @@ internal static class InstalledApps
                 {
                     using var entry = root.OpenSubKey(name);
                     if (entry?.GetValue("DisplayName") is not string displayName ||
-                        !displayName.Equals(AppName(provider), StringComparison.OrdinalIgnoreCase)) continue;
+                        !AppNames(provider).Contains(displayName, StringComparer.OrdinalIgnoreCase)) continue;
                     if (entry.GetValue("DisplayIcon") is string icon)
                     {
                         var file = icon.Split(',')[0].Trim().Trim('"');

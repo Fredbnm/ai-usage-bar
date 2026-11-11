@@ -51,7 +51,7 @@ internal sealed class UsageStore
 
     /// <summary>Every agent the app reads, in display order.</summary>
     public static IReadOnlyList<IUsageProvider> AllProviders() =>
-        [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new GeminiProvider(), new GrokBotProvider(null, keyring: new SecretToolKeyring())];
+        [new ClaudeProvider(), new CodexProvider(), new CopilotProvider(), new CursorProvider(), new GeminiProvider(), new GrokBotProvider(null, keyring: new SecretToolKeyring())];
 
     public event Action? Changed;
 

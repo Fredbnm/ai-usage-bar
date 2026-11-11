@@ -601,6 +601,7 @@ extension ProviderID {
         case .codex: tr("Ver uso no ChatGPT", "View usage on ChatGPT")
         case .gemini: tr("Abrir o Gemini", "Open Gemini")
         case .copilot: tr("Gerenciar o Copilot no github.com", "Manage Copilot on github.com")
+        case .cursor: tr("Ver uso no cursor.com", "View usage on cursor.com")
         case .grokBot: tr("Abrir o Grok Bot", "Open Grok Bot")
         }
     }
@@ -616,6 +617,8 @@ extension ProviderID {
             NSWorkspace.shared.open(URL(string: "https://gemini.google.com/app")!)
         case .copilot:
             NSWorkspace.shared.open(URL(string: "https://github.com/settings/copilot")!)
+        case .cursor:
+            NSWorkspace.shared.open(URL(string: "https://cursor.com/dashboard?tab=usage")!)
         case .grokBot:
             if FileManager.default.fileExists(atPath: GrokBotProvider.appURL.path) {
                 NSWorkspace.shared.open(GrokBotProvider.appURL)
