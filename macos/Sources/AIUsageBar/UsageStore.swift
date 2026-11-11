@@ -70,7 +70,7 @@ final class UsageStore: ObservableObject {
     }
 
     init(
-        providers: [any UsageProvider] = [ClaudeProvider(), CodexProvider(), CopilotProvider(), GeminiProvider(), GrokBotProvider()],
+        providers: [any UsageProvider] = [ClaudeProvider(), CodexProvider(), CopilotProvider(), CursorProvider(), GeminiProvider(), GrokBotProvider()],
         defaults: UserDefaults = .standard
     ) {
         self.providers = providers

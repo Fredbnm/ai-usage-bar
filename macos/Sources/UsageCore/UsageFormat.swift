@@ -21,7 +21,9 @@ public enum UsageFormat {
 
     /// Less than a day away: "Reinicia em 1 h 16 min · 13:50" /
     /// "Resets in 1 h 16 min · 1:50 PM". Further: "Reinicia qui. às 00:00 ·
-    /// em 1 d 11 h" / "Resets Thu at 12:00 AM · in 1 d 11 h".
+    /// em 1 d 11 h" / "Resets Thu at 12:00 AM · in 1 d 11 h". A week or more
+    /// away (a monthly cycle): "Reinicia dia 08/12 às 00:00 · em 27 d 11 h" /
+    /// "Resets Dec 8 at 12:00 AM · in 27 d 11 h".
     public static func reset(_ date: Date, now: Date = Date(), calendar: Calendar = .current) -> String {
         // Limits that reset together come back as 02:59:59.55 and 03:00:00.55;
         // rounding to the minute keeps them from looking like different days.
@@ -33,9 +35,15 @@ public enum UsageFormat {
         if interval < 24 * 3600 {
             return tr("Reinicia em \(remaining) · \(time)", "Resets in \(remaining) · \(time)")
         }
-        let day = calendar.isDate(date, inSameDayAs: now.addingTimeInterval(86_400))
-            ? tr("amanhã", "tomorrow")
-            : string(date, format: "EEE", calendar: calendar)
+        let day: String
+        if calendar.isDate(date, inSameDayAs: now.addingTimeInterval(86_400)) {
+            day = tr("amanhã", "tomorrow")
+        } else if interval >= 7 * 86_400 {
+            // The weekday alone would not say which week.
+            day = tr("dia \(string(date, format: "dd/MM", calendar: calendar))", string(date, format: "MMM d", calendar: calendar))
+        } else {
+            day = string(date, format: "EEE", calendar: calendar)
+        }
         return tr("Reinicia \(day) às \(time) · em \(remaining)", "Resets \(day) at \(time) · in \(remaining)")
     }
 
@@ -52,6 +60,18 @@ public enum UsageFormat {
         }
         let when = string(date, format: tr("dd/MM HH:mm", "MMM d, h:mm a"), calendar: calendar)
         return tr("Atualizado em \(when)", "Updated \(when)")
+    }
+
+    /// "US$ 1.234,50" / "$1,234.50": an amount in US cents (Cursor bills in dollars).
+    public static func dollars(_ cents: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = AppLanguage.current.locale
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let amount = NSDecimalNumber(value: cents).dividing(by: 100)
+        let value = formatter.string(from: amount) ?? "\(amount)"
+        return tr("US$ \(value)", "$\(value)")
     }
 
     /// "12/11" / "Nov 12".

@@ -217,7 +217,7 @@ final class CodexGeminiTests: XCTestCase {
         XCTAssertEqual(ProviderID.gemini.menuBarDisplayOptions, [.weekly, .hidden])
         XCTAssertEqual(ProviderID.gemini.defaultMenuBarDisplay, .weekly)
         XCTAssertEqual(MenuBarDisplay.weekly.label(for: .gemini), "Daily")
-        XCTAssertEqual(ProviderID.allCases, [.claude, .codex, .copilot, .gemini, .grokBot])
+        XCTAssertEqual(ProviderID.allCases, [.claude, .codex, .copilot, .cursor, .gemini, .grokBot])
     }
 
     func testEveryAgentHasADistinctInitial() {

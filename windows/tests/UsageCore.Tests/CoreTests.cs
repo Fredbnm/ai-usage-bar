@@ -105,6 +105,7 @@ public class FormatTests
     private static readonly DateTimeOffset Now = new(2026, 11, 10, 12, 34, 0, TimeSpan.FromHours(-3));
     private static readonly DateTimeOffset Thursday = new(2026, 11, 12, 0, 0, 0, TimeSpan.FromHours(-3));
     private static readonly DateTimeOffset Tomorrow = new(2026, 11, 11, 18, 0, 0, TimeSpan.FromHours(-3));
+    private static readonly DateTimeOffset NextMonth = new(2026, 12, 8, 0, 0, 0, TimeSpan.FromHours(-3));
 
     [Fact]
     public void Portuguese()
@@ -114,6 +115,7 @@ public class FormatTests
         Assert.StartsWith("Reinicia qui", UsageFormat.Reset(Thursday, Now, SaoPaulo));
         Assert.EndsWith("às 00:00 · em 1 d 11 h", UsageFormat.Reset(Thursday, Now, SaoPaulo));
         Assert.Equal("Reinicia amanhã às 18:00 · em 1 d 5 h", UsageFormat.Reset(Tomorrow, Now, SaoPaulo));
+        Assert.Equal("Reinicia dia 08/12 às 00:00 · em 27 d 11 h", UsageFormat.Reset(NextMonth, Now, SaoPaulo));
         // 23:59:59.55 reads the same as the 00:00 reset next to it.
         Assert.Equal(UsageFormat.Reset(Thursday, Now, SaoPaulo), UsageFormat.Reset(Thursday.AddSeconds(-0.45), Now, SaoPaulo));
         Assert.Equal("Reiniciando…", UsageFormat.Reset(Now.AddSeconds(-1), Now, SaoPaulo));
@@ -127,6 +129,7 @@ public class FormatTests
         Assert.Equal("Resets in 1 h 16 min · 1:50 PM", UsageFormat.Reset(Now.AddMinutes(76), Now, SaoPaulo));
         Assert.Equal("Resets Thu at 12:00 AM · in 1 d 11 h", UsageFormat.Reset(Thursday, Now, SaoPaulo));
         Assert.Equal("Resets tomorrow at 6:00 PM · in 1 d 5 h", UsageFormat.Reset(Tomorrow, Now, SaoPaulo));
+        Assert.Equal("Resets Dec 8 at 12:00 AM · in 27 d 11 h", UsageFormat.Reset(NextMonth, Now, SaoPaulo));
         Assert.Equal("Updated just now", UsageFormat.Updated(Now.AddSeconds(-10), Now, SaoPaulo));
         Assert.Equal("Nov 12", UsageFormat.ShortDate(Thursday, SaoPaulo));
     }

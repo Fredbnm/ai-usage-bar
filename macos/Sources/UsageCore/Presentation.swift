@@ -115,6 +115,8 @@ extension UsageResponse {
             return tr("Semanal · todos os modelos", "Weekly · all models")
         case "weekly":
             return tr("Semanal", "Weekly")
+        case "monthly":
+            return tr("Mensal", "Monthly")
         case "premium_requests":
             return tr("Requisições premium · mês", "Premium requests · month")
         case "chat":
@@ -125,6 +127,8 @@ extension UsageResponse {
             return tr("Diário", "Daily") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         case "weekly_scoped":
             return tr("Semanal", "Weekly") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
+        case "monthly_scoped":
+            return tr("Mensal", "Monthly") + " · " + (scopeName ?? tr("limite específico", "specific limit"))
         default:
             let base = kind.replacingOccurrences(of: "_", with: " ").capitalized
             return scopeName.map { "\(base) · \($0)" } ?? base

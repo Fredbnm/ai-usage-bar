@@ -6,7 +6,7 @@ import UsageCore
 /// the menu bar:
 ///
 ///     AIUsageBar --dump [--raw]
-///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|gemini|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
+///     AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--cursor-fixture cursor.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|codex|copilot|cursor|gemini|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
 ///     AIUsageBar --install-update [--no-relaunch]
 ///
 /// `--raw` also prints each service's usage response (no tokens).
@@ -25,6 +25,7 @@ struct CLICommand {
     let grokFixturePath: String?
     let copilotFixturePath: String?
     let codexFixturePath: String?
+    let cursorFixturePath: String?
     let geminiFixturePath: String?
     let tab: String?
     let firstRun: Bool
@@ -54,6 +55,7 @@ struct CLICommand {
         grokFixturePath = value(after: "--grok-fixture")
         copilotFixturePath = value(after: "--copilot-fixture")
         codexFixturePath = value(after: "--codex-fixture")
+        cursorFixturePath = value(after: "--cursor-fixture")
         geminiFixturePath = value(after: "--gemini-fixture")
         tab = value(after: "--tab")
         firstRun = arguments.contains("--first-run")
@@ -75,7 +77,8 @@ struct CLICommand {
             return await installUpdate(relaunch: relaunch)
         }
         let store: UsageStore
-        if fixturePath != nil || grokFixturePath != nil || copilotFixturePath != nil || codexFixturePath != nil || geminiFixturePath != nil {
+        if fixturePath != nil || grokFixturePath != nil || copilotFixturePath != nil || codexFixturePath != nil
+            || cursorFixturePath != nil || geminiFixturePath != nil {
             var snapshots: [ProviderSnapshot] = []
             if let fixturePath {
                 guard let data = FileManager.default.contents(atPath: fixturePath),
@@ -93,6 +96,12 @@ struct CLICommand {
                 guard let data = FileManager.default.contents(atPath: copilotFixturePath),
                       let snapshot = CopilotUsage.snapshot(fromResponse: data)
                 else { return fail("Could not read fixture \(copilotFixturePath)") }
+                snapshots.append(snapshot)
+            }
+            if let cursorFixturePath {
+                guard let data = FileManager.default.contents(atPath: cursorFixturePath),
+                      let snapshot = CursorUsage.snapshot(fromResponse: data, plan: "Pro")
+                else { return fail("Could not read fixture \(cursorFixturePath)") }
                 snapshots.append(snapshot)
             }
             if let geminiFixturePath {

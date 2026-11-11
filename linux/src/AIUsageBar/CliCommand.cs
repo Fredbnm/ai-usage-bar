@@ -9,7 +9,7 @@ namespace AIUsageBar;
 /// Modes for debugging and CI:
 /// <code>
 /// AIUsageBar --dump [--raw]
-/// AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list] [--no-tray-notice]
+/// AIUsageBar --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--cursor-fixture cursor.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|cursor|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list] [--no-tray-notice]
 /// AIUsageBar --install-update [--no-relaunch] [--as-version 0.0.1]
 /// AIUsageBar --demo [fixtures as above] [--dark] [--lang en|pt]
 /// </code>
@@ -90,6 +90,10 @@ internal sealed class CliCommand
         if (Option(args, "--copilot-fixture") is { } copilot && CopilotUsage.Snapshot(File.ReadAllBytes(copilot)) is { } copilotSnapshot)
         {
             snapshots.Add(copilotSnapshot);
+        }
+        if (Option(args, "--cursor-fixture") is { } cursor && CursorUsage.Snapshot(File.ReadAllBytes(cursor), "Pro") is { } cursorSnapshot)
+        {
+            snapshots.Add(cursorSnapshot);
         }
         if (Option(args, "--gemini-fixture") is { } gemini && GeminiUsage.Snapshot(File.ReadAllBytes(gemini), "Free") is { } geminiSnapshot)
         {

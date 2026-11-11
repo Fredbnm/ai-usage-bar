@@ -43,10 +43,10 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force screens | Out-Null
           $exe = Resolve-Path publish/win-x64/AIUsageBar.exe
-          $fixtures = @('--fixture', (Resolve-Path ../docs/sample-usage.json), '--grok-fixture', (Resolve-Path ../docs/sample-grok-usage.json), '--codex-fixture', (Resolve-Path ../docs/sample-codex-usage.json), '--copilot-fixture', (Resolve-Path ../docs/sample-copilot-usage.json), '--gemini-fixture', (Resolve-Path ../docs/sample-gemini-usage.json))
+          $fixtures = @('--fixture', (Resolve-Path ../docs/sample-usage.json), '--grok-fixture', (Resolve-Path ../docs/sample-grok-usage.json), '--codex-fixture', (Resolve-Path ../docs/sample-codex-usage.json), '--copilot-fixture', (Resolve-Path ../docs/sample-copilot-usage.json), '--cursor-fixture', (Resolve-Path ../docs/sample-cursor-usage.json), '--gemini-fixture', (Resolve-Path ../docs/sample-gemini-usage.json))
           foreach ($variant in @(
               @('light', 'en', @()), @('dark', 'en', @('--dark')), @('light-pt', 'pt', @()),
-              @('copilot-tab', 'en', @('--tab', 'copilot')), @('codex-tab', 'en', @('--tab', 'codex')), @('gemini-tab', 'en', @('--tab', 'gemini')), @('agents-first-run', 'en', @('--first-run')),
+              @('copilot-tab', 'en', @('--tab', 'copilot')), @('codex-tab', 'en', @('--tab', 'codex')), @('cursor-tab', 'en', @('--tab', 'cursor')), @('cursor-tab-pt', 'pt', @('--tab', 'cursor')), @('gemini-tab', 'en', @('--tab', 'gemini')), @('agents-first-run', 'en', @('--first-run')),
               @('update-available', 'en', @('--update-available', '9.9.9')),
               @('tab-limit', 'en', @('--tab-limit', 'claude=weekly_all')), @('all-together', 'en', @('--layout', 'list')))) {
             $out = Join-Path (Resolve-Path screens) "popup-$($variant[0]).png"

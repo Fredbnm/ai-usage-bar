@@ -33,7 +33,7 @@ public enum MenuBarDisplay: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .session: tr("Só a sessão atual", "Current session only")
         case .weekly:
-            if provider == .copilot { tr("Mensal", "Monthly") }
+            if provider == .copilot || provider == .cursor { tr("Mensal", "Monthly") }
             else if provider == .gemini { tr("Diário", "Daily") }
             else { provider.menuBarDisplayOptions.contains(.session) ? tr("Só a semanal", "Weekly only") : tr("Semanal", "Weekly") }
         case .both: tr("Sessão atual + semanal", "Session + weekly")
@@ -46,14 +46,14 @@ extension ProviderID {
     public var menuBarDisplayOptions: [MenuBarDisplay] {
         switch self {
         case .claude, .codex: [.session, .weekly, .both, .hidden]
-        case .copilot, .gemini, .grokBot: [.weekly, .hidden]
+        case .copilot, .cursor, .gemini, .grokBot: [.weekly, .hidden]
         }
     }
 
     public var defaultMenuBarDisplay: MenuBarDisplay {
         switch self {
         case .claude, .codex: .both
-        case .copilot, .gemini, .grokBot: .weekly
+        case .copilot, .cursor, .gemini, .grokBot: .weekly
         }
     }
 }

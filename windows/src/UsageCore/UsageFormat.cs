@@ -24,7 +24,8 @@ public static class UsageFormat
     /// <summary>
     /// Less than a day away: "Reinicia em 1 h 16 min · 13:50" / "Resets in
     /// 1 h 16 min · 1:50 PM". Further: "Reinicia qui. às 00:00 · em 1 d 11 h"
-    /// / "Resets Thu at 12:00 AM · in 1 d 11 h".
+    /// / "Resets Thu at 12:00 AM · in 1 d 11 h". A week or more away (a monthly
+    /// cycle): "Reinicia dia 08/12 às 00:00 · em 27 d 11 h" / "Resets Dec 8 at …".
     /// </summary>
     public static string Reset(DateTimeOffset date, DateTimeOffset? now = null, TimeZoneInfo? zone = null)
     {
@@ -45,7 +46,10 @@ public static class UsageFormat
             return T($"Reinicia em {remaining} · {time}", $"Resets in {remaining} · {time}");
         }
         var tomorrow = TimeZoneInfo.ConvertTime(current, zone).Date.AddDays(1);
-        var day = local.Date == tomorrow ? T("amanhã", "tomorrow") : Format(local, "ddd");
+        var day = local.Date == tomorrow ? T("amanhã", "tomorrow")
+            // The weekday alone would not say which week.
+            : interval >= TimeSpan.FromDays(7) ? T($"dia {Format(local, "dd/MM")}", Format(local, "MMM d"))
+            : Format(local, "ddd");
         return T($"Reinicia {day} às {time} · em {remaining}", $"Resets {day} at {time} · in {remaining}");
     }
 
@@ -65,6 +69,13 @@ public static class UsageFormat
         }
         var when = Format(TimeZoneInfo.ConvertTime(date, zone ?? TimeZoneInfo.Local), T("dd/MM HH:mm", "MMM d, h:mm tt"));
         return T($"Atualizado em {when}", $"Updated {when}");
+    }
+
+    /// <summary>"US$ 1.234,50" / "$1,234.50": an amount in US cents (Cursor bills in dollars).</summary>
+    public static string Dollars(long cents)
+    {
+        var value = (cents / 100m).ToString("N2", Current.Culture());
+        return T($"US$ {value}", $"${value}");
     }
 
     /// <summary>"12/11" / "Nov 12".</summary>

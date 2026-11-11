@@ -28,7 +28,7 @@ enum ProviderGlyph {
         case .copilot: return ExtensionIcon.findCopilot().map { ($0, GlyphExtractor.ArtworkKind.dark) }
         case .codex: return ExtensionIcon.findCodex().map { ($0, GlyphExtractor.ArtworkKind.white) }
         case .gemini: return ExtensionIcon.findGemini().map { ($0, GlyphExtractor.ArtworkKind.silhouette) }
-        case .claude, .grokBot: return nil
+        case .claude, .cursor, .grokBot: return nil
         }
     }
 
