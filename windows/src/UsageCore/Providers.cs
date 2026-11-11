@@ -125,17 +125,19 @@ public sealed class ClaudeProvider(string? credentialsPath = null) : IUsageProvi
 
 /// <summary>
 /// Reads Grok Bot's login: its tokens sit in <c>sand-secrets.json</c>,
-/// encrypted with Electron <c>safeStorage</c>, whose key is protected by DPAPI
-/// in "Local State". The token is decrypted in memory for the request and is
-/// never written, refreshed or logged.
+/// encrypted with Electron <c>safeStorage</c>. On Windows its key is protected by DPAPI
+/// in "Local State"; on Linux (when a <paramref name="keyring"/> is given) the values
+/// follow Chromium's Linux format, see <see cref="LinuxSafeStorage"/>. The token is
+/// decrypted in memory for the request and is never written, refreshed or logged.
 /// </summary>
-public sealed class GrokBotProvider(ISecretUnprotector? unprotector, string? dataDirectory = null) : IUsageProvider
+public sealed class GrokBotProvider(ISecretUnprotector? unprotector, string? dataDirectory = null, IKeyringReader? keyring = null) : IUsageProvider
 {
     public static readonly Uri Endpoint = new("https://api2.cursor.sh/aiserver.v1.DashboardService/GetSandUsageStatus");
 
     private readonly string directory = dataDirectory ?? GrokBotPaths.DefaultDataDirectory;
     private readonly Lock gate = new();
     private byte[]? key;
+    private string? keyringPassword;
 
     public ProviderId Id => ProviderId.GrokBot;
 
@@ -174,6 +176,16 @@ public sealed class GrokBotProvider(ISecretUnprotector? unprotector, string? dat
         {
             case StoredToken.Plaintext plain:
                 return plain.Token;
+            case StoredToken.Encrypted encrypted when keyring is not null:
+                try
+                {
+                    return LinuxSafeStorage.Decrypt(encrypted.Blob, LinuxSafeStorage.NeedsKeyring(encrypted.Blob) ? KeyringPassword(keyring) : null);
+                }
+                catch (UsageException)
+                {
+                    lock (gate) { keyringPassword = null; }
+                    throw;
+                }
             case StoredToken.Encrypted encrypted:
                 try
                 {
@@ -187,6 +199,20 @@ public sealed class GrokBotProvider(ISecretUnprotector? unprotector, string? dat
                 }
             default:
                 throw new UsageException(UsageErrorKind.Decoding);
+        }
+    }
+
+    /// <summary>Linux: the keyring's password for "v11" values, read once per run and kept in memory only.</summary>
+    private string KeyringPassword(IKeyringReader reader)
+    {
+        lock (gate)
+        {
+            if (keyringPassword is not null) return keyringPassword;
+            foreach (var application in GrokBotPaths.KeyringApplications)
+            {
+                if (reader.Password(application) is { Length: > 0 } password) return keyringPassword = password;
+            }
+            throw new UsageException(UsageErrorKind.SecretUnavailable);
         }
     }
 

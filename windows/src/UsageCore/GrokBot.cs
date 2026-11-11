@@ -11,12 +11,18 @@ public interface ISecretUnprotector
     byte[] Unprotect(byte[] protectedData);
 }
 
-/// <summary>Where Grok Bot (an Electron app) keeps its data on Windows.</summary>
+/// <summary>Where Grok Bot (an Electron app) keeps its data on Windows and Linux.</summary>
 public static class GrokBotPaths
 {
-    /// <summary><c>%APPDATA%\Grok Bot</c>: Electron's <c>userData</c> folder.</summary>
+    /// <summary>
+    /// Electron's <c>userData</c> folder: <c>%APPDATA%\Grok Bot</c> on Windows,
+    /// <c>~/.config/Grok Bot</c> (or <c>$XDG_CONFIG_HOME/Grok Bot</c>) on Linux.
+    /// </summary>
     public static string DefaultDataDirectory =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Grok Bot");
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.DoNotVerify), "Grok Bot");
+
+    /// <summary>Names Electron may have stored the keyring entry under on Linux (the app's name).</summary>
+    public static readonly IReadOnlyList<string> KeyringApplications = ["Grok Bot", "grok-bot", "grokbot"];
 
     public static string SecretsFile(string dataDirectory) => Path.Combine(dataDirectory, "sand-secrets.json");
 
@@ -137,6 +143,62 @@ public static class ElectronSafeStorage
         aes.Encrypt(nonce, plaintext, ciphertext, tag);
         return [.. VersionPrefix, .. nonce, .. ciphertext, .. tag];
     }
+}
+
+/// <summary>
+/// The desktop keyring on Linux (GNOME Keyring, KWallet… through libsecret): where Electron keeps the
+/// password behind its "v11" values. Returns null when there is no such entry or no keyring.
+/// </summary>
+public interface IKeyringReader
+{
+    string? Password(string application);
+}
+
+/// <summary>
+/// Chromium/Electron <c>OSCrypt</c> on Linux. "v10" values were written without a keyring and use a fixed
+/// password; "v11" values use a password kept in the keyring under the app's name. Either way:
+/// AES-128-CBC, IV of 16 spaces, key = PBKDF2-SHA1(password, "saltysalt", 1 iteration, 16 bytes).
+/// </summary>
+public static class LinuxSafeStorage
+{
+    public const string FixedPassword = "peanuts";
+    private static readonly byte[] Salt = "saltysalt"u8.ToArray();
+    private static readonly byte[] Iv = [.. Enumerable.Repeat((byte)' ', 16)];
+    private const int PrefixSize = 3;
+
+    /// <summary>Whether the value needs the keyring's password ("v11").</summary>
+    public static bool NeedsKeyring(byte[] blob) => blob.AsSpan().StartsWith("v11"u8);
+
+    /// <param name="blob">"v10" or "v11" followed by the ciphertext.</param>
+    /// <param name="keyringPassword">Only read for "v11" values; null then means the keyring did not answer.</param>
+    public static string Decrypt(byte[] blob, string? keyringPassword)
+    {
+        var password = blob.AsSpan().StartsWith("v10"u8) ? FixedPassword
+            : NeedsKeyring(blob) ? keyringPassword ?? throw new UsageException(UsageErrorKind.SecretUnavailable)
+            : throw new UsageException(UsageErrorKind.Decoding);
+        if (blob.Length <= PrefixSize || (blob.Length - PrefixSize) % 16 != 0) throw new UsageException(UsageErrorKind.Decoding);
+        try
+        {
+            using var aes = Aes.Create();
+            aes.Key = Key(password);
+            return Encoding.UTF8.GetString(aes.DecryptCbc(blob.AsSpan(PrefixSize), Iv, PaddingMode.PKCS7));
+        }
+        catch (CryptographicException error)
+        {
+            throw new UsageException(UsageErrorKind.Decoding, inner: error);
+        }
+    }
+
+    /// <summary>The inverse of <see cref="Decrypt"/>; used by tests.</summary>
+    public static byte[] Encrypt(string text, string version, string password)
+    {
+        using var aes = Aes.Create();
+        aes.Key = Key(password);
+        return [.. Encoding.ASCII.GetBytes(version), .. aes.EncryptCbc(Encoding.UTF8.GetBytes(text), Iv, PaddingMode.PKCS7)];
+    }
+
+    private static byte[] Key(string password) =>
+        Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), Salt, 1, HashAlgorithmName.SHA1, 16);
 }
 
 internal static class Jwt

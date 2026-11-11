@@ -94,11 +94,23 @@ public static class TrayIconRenderer
         canvas.Restore();
     }
 
+    /// <summary>
+    /// Segoe UI on Windows; on Linux, the first of the usual desktop fonts that is installed, in bold.
+    /// Kept for the whole run (tray icons are redrawn on every refresh).
+    /// </summary>
+    private static readonly Lazy<SKTypeface> BoldTypeface = new(() =>
+    {
+        foreach (var family in new[] { "Segoe UI", "Ubuntu", "Cantarell", "Noto Sans", "DejaVu Sans", "Liberation Sans" })
+        {
+            if (SKFontManager.Default.MatchFamily(family, SKFontStyle.Bold) is { } typeface) return typeface;
+        }
+        return SKTypeface.FromFamilyName("sans-serif", SKFontStyle.Bold) ?? SKTypeface.Default;
+    });
+
     /// <summary>The largest bold text that fits inside the ring.</summary>
     internal static void DrawNumber(SKCanvas canvas, string text, SKRect inner, SKColor color)
     {
-        using var typeface = SKTypeface.FromFamilyName("Segoe UI", SKFontStyle.Bold) ?? SKTypeface.Default;
-        using var font = new SKFont(typeface, inner.Height) { Edging = SKFontEdging.Antialias, Subpixel = true };
+        using var font = new SKFont(BoldTypeface.Value, inner.Height) { Edging = SKFontEdging.Antialias, Subpixel = true };
         var maxWidth = inner.Width * (text.Length >= 3 ? 1.08f : 0.98f);
         for (var fontSize = inner.Height * 0.95f; fontSize > 4; fontSize -= 0.25f)
         {

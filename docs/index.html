@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Usage Bar</title>
-  <meta name="description" content="See your Claude, Codex, GitHub Copilot, Gemini and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows tray.">
+  <meta name="description" content="See your Claude, Codex, GitHub Copilot, Gemini and Grok Bot usage limits at a glance, right in the macOS menu bar or the Windows and Linux tray.">
   <link rel="icon" href="icon.png">
   <style>
     :root {
@@ -71,7 +71,7 @@
     section h2 { font-size: 28px; letter-spacing: -.01em; margin: 0 0 8px; }
     section > .wrap > p.intro { color: var(--muted); margin: 0 0 28px; max-width: 46em; }
 
-    .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .downloads { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
     .card {
       background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px;
       display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow);
@@ -99,7 +99,7 @@
     .platform-shots figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; }
     @media (max-width: 860px) { .platform-shots { grid-template-columns: 1fr; } }
 
-    .steps { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
     .steps ol { margin: 8px 0 0; padding-left: 20px; color: var(--muted); }
     .steps li { margin-bottom: 6px; }
 
@@ -136,12 +136,12 @@
     <div class="hero">
       <div>
         <h1 data-i18n="hero.title">Your AI limits, one glance away.</h1>
-        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude, Codex, GitHub Copilot, Gemini and Grok Bot plans you have used, right in the macOS menu bar or the Windows tray, and when each limit resets.</p>
+        <p class="lead" data-i18n="hero.lead">AI Usage Bar shows how much of your Claude, Codex, GitHub Copilot, Gemini and Grok Bot plans you have used, right in the macOS menu bar or the Windows and Linux tray, and when each limit resets.</p>
         <div class="cta">
           <a class="button" id="primary-download" href="#download" data-i18n="hero.cta">Download</a>
           <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar" data-i18n="hero.source">View source</a>
         </div>
-        <p class="small" data-i18n="hero.free">Free and open source (MIT). macOS 13+ and Windows 10/11.</p>
+        <p class="small" data-i18n="hero.free">Free and open source (MIT). macOS 13+, Windows 10/11 and Linux.</p>
       </div>
       <div class="shots">
         <picture>
@@ -174,6 +174,12 @@
           <p data-i18n="download.portable">A single .exe that runs without installing. Handy for trying it out.</p>
           <p><code>AIUsageBar-Windows-Portable.exe</code></p>
           <a class="button secondary" href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe" data-i18n="download.portable.button">Download portable</a>
+        </div>
+        <div class="card" data-os="linux">
+          <div class="os"><h3>Linux</h3><span class="tag rec" data-i18n="download.recommended">For your system</span></div>
+          <p data-i18n="download.linux">AppImage for 64-bit Linux: make it executable and run it. On GNOME, tray icons need the AppIndicator extension (Ubuntu has it).</p>
+          <p><code>AIUsageBar-Linux-x86_64.AppImage</code> · <a href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x64.tar.gz" data-i18n="download.linux.archive">or .tar.gz</a></p>
+          <a class="button" href="https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x86_64.AppImage" data-i18n="download.linux.button">Download AppImage</a>
         </div>
       </div>
       <p class="small" style="margin-top:16px">
@@ -229,7 +235,7 @@
         </div>
         <div class="feature">
           <h3 data-i18n="features.native.title">Native on each system</h3>
-          <p data-i18n="features.native">Swift and SwiftUI on macOS, C# and WPF on Windows. Small, fast and at home next to your other menu bar and tray icons.</p>
+          <p data-i18n="features.native">Swift and SwiftUI on macOS, C# and WPF on Windows, C# and Avalonia on Linux. Small, fast and at home next to your other menu bar and tray icons.</p>
         </div>
       </div>
       <div class="platform-shots">
@@ -276,8 +282,16 @@
             <li data-i18n="install.win.3">Left-click an icon for details; right-click for refresh and quit.</li>
           </ol>
         </div>
+        <div class="feature">
+          <h3>Linux</h3>
+          <ol>
+            <li data-i18n="install.linux.1">Make the AppImage executable (chmod +x, or Properties → Allow executing) and open it. It adds itself to the app menu.</li>
+            <li data-i18n="install.linux.2">Find the ring icons in the tray. On GNOME, turn on the "AppIndicator and KStatusNotifierItem Support" extension; without a tray, open the app from the menu to see the popup.</li>
+            <li data-i18n="install.linux.3">Click an icon for details. ⚙ in the popup → Start at login.</li>
+          </ol>
+        </div>
       </div>
-      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Codex, the Codex CLI or extension signed in with ChatGPT (codex login). For GitHub Copilot, a Copilot plan and a signed-in editor plugin (VS Code, JetBrains) or the gh CLI. For Gemini, the Gemini CLI signed in with Google (gemini). For Grok Bot, the Grok Bot app installed and signed in. The Windows version is new; please report anything odd on GitHub.</p>
+      <p class="note" style="margin-top:20px" data-i18n="install.req">Requirements: Claude Code signed in on the same computer (the Claude app or the claude command). For Codex, the Codex CLI or extension signed in with ChatGPT (codex login). For GitHub Copilot, a Copilot plan and a signed-in editor plugin (VS Code, JetBrains) or the gh CLI. For Gemini, the Gemini CLI signed in with Google (gemini). For Grok Bot, the Grok Bot app installed and signed in. The Windows and Linux versions are new; please report anything odd on GitHub.</p>
     </div>
   </section>
 
@@ -300,10 +314,10 @@
       "nav.download": "Baixar",
       "nav.features": "Recursos",
       "hero.title": "Seus limites de IA a um olhar de distância.",
-      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude, do Codex, do GitHub Copilot, do Gemini e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows, e quando cada limite reinicia.",
+      "hero.lead": "O AI Usage Bar mostra quanto você já usou dos planos do Claude, do Codex, do GitHub Copilot, do Gemini e do Grok Bot, direto na barra de menu do macOS ou na bandeja do Windows e do Linux, e quando cada limite reinicia.",
       "hero.cta": "Baixar",
       "hero.source": "Ver código",
-      "hero.free": "Gratuito e de código aberto (MIT). macOS 13+ e Windows 10/11.",
+      "hero.free": "Gratuito e de código aberto (MIT). macOS 13+, Windows 10/11 e Linux.",
       "download.title": "Baixar",
       "download.intro": "Sempre a versão mais recente, gerada pelo GitHub Actions direto do código-fonte. Depois de instalado, o app avisa quando sai uma versão nova e se atualiza com um clique.",
       "download.recommended": "Para o seu sistema",
@@ -314,6 +328,9 @@
       "download.portable.title": "Windows, portátil",
       "download.portable": "Um único .exe que roda sem instalar. Bom para experimentar.",
       "download.portable.button": "Baixar portátil",
+      "download.linux": "AppImage para Linux 64 bits: torne-o executável e abra. No GNOME, os ícones na bandeja precisam da extensão AppIndicator (o Ubuntu já tem).",
+      "download.linux.archive": "ou .tar.gz",
+      "download.linux.button": "Baixar AppImage",
       "download.all": "Todas as versões e notas de lançamento",
       "features.title": "O que ele mostra",
       "features.intro": "Os mesmos números de claude.ai → Configurações → Uso, do /usage do Claude Code, da página de uso do Codex no ChatGPT, das configurações do Copilot no GitHub, das cotas que o Gemini CLI informa e da tela de Uso do próprio Grok Bot.",
@@ -333,7 +350,7 @@
       "features.private.title": "Privado por padrão",
       "features.private": "Ele reaproveita o login dos apps que você já tem, só para leitura e em memória. Os tokens nunca são gravados, renovados nem enviados para outro lugar além do próprio serviço.",
       "features.native.title": "Nativo em cada sistema",
-      "features.native": "Swift e SwiftUI no macOS, C# e WPF no Windows. Leve, rápido e à vontade ao lado dos outros ícones da barra e da bandeja.",
+      "features.native": "Swift e SwiftUI no macOS, C# e WPF no Windows, C# e Avalonia no Linux. Leve, rápido e à vontade ao lado dos outros ícones da barra e da bandeja.",
       "features.shot": "Estilos da barra de menu no macOS, com as cores de alerta ligadas e desligadas.",
       "shots.mac": "macOS: um item na barra de menu para cada IA",
       "shots.win": "Windows: um ícone na bandeja por IA, o mesmo pop-up",
@@ -345,7 +362,10 @@
       "install.win.1": "Rode o instalador. Se o SmartScreen aparecer, clique em \"Mais informações\" → \"Executar assim mesmo\".",
       "install.win.2": "Os ícones de anel ficam na bandeja, perto do relógio (podem começar escondidos na seta ^; arraste-os para fora).",
       "install.win.3": "Clique com o botão esquerdo para ver os detalhes; com o direito para atualizar e sair.",
-      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (codex login). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o gh CLI. Para o Gemini, o Gemini CLI logado com o Google (gemini). Para o Grok Bot, o app Grok Bot instalado e logado. A versão de Windows é nova; avise no GitHub se algo estranho acontecer.",
+      "install.linux.1": "Torne o AppImage executável (chmod +x, ou Propriedades → Permitir executar) e abra. Ele entra sozinho no menu de aplicativos.",
+      "install.linux.2": "Os ícones de anel ficam na bandeja. No GNOME, ligue a extensão \"AppIndicator and KStatusNotifierItem Support\"; sem bandeja, abra o app pelo menu para ver o pop-up.",
+      "install.linux.3": "Clique num ícone para ver os detalhes. ⚙ no pop-up → Abrir ao entrar no sistema.",
+      "install.req": "Requisitos: Claude Code logado no mesmo computador (pelo app do Claude ou pelo comando claude). Para o Codex, o Codex CLI ou a extensão logado com o ChatGPT (codex login). Para o GitHub Copilot, um plano do Copilot e um plugin de editor logado (VS Code, JetBrains) ou o gh CLI. Para o Gemini, o Gemini CLI logado com o Google (gemini). Para o Grok Bot, o app Grok Bot instalado e logado. As versões de Windows e Linux são novas; avise no GitHub se algo estranho acontecer.",
       "footer.disclaimer": "Projeto independente. Não é afiliado, patrocinado nem endossado pela Anthropic, pela OpenAI, pelo GitHub/Microsoft, pelo Google, pela xAI/SpaceXAI ou pela Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok e Grok Bot são marcas dos seus respectivos donos. Usa endpoints não documentados que podem mudar a qualquer momento.",
       "footer.source": "Código-fonte",
       "footer.api": "Contrato de dados",
@@ -378,7 +398,7 @@
 
     // Highlight the download for the visitor's system and point the main button at it.
     const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent;
-    const os = /mac/i.test(platform) ? "mac" : /win/i.test(platform) ? "windows" : null;
+    const os = /android/i.test(platform) ? null : /mac/i.test(platform) ? "mac" : /win/i.test(platform) ? "windows" : /linux/i.test(platform) ? "linux" : null;
     if (os) {
       const card = document.querySelector(`.card[data-os="${os}"]`);
       card.classList.add("recommended");

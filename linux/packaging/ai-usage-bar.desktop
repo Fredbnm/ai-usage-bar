@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AI Usage Bar
+Comment=Claude, Codex, Copilot, Gemini and Grok Bot usage limits in the tray
+Comment[pt_BR]=Limites de uso do Claude, Codex, Copilot, Gemini e Grok Bot na bandeja
+Exec=AIUsageBar
+Icon=ai-usage-bar
+Terminal=false
+Categories=Utility;
+Keywords=Claude;Codex;Copilot;Gemini;Grok;AI;usage;limits;
+StartupNotify=false

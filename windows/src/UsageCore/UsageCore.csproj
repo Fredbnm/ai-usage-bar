@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.155.0" />
+    <!-- SkiaSharp ships the Windows and macOS native libraries itself; Linux needs this one (tests, Linux app). -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.155.0" />
     <InternalsVisibleTo Include="UsageCore.Tests" />
   </ItemGroup>
 

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Entry point of the AppImage: the AppImage runtime sets APPIMAGE (the file to update and to
+# start at login) before running this.
+HERE="$(dirname "$(readlink -f "$0")")"
+exec "$HERE/usr/bin/AIUsageBar" "$@"
