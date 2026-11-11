@@ -73,7 +73,6 @@ public static class AppUpdates
 
     /// <summary>Same fixed names the release workflow uploads.</summary>
     public const string SetupAsset = "AIUsageBar-Windows-Setup.exe";
-    public const string PortableAsset = "AIUsageBar-Windows-Portable.exe";
     public const string LinuxAppImageAsset = "AIUsageBar-Linux-x86_64.AppImage";
     /// <summary>The portable Linux build: a folder with the single-file executable inside.</summary>
     public const string LinuxArchiveAsset = "AIUsageBar-Linux-x64.tar.gz";

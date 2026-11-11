@@ -10,16 +10,17 @@ namespace AIUsageBar;
 internal enum UpdatePhase { Idle, Checking, UpToDate, Downloading, Installing, Failed }
 
 /// <summary>
-/// Looks for a newer release now and then and installs it on request. An installed
-/// copy runs the new Setup silently; a portable copy swaps its own .exe. Either way
-/// the app quits first and a small hidden PowerShell script reopens it afterwards.
+/// Looks for a newer release now and then and installs it on request: the copy installed
+/// by Setup quits, runs the new Setup silently and a small hidden PowerShell script reopens
+/// it afterwards. Any other copy (an old portable .exe, a build from source) opens the
+/// download page instead, since releases only carry the installer.
 /// </summary>
 internal sealed class Updater
 {
     /// <summary>The installer's AppId (see installer/AIUsageBar.iss), as Inno Setup names its uninstall key.</summary>
     private const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\{6B0E4C1D-8A2F-4E7B-9C35-1F7D2A9E4B60}_is1";
 
-    private enum InstallKind { Installer, Portable, Page }
+    private enum InstallKind { Installer, Page }
 
     private readonly DispatcherTimer timer = new() { Interval = AppUpdates.CheckInterval };
     private readonly DispatcherTimer clearTimer = new() { Interval = TimeSpan.FromSeconds(6) };
@@ -110,8 +111,7 @@ internal sealed class Updater
         {
             var release = await AppUpdates.FetchLatestAsync(ApiToken);
             lastCheck = DateTimeOffset.Now;
-            var asset = Kind == InstallKind.Portable ? AppUpdates.PortableAsset : AppUpdates.SetupAsset;
-            Available = AppUpdates.Update(release, current, asset);
+            Available = AppUpdates.Update(release, current, AppUpdates.SetupAsset);
             if (manual && Available is null) Flash(UpdatePhase.UpToDate);
             else if (manual || Phase == UpdatePhase.Failed) Set(UpdatePhase.Idle);
             else Changed?.Invoke();
@@ -145,7 +145,7 @@ internal sealed class Updater
         }
     }
 
-    /// <summary>"installer", "portable" or "page": how this copy updates (for <c>--install-update</c>).</summary>
+    /// <summary>"installer" or "page": how this copy updates (for <c>--install-update</c>).</summary>
     internal string InstallMode => Kind.ToString().ToLowerInvariant();
 
     /// <summary>
@@ -154,13 +154,7 @@ internal sealed class Updater
     /// </summary>
     internal async Task<bool> DownloadAndSwapAsync(bool relaunch)
     {
-        var kind = Kind;
-        var asset = kind switch
-        {
-            InstallKind.Installer => Available?.Asset(AppUpdates.SetupAsset),
-            InstallKind.Portable => Available?.Asset(AppUpdates.PortableAsset),
-            _ => null,
-        };
+        var asset = Kind == InstallKind.Installer ? Available?.Asset(AppUpdates.SetupAsset) : null;
         var failure = T("Não consegui baixar ou instalar a nova versão. Baixe pela página.", "Couldn't download or install the new version. Download it from the page.");
         if (asset is null || Environment.ProcessPath is not { } exe)
         {
@@ -172,8 +166,7 @@ internal sealed class Updater
         Progress = 0;
         Set(UpdatePhase.Downloading);
         var work = Path.Combine(Path.GetTempPath(), "AIUsageBar-update-" + Guid.NewGuid().ToString("N"));
-        // The portable .exe is downloaded next to the old one, so the swap is a rename on the same drive.
-        var downloaded = kind == InstallKind.Installer ? Path.Combine(work, asset.Name) : exe + ".update";
+        var downloaded = Path.Combine(work, asset.Name);
         try
         {
             Directory.CreateDirectory(work);
@@ -188,7 +181,7 @@ internal sealed class Updater
             });
             await AppUpdates.DownloadAsync(asset, downloaded, progress);
             Set(UpdatePhase.Installing);
-            StartSwap(kind, downloaded, exe, work, relaunch);
+            StartSetup(downloaded, exe, work, relaunch);
             return true;
         }
         catch (Exception)
@@ -206,26 +199,17 @@ internal sealed class Updater
 
     /// <summary>
     /// Waits for this process to exit, then runs the Setup silently (keeping the user's "Start with Windows"
-    /// choice) or moves the new portable .exe over the old one, and reopens the app either way.
+    /// choice) and reopens the app.
     /// </summary>
-    private static void StartSwap(InstallKind kind, string downloaded, string exe, string work, bool relaunch)
+    private static void StartSetup(string downloaded, string exe, string work, bool relaunch)
     {
         static string Quote(string text) => "'" + text.Replace("'", "''") + "'";
         var pid = Environment.ProcessId;
         var startup = StartupRegistration.IsEnabled ? "startup" : "!startup";
-        var swap = kind == InstallKind.Installer
-            ? $"Start-Process -FilePath {Quote(downloaded)} -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/MERGETASKS={startup}' -Wait"
-            : $$"""
-              foreach ($i in 1..40) {
-                try { Move-Item -LiteralPath {{Quote(downloaded)}} -Destination {{Quote(exe)}} -Force -ErrorAction Stop; break }
-                catch { Start-Sleep -Milliseconds 250 }
-              }
-              Remove-Item -LiteralPath {{Quote(downloaded)}} -Force -ErrorAction SilentlyContinue
-              """;
         var script = $"""
             $ErrorActionPreference = 'SilentlyContinue'
             Wait-Process -Id {pid} -Timeout 60
-            {swap}
+            Start-Process -FilePath {Quote(downloaded)} -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/MERGETASKS={startup}' -Wait
             {(relaunch ? $"Start-Process -FilePath {Quote(exe)}" : "")}
             Remove-Item -LiteralPath {Quote(work)} -Recurse -Force
             """;
@@ -239,8 +223,8 @@ internal sealed class Updater
     }
 
     /// <summary>
-    /// Installed by Setup (the exe sits where the uninstall key says), portable (a single-file exe in a folder
-    /// this user can write to), or neither (a build from source, or a read-only folder): then the page opens.
+    /// Installed by Setup (the exe sits where the uninstall key says), or anything else (an old portable .exe,
+    /// a build from source): then the page opens.
     /// </summary>
     private static InstallKind FindKind()
     {
@@ -248,30 +232,11 @@ internal sealed class Updater
         if (Environment.ProcessPath is not { } exe || !string.IsNullOrEmpty(typeof(Updater).Assembly.Location)) return InstallKind.Page;
         var folder = Path.GetDirectoryName(exe);
         if (folder is null) return InstallKind.Page;
-        using (var key = Registry.CurrentUser.OpenSubKey(UninstallKey))
-        {
-            if (key?.GetValue("InstallLocation") is string installed
-                && string.Equals(Path.TrimEndingDirectorySeparator(installed), Path.TrimEndingDirectorySeparator(folder), StringComparison.OrdinalIgnoreCase))
-            {
-                return InstallKind.Installer;
-            }
-        }
-        return CanWrite(folder) ? InstallKind.Portable : InstallKind.Page;
-    }
-
-    private static bool CanWrite(string folder)
-    {
-        try
-        {
-            var probe = Path.Combine(folder, ".aiusagebar-write-test-" + Guid.NewGuid().ToString("N"));
-            File.WriteAllText(probe, "");
-            File.Delete(probe);
-            return true;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
+        using var key = Registry.CurrentUser.OpenSubKey(UninstallKey);
+        return key?.GetValue("InstallLocation") is string installed
+            && string.Equals(Path.TrimEndingDirectorySeparator(installed), Path.TrimEndingDirectorySeparator(folder), StringComparison.OrdinalIgnoreCase)
+            ? InstallKind.Installer
+            : InstallKind.Page;
     }
 
     private static void TryDelete(string path)
