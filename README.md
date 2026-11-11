@@ -95,7 +95,7 @@ The icons are the agents' own official artwork, cut out at runtime from what is 
 | System | Status | Where |
 |---|---|---|
 | macOS 13+ (Apple Silicon and Intel) | ✅ Native app (Swift/SwiftUI), `.dmg` installer | [`macos/`](macos/) |
-| Windows 10/11 (x64) | 🧪 New: native app (C#/WPF), installer and portable `.exe`. Built and tested by CI, not yet on a real PC | [`windows/`](windows/) |
+| Windows 10/11 (x64) | 🧪 New: native app (C#/WPF) with an installer. Built and tested by CI, not yet on a real PC | [`windows/`](windows/) |
 | Linux (x64) | 🧪 New: native app (C#/Avalonia), AppImage and portable `.tar.gz`. Built and tested by CI and on a virtual X11 desktop, not yet on a real one | [`linux/`](linux/) |
 
 Each system gets its own native app and installer. Everything a new port needs is in [`docs/usage-api.md`](docs/usage-api.md): where each login comes from, which endpoints to call and how to read the responses. Use [`docs/sample-usage.json`](docs/sample-usage.json), [`docs/sample-codex-usage.json`](docs/sample-codex-usage.json), [`docs/sample-copilot-usage.json`](docs/sample-copilot-usage.json), [`docs/sample-gemini-usage.json`](docs/sample-gemini-usage.json) and [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) as test data.
@@ -107,8 +107,7 @@ The [website](https://matheusvelloso.github.io/ai-usage-bar/) always links to th
 | System | File |
 |---|---|
 | macOS | [`AIUsageBar-macOS.dmg`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-macOS.dmg) |
-| Windows (installer) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
-| Windows (portable) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
+| Windows | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
 | Linux (AppImage) | [`AIUsageBar-Linux-x86_64.AppImage`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x86_64.AppImage) |
 | Linux (portable) | [`AIUsageBar-Linux-x64.tar.gz`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x64.tar.gz) |
 
@@ -117,7 +116,7 @@ The [website](https://matheusvelloso.github.io/ai-usage-bar/) always links to th
 From 0.8.0 on, the app looks for a new release on GitHub when it starts and every 6 hours. When there is one, the popup shows **New version … → Update**: one click downloads it, installs it over the current copy and reopens the meter. To look right away: ⚙ → **Check for updates**.
 
 - **macOS:** the app replaces itself where it is (usually Applications). If your user cannot write to that folder, the button opens the download page instead. If you use Grok Bot, macOS asks for "Always Allow" again after an update (see [Limitations](#limitations)).
-- **Windows:** an installed copy runs the new Setup silently and keeps your "Start with Windows" choice; the portable .exe replaces itself in its folder.
+- **Windows:** the app runs the new Setup silently and keeps your "Start with Windows" choice.
 - **Linux:** the AppImage replaces itself, and so does the portable executable; then the meter reopens. If your user cannot write to their folder, the button opens the download page instead.
 - The check calls only GitHub's public releases API (`api.github.com/repos/matheusvelloso/ai-usage-bar/releases/latest`) and downloads only files from this repository's releases; nothing about you or your usage is sent. Versions before 0.8.0 do not have it, so update those once by hand.
 
@@ -138,7 +137,7 @@ From 0.8.0 on, the app looks for a new release on GitHub when it starts and ever
 
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Popup on Windows"></p>
 
-Windows tray icons are small squares, so each one shows a single value (session *or* weekly) around the AI's icon or as a number; the popup shows everything. Prefer not to install? `AIUsageBar-Windows-Portable.exe` runs as is.
+Windows tray icons are small squares, so each one shows a single value (session *or* weekly) around the AI's icon or as a number; the popup shows everything.
 
 ## Install on Linux
 
