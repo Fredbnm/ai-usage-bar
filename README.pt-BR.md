@@ -95,7 +95,7 @@ Os ícones são a arte oficial de cada IA, extraída na hora do que está instal
 | Sistema | Situação | Onde |
 |---|---|---|
 | macOS 13+ (Apple Silicon e Intel) | ✅ App nativo (Swift/SwiftUI), instalador `.dmg` | [`macos/`](macos/) |
-| Windows 10/11 (x64) | 🧪 Novo: app nativo (C#/WPF), instalador e `.exe` portátil. Compilado e testado pelo CI, ainda não num PC de verdade | [`windows/`](windows/) |
+| Windows 10/11 (x64) | 🧪 Novo: app nativo (C#/WPF) com instalador. Compilado e testado pelo CI, ainda não num PC de verdade | [`windows/`](windows/) |
 | Linux (x64) | 🧪 Novo: app nativo (C#/Avalonia), AppImage e `.tar.gz` portátil. Compilado e testado pelo CI e num desktop X11 virtual, ainda não num de verdade | [`linux/`](linux/) |
 
 Cada sistema tem um app nativo e um instalador próprios. Tudo de que um novo port precisa está em [`docs/usage-api.md`](docs/usage-api.md): de onde vem cada login, quais endpoints chamar e como ler as respostas. Use [`docs/sample-usage.json`](docs/sample-usage.json), [`docs/sample-codex-usage.json`](docs/sample-codex-usage.json), [`docs/sample-copilot-usage.json`](docs/sample-copilot-usage.json), [`docs/sample-gemini-usage.json`](docs/sample-gemini-usage.json) e [`docs/sample-grok-usage.json`](docs/sample-grok-usage.json) como dados de teste.
@@ -107,8 +107,7 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 | Sistema | Arquivo |
 |---|---|
 | macOS | [`AIUsageBar-macOS.dmg`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-macOS.dmg) |
-| Windows (instalador) | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
-| Windows (portátil) | [`AIUsageBar-Windows-Portable.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Portable.exe) |
+| Windows | [`AIUsageBar-Windows-Setup.exe`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Windows-Setup.exe) |
 | Linux (AppImage) | [`AIUsageBar-Linux-x86_64.AppImage`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x86_64.AppImage) |
 | Linux (portátil) | [`AIUsageBar-Linux-x64.tar.gz`](https://github.com/matheusvelloso/ai-usage-bar/releases/latest/download/AIUsageBar-Linux-x64.tar.gz) |
 
@@ -117,7 +116,7 @@ O [site](https://matheusvelloso.github.io/ai-usage-bar/) sempre aponta para a ve
 A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 horas. Quando há uma, o pop-up mostra **Nova versão … → Atualizar**: um clique baixa, instala por cima da cópia atual e reabre o medidor. Para procurar na hora: ⚙ → **Procurar atualizações**.
 
 - **macOS:** o app se substitui onde está (normalmente em Aplicativos). Se o seu usuário não pode gravar nessa pasta, o botão abre a página de download. Se você usa o Grok Bot, o macOS pede o "Permitir sempre" de novo depois de uma atualização (veja [Limitações](#limitações)).
-- **Windows:** a cópia instalada roda o novo instalador em silêncio e mantém a sua escolha de "Abrir ao iniciar o Windows"; o .exe portátil se substitui na própria pasta.
+- **Windows:** o app roda o novo instalador em silêncio e mantém a sua escolha de "Abrir ao iniciar o Windows".
 - **Linux:** o AppImage se substitui, e o executável portátil também; depois o medidor reabre. Se o seu usuário não pode gravar na pasta deles, o botão abre a página de download.
 - A verificação chama só a API pública de releases do GitHub (`api.github.com/repos/matheusvelloso/ai-usage-bar/releases/latest`) e só baixa arquivos das releases deste repositório; nada sobre você ou o seu uso é enviado. Versões anteriores à 0.8.0 não têm isso, então atualize essas uma vez à mão.
 
@@ -138,7 +137,7 @@ A partir da 0.8.0, o app procura uma versão nova no GitHub ao abrir e a cada 6 
 
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Pop-up no Windows"></p>
 
-Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo. Prefere não instalar? O `AIUsageBar-Windows-Portable.exe` roda direto.
+Os ícones da bandeja do Windows são quadradinhos, então cada um mostra um valor só (sessão *ou* semanal), em volta do ícone da IA ou como número; o pop-up mostra tudo.
 
 ## Instalar no Linux
 
