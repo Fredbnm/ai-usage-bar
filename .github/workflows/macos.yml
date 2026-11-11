@@ -18,6 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # dmgbuild, which lays out the .dmg window, needs Python 3.10 or newer.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Tests
         run: swift test
 
