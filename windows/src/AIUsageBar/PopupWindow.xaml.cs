@@ -84,14 +84,27 @@ public partial class PopupWindow : Window
         Left = -10_000;
         Top = -10_000;
         Show();
-        UpdateLayout();
         anchor = Forms.Cursor.Position;
+        LimitHeight(anchor);
+        UpdateLayout();
         PlaceNear(anchor);
 
         Activate();
         clock.Start();
         _ = store.RefreshIfStaleAsync();
         updater.CheckIfStale();
+    }
+
+    /// <summary>
+    /// Keeps the popup within the screen: the agents scroll and the header, tabs and settings button stay
+    /// visible. Room is left for the header, the update banner, the tab strip and the footer.
+    /// </summary>
+    private void LimitHeight(System.Drawing.Point cursor)
+    {
+        var work = Forms.Screen.FromPoint(cursor).WorkingArea;
+        var toDip = PresentationSource.FromVisual(this)!.CompositionTarget!.TransformFromDevice;
+        var height = toDip.Transform(new Point(0, work.Height)).Y;
+        Body.MaxHeight = Math.Max(240, height - 240);
     }
 
     /// <summary>Next to the taskbar, wherever it is docked, centred on the click.</summary>
@@ -242,6 +255,7 @@ public partial class PopupWindow : Window
         Left = -10_000;
         Top = -10_000;
         Show();
+        LimitHeight(Forms.Cursor.Position);
         UpdateLayout();
         Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 

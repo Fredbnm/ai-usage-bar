@@ -88,6 +88,9 @@
                 </ItemsControl>
             </DockPanel>
 
+            <!-- Scrolls when "All AIs together" (or the Agents tab) is taller than the screen allows. -->
+            <ScrollViewer x:Name="Body" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+            <StackPanel>
             <!-- Agents tab: every supported agent and whether it is connected. -->
             <StackPanel DataContext="{Binding Agents}" Visibility="{Binding DataContext.AgentsVisibility, RelativeSource={RelativeSource AncestorType=Window}}">
                 <Border Height="1" Margin="0,0,0,12" Background="{DynamicResource Divider}" />
@@ -132,6 +135,9 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+
+            </StackPanel>
+            </ScrollViewer>
 
             <!-- Footer -->
             <Border Height="1" Margin="0,12,0,6" Background="{DynamicResource Divider}" />

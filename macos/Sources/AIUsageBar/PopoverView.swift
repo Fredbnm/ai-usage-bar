@@ -20,10 +20,18 @@ struct PopoverView: View {
                 TabStrip(store: store)
             }
             if store.showsAllProviders {
-                ForEach(store.visibleProviders, id: \.self) { id in
-                    Divider()
-                    ProviderSection(provider: id, state: store.state(for: id))
+                Divider()
+                // Scrolls when every agent together is taller than the screen allows;
+                // the header and the gear stay in view.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(Array(store.visibleProviders.enumerated()), id: \.element) { index, id in
+                            if index > 0 { Divider() }
+                            ProviderSection(provider: id, state: store.state(for: id))
+                        }
+                    }
                 }
+                .frame(maxHeight: Self.maxListHeight)
             } else {
                 Divider()
                 if let id = store.currentProvider {
@@ -39,6 +47,11 @@ struct PopoverView: View {
         .frame(width: 320)
         .id(store.language)
         .background(tabKeyboardShortcuts)
+    }
+
+    /// Room for "All AIs together": the screen's height minus the header, banner and footer.
+    static var maxListHeight: CGFloat {
+        max(240, (NSScreen.main?.visibleFrame.height ?? 800) - 240)
     }
 
     /// Left/Right arrows move between tabs.
