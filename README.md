@@ -4,7 +4,7 @@
 
 > **Independent project.** Not affiliated with, sponsored or endorsed by Anthropic, OpenAI, GitHub/Microsoft, Google, xAI/SpaceXAI or Anysphere (Cursor). Claude, Codex, GitHub Copilot, Gemini, Grok and Grok Bot are trademarks of their respective owners. The app relies on internal, undocumented endpoints of these services, which may change or stop working at any time. Use at your own risk.
 
-A meter for your AI usage limits that lives in the macOS menu bar or the Windows tray. Each AI shows up as its own official icon (Claude's star, Codex's blossom, Copilot's mascot…) inside a ring that fills with usage; one click opens a popover with the details for each service. With two or more AIs connected, the popover has **one tab per agent**, each showing its fullest limit so you can see them all at a glance:
+A meter for your AI usage limits that lives in the macOS menu bar or the Windows tray. Each AI shows up as its own official icon (Claude's star, Codex's blossom, Copilot's mascot…) inside a ring that fills with usage; one click opens a popover with the details for each service. With two or more AIs connected, the popover has **one tab per agent**, each showing its fullest limit (or the one you pick) so you can see them all at a glance. Prefer them all on one screen? ⚙ → **Popup** → **All AIs together**.
 
 **Claude**
 - **Current session** (5-hour window): how much is used and when it resets
@@ -30,7 +30,7 @@ The numbers are the same ones shown in claude.ai → Settings → Usage, in Clau
 
 ### Connecting your agents
 
-The **＋** tab (or ⚙ → **Set up agents…**) lists every supported agent: ✓ connected, or a hint on how to sign in (for Copilot: sign in to GitHub Copilot in VS Code, or run `gh auth login`; for Codex: `codex login`; for Gemini: run `gemini` and sign in with Google). It opens by itself on the first launch. The app never asks you to log in: it reuses the logins your tools already have, so signing in elsewhere is enough and the tab appears within a few minutes. Untick **Show** to hide an agent you do not want to track.
+The **＋** tab (or ⚙ → **Set up agents…**) lists every supported agent: ✓ connected, or a hint on how to sign in (for Copilot: sign in to GitHub Copilot in VS Code, or run `gh auth login`; for Codex: `codex login`; for Gemini: run `gemini` and sign in with Google). It opens by itself on the first launch. The app never asks you to log in: it reuses the logins your tools already have, so signing in elsewhere is enough and the tab appears within a few minutes. An agent shows up on its own once its usage loads. A login that returns no usage stays unticked, marked "Login found, but no usage data": for example the `gh` CLI signed in on an account without Copilot. Tick **Show** to track it anyway, with its warning, or untick it to hide an agent you do not want to track.
 
 <p align="center">
   <img src="docs/screenshot-light.png" width="320" alt="Popover, light theme">
@@ -39,7 +39,7 @@ The **＋** tab (or ⚙ → **Set up agents…**) lists every supported agent: �
 
 ### Screenshots (Windows)
 
-One tab per agent, each with the agent's official icon and its fullest limit; the **＋** tab lists every supported agent and how to connect the ones that are not signed in yet.
+One tab per agent, each with the agent's official icon and its fullest limit (or the one you pick); the **＋** tab lists every supported agent and how to connect the ones that are not signed in yet.
 
 <p align="center">
   <img src="docs/screenshot-windows.png" width="300" alt="Windows popup on the Claude tab, with tabs for Claude, Codex and Copilot">
@@ -64,7 +64,7 @@ Under ⚙︎ in the popover:
 - **AI icon with ring** (default): each AI's icon inside a ring that fills with usage.
 - **Percentage only**: no icon, just a small pie gauge and the number, like the very first version.
 
-**What each AI shows**
+**What each AI shows** (⚙ → the AI → **In the menu bar**)
 
 | Service | Options |
 |---|---|
@@ -75,6 +75,10 @@ Under ⚙︎ in the popover:
 | Grok Bot | **Weekly** (default) · **Hide** |
 
 Everything is drawn in the menu bar's own color, like other menu bar icons: white on a dark menu bar, black on a light one. The ring (or pie) follows the first number (with "Session + weekly" it shows the session) and is the only element that changes color: orange when usage reaches a warning level and red when it is critical.
+
+**Popup** (⚙ → **Popup**): **One tab per agent** (default) or **All AIs together**, every agent one below the other on a single screen.
+
+**In its tab** (⚙ → the AI → **In its tab**, or right-click the tab): the number on each agent's tab. **Highest usage** (default) shows whichever limit is fullest. You can pin any one of that AI's limits instead: Claude's weekly limit for all models or for one model, Codex's session, Copilot's monthly requests, a Gemini model's daily quota.
 
 **Alert colors in menu bar** (on by default): turn it off to keep the ring or pie in the menu bar color, without orange or red. The popover keeps its colors.
 
@@ -127,7 +131,7 @@ From 0.8.0 on, the app looks for a new release on GitHub when it starts and ever
 
 1. Run `AIUsageBar-Windows-Setup.exe` (installs for your user only, no admin rights). If SmartScreen appears, click **More info** → **Run anyway**: the app is not signed with a Microsoft certificate yet.
 2. Each AI gets its own **tray icon**, next to the clock. Windows may put new icons in the **^** overflow area; drag them onto the taskbar to keep them visible.
-3. Left-click an icon for the popup, right-click for refresh and quit. Options (style, what each AI shows, alert colors, language, start with Windows) are under ⚙ in the popup.
+3. Left-click an icon for the popup, right-click for refresh and quit. Options (style, tabs or all AIs together, what each AI shows in the tray and in its tab, alert colors, language, start with Windows) are under ⚙ in the popup; right-click a tab to pick its number.
 
 <p align="center"><img src="docs/screenshot-windows.png" width="320" alt="Popup on Windows"></p>
 
@@ -212,6 +216,7 @@ APP="/Applications/AI Usage Bar.app/Contents/MacOS/AIUsageBar"
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --copilot-fixture docs/sample-copilot-usage.json --tab copilot   # a given tab
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --first-run                                                   # the first-run Agents tab
 "$APP" --snapshot pop.png --fixture docs/sample-usage.json --update-available 9.9.9                                      # the "New version" banner
+"$APP" --snapshot pop.png --fixture docs/sample-usage.json --grok-fixture docs/sample-grok-usage.json --layout list        # all AIs together; --tab-limit claude=weekly_all picks a tab's number
 "$APP" --install-update --no-relaunch   # the in-app update from the command line: installs a newer release over this copy
 ```
 

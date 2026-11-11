@@ -3,7 +3,8 @@ using AIUsageBar.Core;
 
 namespace AIUsageBar;
 
-internal sealed record AgentRow(ProviderId Id, SetupStatus Status, bool Hidden, string? Plan);
+/// <summary>One agent in the Agents tab. <paramref name="HasData"/>: its usage loaded at least once on this computer.</summary>
+internal sealed record AgentRow(ProviderId Id, SetupStatus Status, bool IsShown, bool HasData, string? Plan);
 
 internal sealed class ProviderState
 {
@@ -62,7 +63,10 @@ internal sealed class UsageStore
     public string CurrentTab =>
         PopupTabs.Resolve(requestedTab ?? Settings.SelectedProvider, VisibleProviders, Settings.OnboardingDismissed);
 
-    public bool ShowTabStrip => PopupTabs.ShowStrip(VisibleProviders.Count);
+    public bool ShowTabStrip => Settings.Layout == PopupLayout.Tabs && PopupTabs.ShowStrip(VisibleProviders.Count);
+
+    /// <summary>"All AIs together": every agent on one screen, unless the Agents tab was asked for.</summary>
+    public bool ShowsAllProviders => Settings.Layout == PopupLayout.List && CurrentTab != PopupTabs.AgentsKey;
 
     public void SelectTab(string key)
     {
@@ -88,12 +92,21 @@ internal sealed class UsageStore
         Changed?.Invoke();
     }
 
-    public void SetProviderHidden(ProviderId id, bool hidden) => UpdateSettings(() =>
+    /// <summary>
+    /// The Agents tab's "Show" box. Ticking it shows the agent even when its usage does not load
+    /// (with the error), unticking hides it even when it works.
+    /// </summary>
+    public void SetProviderHidden(ProviderId id, bool hidden)
     {
-        Settings.HiddenProviders.RemoveAll(key => key == id.Key());
-        if (hidden) Settings.HiddenProviders.Add(id.Key());
-        UpdateVisibleProviders();
-    });
+        UpdateSettings(() =>
+        {
+            Settings.HiddenProviders.RemoveAll(key => key == id.Key());
+            Settings.ShownProviders.RemoveAll(key => key == id.Key());
+            (hidden ? Settings.HiddenProviders : Settings.ShownProviders).Add(id.Key());
+            UpdateVisibleProviders();
+        });
+        _ = RefreshAsync(force: true);
+    }
 
     /// <summary>One row per supported agent, connected or not, for the Agents tab.</summary>
     public IReadOnlyList<AgentRow> AgentRows() =>
@@ -102,7 +115,8 @@ internal sealed class UsageStore
         {
             var provider = providers.FirstOrDefault(p => p.Id == descriptor.Id);
             var status = provider?.Detect() ?? (State(descriptor.Id).Snapshot is null ? SetupStatus.NeedsLogin : SetupStatus.Connected);
-            return new AgentRow(descriptor.Id, status, Settings.HiddenProviders.Contains(descriptor.Key), State(descriptor.Id).Snapshot?.PlanName);
+            var snapshot = State(descriptor.Id).Snapshot;
+            return new AgentRow(descriptor.Id, status, VisibleProviders.Contains(descriptor.Id), snapshot is not null, snapshot?.PlanName);
         }),
     ];
 
@@ -118,8 +132,17 @@ internal sealed class UsageStore
 
     public void SetStyle(TrayStyle style) => UpdateSettings(() => Settings.Style = style);
 
+    public void SetLayout(PopupLayout layout) => UpdateSettings(() => Settings.Layout = layout);
+
     public void SetDisplay(ProviderId provider, TrayDisplay display) =>
         UpdateSettings(() => Settings.Displays[provider.Key()] = display);
+
+    public void SetTabLimit(ProviderId provider, string key) =>
+        UpdateSettings(() => Settings.TabLimits[provider.Key()] = key);
+
+    /// <summary>What the agent's tab can show, for its settings menu.</summary>
+    public IReadOnlyList<string> TabLimitOptions(ProviderId provider) =>
+        TabLimit.Options(State(provider).Snapshot?.Items ?? [], Settings.TabLimitFor(provider));
 
     public void SetTaskbarWidget(bool enabled) => UpdateSettings(() => Settings.ShowTaskbarWidget = enabled);
 
@@ -183,12 +206,14 @@ internal sealed class UsageStore
         return fresh ? Task.CompletedTask : RefreshAsync(force: true);
     }
 
+    /// <summary>Also fetches agents that are signed in but not shown yet, so one appears as soon as its usage loads.</summary>
     public async Task RefreshAsync(bool force)
     {
         UpdateVisibleProviders();
         var now = DateTimeOffset.Now;
+        var candidates = Candidates().Select(p => p.Id).ToHashSet();
         var targets = providers
-            .Where(p => VisibleProviders.Contains(p.Id) && !State(p.Id).IsLoading)
+            .Where(p => candidates.Contains(p.Id) && !State(p.Id).IsLoading)
             .Where(p => force || State(p.Id).BackoffUntil is not { } backoff || backoff <= now)
             .ToList();
         if (targets.Count == 0) return;
@@ -230,12 +255,22 @@ internal sealed class UsageStore
                 if (error?.Kind == UsageErrorKind.RateLimited) state.BackoffUntil = DateTimeOffset.Now + RateLimitBackoff;
             }
         }
+        UpdateVisibleProviders();
         Changed?.Invoke();
     }
 
+    /// <summary>Signed in on this computer and not switched off by the user.</summary>
+    private IEnumerable<IUsageProvider> Candidates() =>
+        providers.Where(p => !Settings.HiddenProviders.Contains(p.Id.Key()) && p.IsAvailable());
+
+    /// <summary>
+    /// A login alone is not enough to show an agent: the gh CLI, for one, can be signed in without a
+    /// Copilot plan. An agent shows up once its usage has loaded on this computer (it stays after that,
+    /// also when its login later expires), or when the user ticked Show for it.
+    /// </summary>
     private void UpdateVisibleProviders() =>
-        VisibleProviders = [.. providers
-            .Where(p => !Settings.HiddenProviders.Contains(p.Id.Key()) && p.IsAvailable())
+        VisibleProviders = [.. Candidates()
+            .Where(p => State(p.Id).Snapshot is not null || Settings.ShownProviders.Contains(p.Id.Key()))
             .Select(p => p.Id)];
 
     // MARK: Cache (usage responses only, never tokens)

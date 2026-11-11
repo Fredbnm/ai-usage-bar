@@ -8,7 +8,7 @@ namespace AIUsageBar;
 /// Headless modes for debugging and CI:
 /// <code>
 /// AIUsageBar.exe --dump [--raw]
-/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run] [--update-available 9.9.9]
+/// AIUsageBar.exe --snapshot out.png [--fixture claude.json] [--codex-fixture codex.json] [--copilot-fixture copilot.json] [--gemini-fixture gemini.json] [--grok-fixture grok.json] [--dark] [--lang en|pt] [--tab claude|copilot|grokBot|agents] [--first-run] [--update-available 9.9.9] [--tab-limit claude=weekly_all] [--layout tabs|list]
 /// </code>
 /// AIUsageBar.exe --install-update [--no-relaunch] [--as-version 0.0.1]
 /// <c>--snapshot</c> also writes <c>out-tray.png</c> with every tray icon combination.
@@ -115,6 +115,11 @@ internal sealed class CliCommand
         var settings = new AppSettings { LanguageValue = Localization.Current, OnboardingDismissed = !args.Contains("--first-run") };
         var store = new UsageStore(settings, snapshots);
         if (Option("--tab") is { } tab) store.PreviewTab(tab);
+        if (Enum.TryParse<PopupLayout>(Option("--layout"), ignoreCase: true, out var layout)) settings.Layout = layout;
+        if (Option("--tab-limit")?.Split('=', 2) is [var agent, var limit] && PopupTabs.ProviderOf(agent) is { } limited)
+        {
+            settings.TabLimits[limited.Key()] = limit;
+        }
         var updater = AppVersion.Parse(Option("--update-available")) is { } update
             ? Updater.Preview(update, Updater.RunningVersion)
             : new Updater(current: null);

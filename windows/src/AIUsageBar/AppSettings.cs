@@ -12,6 +12,9 @@ internal sealed class AppSettings
     public bool ColorAlerts { get; set; } = true;
     public Dictionary<string, TrayDisplay> Displays { get; set; } = [];
 
+    /// <summary>The limit each agent's tab shows (<see cref="TabLimit"/> keys); missing means the fullest one.</summary>
+    public Dictionary<string, string> TabLimits { get; set; } = [];
+
     /// <summary>The first-run "Agents" tab was closed with Done.</summary>
     public bool OnboardingDismissed { get; set; }
 
@@ -30,6 +33,12 @@ internal sealed class AppSettings
 
     /// <summary>Agents the user switched off in the Agents tab (keys).</summary>
     public List<string> HiddenProviders { get; set; } = [];
+
+    /// <summary>Agents the user switched on in the Agents tab, shown even before they return any usage (keys).</summary>
+    public List<string> ShownProviders { get; set; } = [];
+
+    /// <summary>Tabs (one agent at a time) or every agent on one screen.</summary>
+    public PopupLayout Layout { get; set; } = PopupLayout.Tabs;
 
     [JsonIgnore]
     public AppLanguage LanguageValue
@@ -53,6 +62,9 @@ internal sealed class AppSettings
         Displays.TryGetValue(provider.Key(), out var display) && TrayOptions.For(provider).Contains(display)
             ? display
             : TrayOptions.Default(provider);
+
+    public string TabLimitFor(ProviderId provider) =>
+        TabLimits.TryGetValue(provider.Key(), out var key) && !string.IsNullOrEmpty(key) ? key : TabLimit.Highest;
 
     public static AppSettings Load()
     {

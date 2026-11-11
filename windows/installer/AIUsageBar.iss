@@ -1,6 +1,6 @@
 ; Inno Setup script for the Windows installer (per-user, no admin rights).
 ; Built by .github/workflows/windows.yml:
-;   ISCC.exe /DAppVersion=0.8.0 installer\AIUsageBar.iss
+;   ISCC.exe /DAppVersion=0.9.0 installer\AIUsageBar.iss
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"

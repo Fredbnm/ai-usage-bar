@@ -33,7 +33,11 @@ jobs:
       # Pretends to be an old version and lets the app update itself from the latest
       # published release, the way a user's copy would.
       - name: Self-update from the latest release
+        # Not on tags: whichever system finishes first publishes the new release, and
+        # until the other one adds its files, "latest" has nothing for it to install.
+        if: github.ref_type != 'tag'
         continue-on-error: true
+        timeout-minutes: 10
         env:
           # The app asks GitHub anonymously; shared CI machines often run out of that limit.
           GITHUB_TOKEN: ${{ github.token }}

@@ -13,5 +13,7 @@ let package = Package(
         // Menu bar app (AppKit status item + SwiftUI popover).
         .executableTarget(name: "AIUsageBar", dependencies: ["UsageCore"]),
         .testTarget(name: "UsageCoreTests", dependencies: ["UsageCore"]),
+        // The app's own logic (which agents show up, settings), with fake providers.
+        .testTarget(name: "AppTests", dependencies: ["AIUsageBar", "UsageCore"]),
     ]
 )

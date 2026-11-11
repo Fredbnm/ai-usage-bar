@@ -47,7 +47,8 @@ jobs:
           foreach ($variant in @(
               @('light', 'en', @()), @('dark', 'en', @('--dark')), @('light-pt', 'pt', @()),
               @('copilot-tab', 'en', @('--tab', 'copilot')), @('codex-tab', 'en', @('--tab', 'codex')), @('gemini-tab', 'en', @('--tab', 'gemini')), @('agents-first-run', 'en', @('--first-run')),
-              @('update-available', 'en', @('--update-available', '9.9.9')))) {
+              @('update-available', 'en', @('--update-available', '9.9.9')),
+              @('tab-limit', 'en', @('--tab-limit', 'claude=weekly_all')), @('all-together', 'en', @('--layout', 'list')))) {
             $out = Join-Path (Resolve-Path screens) "popup-$($variant[0]).png"
             $arguments = @('--snapshot', $out, '--lang', $variant[1]) + $fixtures + $variant[2]
             $process = Start-Process -FilePath $exe -ArgumentList $arguments -Wait -PassThru
@@ -82,7 +83,11 @@ jobs:
       # published release, the way a user's copy would: once as a portable .exe and once
       # installed by Setup. Passes when the exe on disk matches the release's exe.
       - name: Self-update from the latest release
+        # Not on tags: whichever system finishes first publishes the new release, and
+        # until the other one adds its files, "latest" has nothing for it to install.
+        if: github.ref_type != 'tag'
         continue-on-error: true
+        timeout-minutes: 10
         env:
           # The app asks GitHub anonymously; shared CI machines often run out of that limit.
           GITHUB_TOKEN: ${{ github.token }}

@@ -19,11 +19,26 @@ struct PopoverView: View {
             if store.showTabStrip {
                 TabStrip(store: store)
             }
-            Divider()
-            if let id = store.currentProvider {
-                ProviderSection(provider: id, state: store.state(for: id))
+            if store.showsAllProviders {
+                Divider()
+                // Scrolls when every agent together is taller than the screen allows;
+                // the header and the gear stay in view.
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        ForEach(Array(store.visibleProviders.enumerated()), id: \.element) { index, id in
+                            if index > 0 { Divider() }
+                            ProviderSection(provider: id, state: store.state(for: id))
+                        }
+                    }
+                }
+                .frame(maxHeight: Self.maxListHeight)
             } else {
-                AgentsSection(store: store)
+                Divider()
+                if let id = store.currentProvider {
+                    ProviderSection(provider: id, state: store.state(for: id))
+                } else {
+                    AgentsSection(store: store)
+                }
             }
             Divider()
             footer
@@ -32,6 +47,11 @@ struct PopoverView: View {
         .frame(width: 320)
         .id(store.language)
         .background(tabKeyboardShortcuts)
+    }
+
+    /// Room for "All AIs together": the screen's height minus the header, banner and footer.
+    static var maxListHeight: CGFloat {
+        max(240, (NSScreen.main?.visibleFrame.height ?? 800) - 240)
     }
 
     /// Left/Right arrows move between tabs.
@@ -80,11 +100,21 @@ struct PopoverView: View {
                         Text(style.label).tag(style)
                     }
                 }
+                Picker(tr("Pop-up", "Popup"), selection: $store.popupLayout) {
+                    ForEach(PopupLayout.allCases) { layout in
+                        Text(layout.label).tag(layout)
+                    }
+                }
                 Button(tr("Configurar agentes…", "Set up agents…")) { store.showAgents() }
                 ForEach(store.visibleProviders, id: \.self) { id in
-                    Picker(id.displayName + tr(" na barra", " in menu bar"), selection: menuBarBinding(for: id)) {
-                        ForEach(id.menuBarDisplayOptions) { option in
-                            Text(option.label(for: id)).tag(option)
+                    Menu(id.displayName) {
+                        Picker(tr("Na barra de menu", "In the menu bar"), selection: menuBarBinding(for: id)) {
+                            ForEach(id.menuBarDisplayOptions) { option in
+                                Text(option.label(for: id)).tag(option)
+                            }
+                        }
+                        if store.popupLayout == .tabs {
+                            TabLimitPicker(store: store, provider: id)
                         }
                     }
                 }
@@ -258,7 +288,24 @@ private struct UpdateBanner: View {
     }
 }
 
-/// One tab per agent (icon, name and its fullest limit) and the Agents tab.
+/// "In the tab" choices for one agent: the fullest limit or any one of its limits.
+private struct TabLimitPicker: View {
+    @ObservedObject var store: UsageStore
+    let provider: ProviderID
+
+    var body: some View {
+        Picker(tr("Na aba", "In its tab"), selection: Binding(
+            get: { store.tabLimit(for: provider) },
+            set: { store.setTabLimit($0, for: provider) }
+        )) {
+            ForEach(store.tabLimitOptions(for: provider), id: \.self) { key in
+                Text(TabLimit.title(for: key)).tag(key)
+            }
+        }
+    }
+}
+
+/// One tab per agent (icon, name and the limit picked for it, by default the fullest) and the Agents tab.
 private struct TabStrip: View {
     @ObservedObject var store: UsageStore
 
@@ -277,7 +324,7 @@ private struct TabStrip: View {
 
     private func agentTab(_ id: ProviderID) -> some View {
         let state = store.state(for: id)
-        let summary = TabSummary.make(snapshot: state.snapshot, hasError: state.error != nil)
+        let summary = TabSummary.make(snapshot: state.snapshot, hasError: state.error != nil, limit: store.tabLimit(for: id))
         let selected = store.currentTab == id.rawValue
         let status = summary.isWarning && summary.text != "!" ? summary.text + " ⚠" : summary.text
         let statusColor: Color = summary.text == "–"
@@ -294,7 +341,10 @@ private struct TabStrip: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundColor(statusColor)
 
-        return button(key: id.rawValue, spoken: tabDescription(id, summary)) {
+        return button(key: id.rawValue, spoken: tabDescription(id, summary), menu: {
+            // Right-click a tab to pick what it shows.
+            TabLimitPicker(store: store, provider: id)
+        }) {
             // Icon + name + number when they fit; the name is the first thing to go.
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 4) {
@@ -311,7 +361,11 @@ private struct TabStrip: View {
         }
     }
 
-    private func button<Label: View>(key: String, spoken: String, @ViewBuilder label: () -> Label) -> some View {
+    private func button<Label: View, MenuContent: View>(
+        key: String, spoken: String,
+        @ViewBuilder menu: () -> MenuContent = { EmptyView() },
+        @ViewBuilder label: () -> Label
+    ) -> some View {
         let selected = store.currentTab == key
         return Button {
             store.selectTab(key)
@@ -326,6 +380,7 @@ private struct TabStrip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .contextMenu { menu() }
         .help(spoken)
         .accessibilityLabel(spoken)
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
@@ -351,15 +406,15 @@ private struct AgentsSection: View {
                 .foregroundStyle(.secondary)
             if !store.onboardingDismissed {
                 Text(tr(
-                    "Aqui estão os agentes que o medidor sabe ler. Os que já têm login neste Mac aparecem sozinhos; para os outros, siga a dica.",
-                    "These are the agents the meter can read. The ones already signed in on this Mac show up on their own; for the others, follow the hint."
+                    "Aqui estão os agentes que o medidor sabe ler. Os que você já usa neste Mac aparecem sozinhos; para os outros, siga a dica.",
+                    "These are the agents the meter can read. The ones you already use on this Mac show up on their own; for the others, follow the hint."
                 ))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(store.agentRows) { row in
-                AgentRowView(row: row) { store.setProviderHidden(row.id, !row.isHidden) }
+                AgentRowView(row: row) { store.setProviderHidden(row.id, row.isShown) }
             }
             HStack {
                 Spacer()
@@ -379,30 +434,52 @@ private struct AgentRowView: View {
     let toggle: () -> Void
 
     var body: some View {
-        let connected = row.status == .connected
+        let signedIn = row.status == .connected
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: connected ? "checkmark" : "exclamationmark.triangle.fill")
-                .foregroundStyle(connected ? Severity.normal.color : Severity.warning.color)
-                .frame(width: 14)
+            icon.frame(width: 14)
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.id.displayName).font(.system(size: 13, weight: .semibold))
-                Text(connected
-                    ? tr("Conectado", "Connected") + (row.plan.map { " · \($0)" } ?? "")
-                    : tr("Login não encontrado", "No login found"))
+                Text(status)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                if !connected {
-                    Text(row.id.setupHint)
+                if let hint {
+                    Text(hint)
                         .font(.caption)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer()
-            if connected {
-                Toggle(tr("Mostrar", "Show"), isOn: Binding(get: { !row.isHidden }, set: { _ in toggle() }))
+            if signedIn {
+                Toggle(tr("Mostrar", "Show"), isOn: Binding(get: { row.isShown }, set: { _ in toggle() }))
                     .toggleStyle(.checkbox)
             }
         }
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        if row.status != .connected {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Severity.warning.color)
+        } else if row.hasData {
+            Image(systemName: "checkmark").foregroundStyle(Severity.normal.color)
+        } else {
+            Image(systemName: "questionmark.circle").foregroundStyle(.secondary)
+        }
+    }
+
+    private var status: String {
+        if row.status != .connected { return tr("Login não encontrado", "No login found") }
+        if row.hasData { return tr("Conectado", "Connected") + (row.plan.map { " · \($0)" } ?? "") }
+        return tr("Login encontrado, mas sem dados de uso", "Login found, but no usage data")
+    }
+
+    private var hint: String? {
+        if row.status != .connected { return row.id.setupHint }
+        if row.hasData { return nil }
+        return tr(
+            "Talvez esta conta não tenha o \(row.id.displayName). Marque Mostrar para acompanhar mesmo assim.",
+            "This account may not have \(row.id.displayName). Tick Show to track it anyway."
+        )
     }
 }
 
