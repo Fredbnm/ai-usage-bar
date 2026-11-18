@@ -18,6 +18,8 @@ internal sealed class ProviderState
     public bool IsLoading { get; set; }
     /// <summary>The last request, successful or not.</summary>
     public DateTimeOffset? LastAttempt { get; set; }
+    /// <summary>The login the last request used, when the agent can name one, so a sign-in change can lift a wait the previous login earned.</summary>
+    public string? Login { get; set; }
     public RateLimitBackoff Backoff { get; } = new();
     /// <summary>Claude, with the Claude Code switch off: a rate limit with nothing to show suggests turning it on.</summary>
     public bool SuggestsClaudeCode { get; set; }
@@ -369,7 +371,8 @@ internal sealed class UsageStore
         var candidates = Candidates().Select(p => p.Id).ToHashSet();
         var targets = providers
             .Where(p => candidates.Contains(p.Id)
-                && State(p.Id) is { IsLoading: false } state && !state.Backoff.IsWaiting(now) && wanted(state))
+                && State(p.Id) is { IsLoading: false } state && wanted(state)
+                && (!state.Backoff.IsWaiting(now) || SignedInAgain(p, state)))
             .ToList();
         if (targets.Count == 0) return;
 
@@ -377,6 +380,8 @@ internal sealed class UsageStore
         {
             State(provider.Id).IsLoading = true;
             State(provider.Id).LastAttempt = now;
+            // Got through on a new login: the previous one's wait is spent.
+            if (State(provider.Id).Backoff.IsWaiting(now)) State(provider.Id).Backoff.Reset();
         }
         Changed?.Invoke();
 
@@ -413,7 +418,17 @@ internal sealed class UsageStore
             else
             {
                 state.Error = error;
+                // A login the server rejects will be rejected again in three
+                // minutes. Asking anyway, on every tick and every popup, is what
+                // turns one 401 into a 429 nothing can wait out. The wait is
+                // lifted as soon as the login changes.
                 if (error is { IsRateLimit: true }) state.Backoff.Record(error.RetryAfter, DateTimeOffset.Now);
+                else if (error.Kind is UsageErrorKind.Unauthorized or UsageErrorKind.UnauthorizedExpired
+                         or UsageErrorKind.NotLoggedIn) state.Backoff.Record(null, DateTimeOffset.Now);
+                // Only the failing path needs to remember the login, and only to
+                // notice it changing: reading it costs a process on Claude.
+                if (state.Backoff.IsWaiting(DateTimeOffset.Now))
+                    state.Login = providers.FirstOrDefault(p => p.Id == id)?.LoginIdentity();
             }
         }
         ShowClaudeCode();
@@ -477,6 +492,10 @@ internal sealed class UsageStore
         }
         if (changed) Changed?.Invoke();
     }
+
+    /// <summary>Whether the agent's login is not the one that earned its current wait.</summary>
+    private static bool SignedInAgain(IUsageProvider provider, ProviderState state) =>
+        state.Login is { } previous && provider.LoginIdentity() is { } current && current != previous;
 
     /// <summary>Asks the rate-limited agents again when the first wait ends, instead of at the next 3-minute tick.</summary>
     private void ScheduleRetry()

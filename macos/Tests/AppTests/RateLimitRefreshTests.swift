@@ -17,7 +17,16 @@ private final class ScriptedProvider: UsageProvider, @unchecked Sendable {
 
     var calls: Int { lock.withLock { count } }
 
+    /// Which login it would use now; changing it stands for signing in again.
+    var login: String? {
+        get { lock.withLock { currentLogin } }
+        set { lock.withLock { currentLogin = newValue } }
+    }
+    private var currentLogin: String? = "login-1"
+
     func isAvailable() -> Bool { true }
+
+    func loginIdentity() -> String? { login }
 
     func fetch() async throws -> ProviderFetchResult {
         let answer: UsageError? = lock.withLock {
@@ -76,6 +85,70 @@ final class RateLimitRefreshTests: XCTestCase {
     private func wait(_ seconds: TimeInterval) { time += seconds }
 
     private let tooMany = UsageError.rateLimited(retryAfter: nil)
+    private let rejected = UsageError.unauthorized(expired: false)
+
+    func testARejectedLoginWaitsInsteadOfAskingOnEveryTick() async {
+        let claude = ScriptedProvider(id: .claude, answers: [rejected])
+        let store = makeStore([claude])
+        await store.refresh()
+
+        let state = store.state(for: .claude)
+        XCTAssertTrue(state.hasWarning, "a login the server refuses is an error, not a notice")
+        XCTAssertEqual(state.backoff.until, time.addingTimeInterval(60))
+
+        // The three-minute tick, the popover and the refresh button all hold off.
+        wait(30)
+        await store.refresh()
+        await store.refreshIfStale()
+        XCTAssertEqual(claude.calls, 1)
+
+        // And the wait grows, instead of asking a refused login every three
+        // minutes until the server answers 429 instead of 401.
+        wait(31)
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 2)
+        XCTAssertEqual(store.state(for: .claude).backoff.until, time.addingTimeInterval(120))
+    }
+
+    func testSigningInAgainLiftsTheWait() async {
+        let claude = ScriptedProvider(id: .claude, answers: [rejected, nil])
+        let store = makeStore([claude])
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 1)
+
+        wait(10)
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 1, "still the login the server refused")
+
+        claude.login = "login-2"
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 2, "a new login is asked at once, not after the wait")
+        XCTAssertNil(store.state(for: .claude).error)
+        XCTAssertEqual(store.state(for: .claude).backoff, RateLimitBackoff())
+    }
+
+    func testSigningInAgainLiftsARateLimitWaitToo() async {
+        let claude = ScriptedProvider(id: .claude, answers: [tooMany, nil])
+        let store = makeStore([claude])
+        await store.refresh()
+        wait(10)
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 1)
+
+        claude.login = "login-2"
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 2, "the limit was earned by the previous login")
+    }
+
+    func testAnAgentThatCannotNameItsLoginStillWaits() async {
+        let claude = ScriptedProvider(id: .claude, answers: [tooMany])
+        claude.login = nil
+        let store = makeStore([claude])
+        await store.refresh()
+        wait(10)
+        await store.refresh()
+        XCTAssertEqual(claude.calls, 1, "no login to compare means the wait stands")
+    }
 
     func testKeepsTheNumbersAndWaitsAMinute() async {
         let claude = ScriptedProvider(id: .claude, answers: [nil, tooMany, nil])

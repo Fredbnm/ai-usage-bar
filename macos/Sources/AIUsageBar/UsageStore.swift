@@ -14,6 +14,9 @@ final class UsageStore: ObservableObject {
         var isLoading = false
         /// The last request, successful or not.
         var lastAttempt: Date?
+        /// The login the last request used, when the agent can name one, so a
+        /// sign-in change can lift a wait the previous login earned.
+        var login: String?
         var backoff = RateLimitBackoff()
         /// Claude, with the Claude Code switch off: a rate limit with nothing to show suggests turning it on.
         var suggestsClaudeCode = false
@@ -555,12 +558,21 @@ final class UsageStore: ObservableObject {
         let candidates = Set(candidateProviders.map(\.id))
         let targets = providers.filter { provider in
             let state = state(for: provider.id)
-            return candidates.contains(provider.id) && !state.isLoading && !state.backoff.isWaiting(now: now) && wanted(state)
+            guard candidates.contains(provider.id), !state.isLoading, wanted(state) else { return false }
+            guard state.backoff.isWaiting(now: now) else { return true }
+            // Signing in again is a fresh start: the wait belonged to the login
+            // that earned it, not to this one. Only asked while an agent waits,
+            // so the common path does not read the login.
+            return signedInAgain(provider, state: state)
         }
         guard !targets.isEmpty else { return }
         for provider in targets {
             states[provider.id, default: ProviderState()].isLoading = true
             states[provider.id]?.lastAttempt = now
+            // Got through on a new login: the previous one's wait is spent.
+            if states[provider.id]?.backoff.isWaiting(now: now) == true {
+                states[provider.id]?.backoff.reset()
+            }
         }
 
         await withTaskGroup(of: (ProviderID, Result<ProviderFetchResult, Error>).self) { group in
@@ -599,12 +611,32 @@ final class UsageStore: ObservableObject {
         case .failure(let error):
             let usageError = (error as? UsageError) ?? .decoding
             state.error = usageError
-            if case .rateLimited(let retryAfter) = usageError {
+            switch usageError {
+            case .rateLimited(let retryAfter):
                 state.backoff.record(serverWait: retryAfter, now: clock())
+            case .unauthorized, .notLoggedIn:
+                // A login the server rejects will be rejected again in three
+                // minutes. Asking anyway, on every tick and every popover, is
+                // what turns one 401 into a 429 nothing can wait out. The wait
+                // is lifted as soon as the login changes.
+                state.backoff.record(serverWait: nil, now: clock())
+            default:
+                break
+            }
+            // Only the failing path needs to remember the login, and only to
+            // notice it changing: reading it costs a process on Claude.
+            if state.backoff.isWaiting(now: clock()) {
+                state.login = providers.first { $0.id == id }?.loginIdentity()
             }
         }
         states[id] = state
         if id == .claude { showClaudeCode() }
+    }
+
+    /// Whether the agent's login is not the one that earned its current wait.
+    private func signedInAgain(_ provider: UsageProvider, state: ProviderState) -> Bool {
+        guard let previous = state.login, let current = provider.loginIdentity() else { return false }
+        return current != previous
     }
 
     /// Asks the rate-limited agents again when the first wait ends, instead of at the next 3-minute tick.

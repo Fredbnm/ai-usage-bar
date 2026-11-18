@@ -26,13 +26,20 @@ public interface IUsageProvider
     Task<ProviderFetchResult> FetchAsync(CancellationToken cancellation = default);
 
     ProviderSnapshot? SnapshotFromCache(byte[] cache);
+
+    /// <summary>
+    /// Which login this agent would use right now, or null when it has no way
+    /// to tell its logins apart. A wait earned by one login does not apply to
+    /// the next, so the store asks again as soon as this changes.
+    /// </summary>
+    string? LoginIdentity() => null;
 }
 
 /// <summary>
 /// What gets persisted between launches: the plan name (it comes from the
 /// login, not the usage response) and the raw usage response. Never a token.
 /// </summary>
-internal sealed record ProviderCache(string? Plan, string Raw)
+internal sealed record ProviderCache(string? Plan, string Raw, string? Account = null)
 {
     public byte[] Encode() => JsonSerializer.SerializeToUtf8Bytes(this);
 
@@ -42,7 +49,8 @@ internal sealed record ProviderCache(string? Plan, string Raw)
         catch (JsonException) { return null; }
     }
 
-    public static ProviderCache From(string? plan, byte[] raw) => new(plan, Convert.ToBase64String(raw));
+    public static ProviderCache From(string? plan, byte[] raw, string? account = null) =>
+        new(plan, Convert.ToBase64String(raw), account);
 
     public byte[] RawBytes => Convert.FromBase64String(Raw);
 }
@@ -125,11 +133,37 @@ public sealed class ClaudeProvider(string? credentialsPath = null) : IUsageProvi
         }
 
         var snapshot = SnapshotFromResponse(data, credentials.PlanName) ?? throw new UsageException(UsageErrorKind.Decoding);
-        return new ProviderFetchResult(snapshot, ProviderCache.From(credentials.PlanName, data).Encode());
+        return new ProviderFetchResult(
+            snapshot,
+            ProviderCache.From(credentials.PlanName, data, credentials.Account).Encode());
     }
 
-    public ProviderSnapshot? SnapshotFromCache(byte[] cache) =>
-        ProviderCache.Decode(cache) is { } decoded ? SnapshotFromResponse(decoded.RawBytes, decoded.Plan) : null;
+    public ProviderSnapshot? SnapshotFromCache(byte[] cache) => SnapshotFromCache(cache, CurrentAccount());
+
+    /// <summary>
+    /// <paramref name="account"/>: the login on this machine now, or null when
+    /// it could not be read. Numbers cached under a different account are
+    /// dropped instead of being shown as yours; signing in elsewhere otherwise
+    /// left the previous account's percentages on screen.
+    /// </summary>
+    internal static ProviderSnapshot? SnapshotFromCache(byte[] cache, string? account)
+    {
+        if (ProviderCache.Decode(cache) is not { } decoded) return null;
+        // Only when the mismatch is certain: a login that cannot be read right
+        // now is no reason to blank numbers that are probably still ours.
+        if (decoded.Account is { } cached && account is not null && cached != account) return null;
+        return SnapshotFromResponse(decoded.RawBytes, decoded.Plan);
+    }
+
+    public string? LoginIdentity() => TryLoad()?.LoginIdentity;
+
+    private string? CurrentAccount() => TryLoad()?.Account;
+
+    private ClaudeCredentials? TryLoad()
+    {
+        try { return ClaudeCredentialsStore.Load(credentialsPath); }
+        catch (UsageException) { return null; }
+    }
 
     public static ProviderSnapshot? SnapshotFromResponse(byte[] data, string? plan)
     {

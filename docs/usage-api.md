@@ -32,6 +32,7 @@ Contents (only the fields used):
 
 ```json
 {
+  "organizationUuid": "1941842f-…",
   "claudeAiOauth": {
     "accessToken": "…",
     "expiresAt": 1762790400000,
@@ -42,7 +43,8 @@ Contents (only the fields used):
 ```
 
 - `expiresAt` is in **milliseconds** since 1970.
-- Plan name: a `rateLimitTier` containing `max_20x` becomes "Max 20x", containing `max_5x` becomes "Max 5x". Otherwise use `subscriptionType` with its first letter capitalized ("Pro", "Team"…).
+- Plan name: **`subscriptionType` names the plan** ("max", "pro", "team", "enterprise"), capitalized ("Pro", "Team"…). `rateLimitTier` only tells the Max tiers apart, so read it for `max` alone (or when `subscriptionType` is missing): containing `max_20x` is "Max 20x", containing `max_5x` is "Max 5x". Reading the tier first labels a Team account "Max 5x", because its tier is `default_claude_max_5x`.
+- `organizationUuid` (next to `claudeAiOauth`, not inside it) is the account. It is the same value the response returns in the `anthropic-organization-id` header, and it survives a token renewal, which makes it the right thing to stamp cached usage with: numbers cached under another account must not be shown after a sign-in change. Pair it with `expiresAt` when you need to notice the login *itself* changing (a renewal keeps the account but issues a new token).
 - **Never refresh the token** with the `refreshToken`. Refreshing rotates the refresh token and would sign Claude Code out. If the token expired, show the last cached data and ask the user to open Claude Code.
 - **Prefer a login that is still valid.** With more than one source (two Keychain items, or the Keychain and the file), take the first one whose `expiresAt` is in the future; fall back to an expired one only when no source holds a valid login, so the "login expired" notice still appears when that is really the case.
 - Never write the token to a log, cache or file.
@@ -59,7 +61,7 @@ Accept: application/json
 | Status | What to do |
 |---|---|
 | 200 | Decode, show and cache |
-| 401 / 403 | Invalid or expired login (compare `expiresAt` with the current time to pick the message) |
+| 401 / 403 | Invalid or expired login (compare `expiresAt` with the current time to pick the message). **Wait before asking again**, on the same ladder as a 429: a login the server rejects is rejected again three minutes later, and enough 401s in a row make the endpoint answer 429 instead — a limit no backoff can clear, because the credential never improves. Lift the wait as soon as the login changes, so signing in again is picked up at once instead of after it |
 | 429, or a 403 with `Retry-After` or `x-ratelimit-remaining: 0` (GitHub) | Too many requests: keep the last numbers on screen with a notice, not an error. Wait 1 minute, doubling with each 429 in a row up to 10 minutes, or longer when the server asks for more: `Retry-After` (seconds or an HTTP date; GitHub's `x-ratelimit-reset` when the quota is used up), at most 1 hour. A shorter `Retry-After` does not shorten the wait: Anthropic's endpoint answers `retry-after: 0` and then refuses again. A successful response resets it. Nothing asks that agent during the wait, the refresh button included, and it is asked again as soon as the wait ends. For Claude, see also section 13 |
 | other | Show an error and try on the next cycle |
 

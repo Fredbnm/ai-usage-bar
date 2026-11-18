@@ -169,10 +169,15 @@ public protocol UsageProvider: Sendable {
     func detect() -> SetupStatus
     func fetch() async throws -> ProviderFetchResult
     func snapshot(fromCache data: Data) -> ProviderSnapshot?
+    /// Which login this agent would use right now, or nil when the agent has
+    /// no way to tell its logins apart. A wait earned by one login does not
+    /// apply to the next, so the store retries as soon as this changes.
+    func loginIdentity() -> String?
 }
 
 extension UsageProvider {
     public func detect() -> SetupStatus { isAvailable() ? .connected : .needsLogin }
+    public func loginIdentity() -> String? { nil }
 }
 
 /// What gets persisted between launches: the plan name (which comes from
@@ -180,6 +185,10 @@ extension UsageProvider {
 struct ProviderCache: Codable {
     var plan: String?
     var raw: Data
+    /// The account these numbers came from, when the agent can name it.
+    /// Absent in caches written before this field existed, which are taken at
+    /// face value so an update does not blank the popover.
+    var account: String?
 
     func encoded() throws -> Data { try JSONEncoder().encode(self) }
     static func decode(_ data: Data) -> ProviderCache? { try? JSONDecoder().decode(ProviderCache.self, from: data) }

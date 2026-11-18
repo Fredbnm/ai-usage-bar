@@ -18,6 +18,95 @@ final class CredentialsTests: XCTestCase {
         return try! JSONSerialization.data(withJSONObject: ["claudeAiOauth": oauth])
     }
 
+    // MARK: plan name
+
+    private func credentials(plan: String?, tier: String?) -> ClaudeCredentials {
+        ClaudeCredentials(accessToken: "t", expiresAt: nil, subscriptionType: plan, rateLimitTier: tier)
+    }
+
+    func testTheSubscriptionNamesThePlan() {
+        XCTAssertEqual(
+            credentials(plan: "team", tier: "default_claude_max_5x").planName,
+            "Team",
+            "a Team account carries a max_5x tier; the tier must not win"
+        )
+        XCTAssertEqual(credentials(plan: "enterprise", tier: "default_claude_max_5x").planName, "Enterprise")
+        XCTAssertEqual(credentials(plan: "pro", tier: nil).planName, "Pro")
+    }
+
+    func testTheTierSeparatesTheMaxPlans() {
+        XCTAssertEqual(credentials(plan: "max", tier: "default_claude_max_5x").planName, "Max 5x")
+        XCTAssertEqual(credentials(plan: "max", tier: "default_claude_max_20x").planName, "Max 20x")
+        XCTAssertEqual(credentials(plan: "max", tier: nil).planName, "Max", "no tier still names the plan")
+    }
+
+    func testTheTierIsTheFallbackWithoutASubscription() {
+        XCTAssertEqual(credentials(plan: nil, tier: "default_claude_max_20x").planName, "Max 20x")
+        XCTAssertEqual(credentials(plan: "", tier: "default_claude_max_5x").planName, "Max 5x")
+        XCTAssertNil(credentials(plan: nil, tier: nil).planName)
+    }
+
+    // MARK: account and login identity
+
+    func testTheAccountComesFromTheOrganization() throws {
+        let json = """
+        {"organizationUuid": "org-1", "claudeAiOauth": {"accessToken": "a",
+          "expiresAt": 4102444800000, "subscriptionType": "team", "rateLimitTier": "default_claude_max_5x"}}
+        """
+        let parsed = try ClaudeCredentials.parse(Data(json.utf8))
+        XCTAssertEqual(parsed.organizationUuid, "org-1")
+        XCTAssertEqual(parsed.account, "org-1")
+        XCTAssertEqual(parsed.planName, "Team")
+    }
+
+    func testTheLoginIdentityMovesWithTheTokenButTheAccountDoesNot() {
+        let first = ClaudeCredentials(
+            accessToken: "a", expiresAt: Date(timeIntervalSince1970: 100),
+            subscriptionType: "max", rateLimitTier: nil, organizationUuid: "org-1")
+        let renewed = ClaudeCredentials(
+            accessToken: "b", expiresAt: Date(timeIntervalSince1970: 200),
+            subscriptionType: "max", rateLimitTier: nil, organizationUuid: "org-1")
+        let other = ClaudeCredentials(
+            accessToken: "c", expiresAt: Date(timeIntervalSince1970: 100),
+            subscriptionType: "max", rateLimitTier: nil, organizationUuid: "org-2")
+
+        XCTAssertNotEqual(first.loginIdentity, renewed.loginIdentity, "a renewal is a new login to retry on")
+        XCTAssertEqual(first.account, renewed.account, "but the cached numbers are still this account's")
+        XCTAssertNotEqual(first.account, other.account)
+        XCTAssertFalse(first.loginIdentity.contains("a"), "carries no part of the token")
+    }
+
+    // MARK: cached numbers belong to an account
+
+    private var cachedUsage: Data {
+        let raw = Data(#"{"five_hour": {"utilization": 42.0, "resets_at": "2026-11-10T16:50:00.554353+00:00"}}"#.utf8)
+        return try! ProviderCache(plan: "Team", raw: raw, account: "org-1").encoded()
+    }
+
+    func testCachedNumbersFromAnotherAccountAreDropped() {
+        XCTAssertNil(
+            ClaudeProvider.snapshot(fromCache: cachedUsage, account: "org-2"),
+            "after signing in elsewhere, the previous account's percentages are not yours"
+        )
+    }
+
+    func testCachedNumbersAreKeptForTheSameAccount() {
+        XCTAssertEqual(ClaudeProvider.snapshot(fromCache: cachedUsage, account: "org-1")?.planName, "Team")
+    }
+
+    func testCachedNumbersAreKeptWhenTheAccountCannotBeRead() {
+        XCTAssertNotNil(
+            ClaudeProvider.snapshot(fromCache: cachedUsage, account: nil),
+            "an unreadable Keychain is no reason to blank the popover"
+        )
+    }
+
+    func testACacheWrittenBeforeAccountsWereRecordedIsKept() throws {
+        let raw = Data(#"{"five_hour": {"utilization": 42.0, "resets_at": "2026-11-10T16:50:00.554353+00:00"}}"#.utf8)
+        let legacy = try ProviderCache(plan: "Max 5x", raw: raw, account: nil).encoded()
+        XCTAssertNotNil(ClaudeProvider.snapshot(fromCache: legacy, account: "org-1"))
+    }
+
     // MARK: account
 
     func testAccountIsTheUserName() {

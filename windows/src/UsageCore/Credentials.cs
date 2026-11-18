@@ -10,22 +10,48 @@ public sealed record ClaudeCredentials(
     string AccessToken,
     DateTimeOffset? ExpiresAt,
     string? SubscriptionType,
-    string? RateLimitTier)
+    string? RateLimitTier,
+    string? OrganizationUuid = null)
 {
     public bool IsExpired => ExpiresAt is { } expires && expires < DateTimeOffset.UtcNow;
 
-    /// <summary>"Max 5x", "Max 20x", "Pro", "Team"…</summary>
+    /// <summary>
+    /// "Max 5x", "Max 20x", "Pro", "Team"… <c>SubscriptionType</c> names the
+    /// plan; <c>RateLimitTier</c> only tells the Max tiers apart, and is read
+    /// for those alone. A Team account carries the tier
+    /// <c>default_claude_max_5x</c>, so reading the tier first labelled it
+    /// "Max 5x".
+    /// </summary>
     public string? PlanName
     {
         get
         {
-            var tier = (RateLimitTier ?? "").ToLowerInvariant();
-            if (tier.Contains("max_20x")) return "Max 20x";
-            if (tier.Contains("max_5x")) return "Max 5x";
-            if (string.IsNullOrEmpty(SubscriptionType)) return null;
-            return char.ToUpperInvariant(SubscriptionType[0]) + SubscriptionType[1..];
+            var plan = (SubscriptionType ?? "").ToLowerInvariant();
+            if (plan.Length == 0 || plan == "max")
+            {
+                var tier = (RateLimitTier ?? "").ToLowerInvariant();
+                if (tier.Contains("max_20x")) return "Max 20x";
+                if (tier.Contains("max_5x")) return "Max 5x";
+            }
+            if (plan.Length == 0) return null;
+            return char.ToUpperInvariant(plan[0]) + plan[1..];
         }
     }
+
+    /// <summary>
+    /// Which account these numbers belong to. A token renewal leaves it alone,
+    /// so cached usage survives one and is dropped only on a real sign-in
+    /// change.
+    /// </summary>
+    public string? Account => OrganizationUuid;
+
+    /// <summary>
+    /// The login itself: the account plus the life of the current token, which
+    /// moves whenever Claude Code signs in again or renews. Carries no part of
+    /// the token.
+    /// </summary>
+    public string LoginIdentity =>
+        $"{OrganizationUuid ?? "none"}|{(ExpiresAt is { } at ? at.ToUnixTimeSeconds().ToString() : "none")}";
 
     /// <summary>Never prints the token.</summary>
     public override string ToString() => $"ClaudeCredentials(plan: {PlanName ?? "?"}, expiresAt: {ExpiresAt}, token: <redacted>)";
@@ -41,7 +67,8 @@ public sealed record ClaudeCredentials(
             token,
             expiresMs is { } ms ? DateTimeOffset.FromUnixTimeMilliseconds((long)ms) : null,
             Json.Str(oauth, "subscriptionType"),
-            Json.Str(oauth, "rateLimitTier"));
+            Json.Str(oauth, "rateLimitTier"),
+            Json.Str(Json.Parse(data), "organizationUuid"));
     }
 }
 

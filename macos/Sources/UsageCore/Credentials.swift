@@ -8,12 +8,23 @@ public struct ClaudeCredentials: Equatable, Sendable, CustomStringConvertible {
     public var expiresAt: Date?
     public var subscriptionType: String?
     public var rateLimitTier: String?
+    /// The account this login belongs to. Claude Code keeps it next to the
+    /// token, and it survives a token renewal, so it is what tells one
+    /// account's usage from another's.
+    public var organizationUuid: String?
 
-    public init(accessToken: String, expiresAt: Date?, subscriptionType: String?, rateLimitTier: String?) {
+    public init(
+        accessToken: String,
+        expiresAt: Date?,
+        subscriptionType: String?,
+        rateLimitTier: String?,
+        organizationUuid: String? = nil
+    ) {
         self.accessToken = accessToken
         self.expiresAt = expiresAt
         self.subscriptionType = subscriptionType
         self.rateLimitTier = rateLimitTier
+        self.organizationUuid = organizationUuid
     }
 
     public func isExpired(now: Date) -> Bool {
@@ -24,12 +35,34 @@ public struct ClaudeCredentials: Equatable, Sendable, CustomStringConvertible {
     public var isExpired: Bool { isExpired(now: Date()) }
 
     /// "Max 5x", "Max 20x", "Pro", "Team", ...
+    ///
+    /// `subscriptionType` names the plan; `rateLimitTier` only tells the Max
+    /// tiers apart, and is consulted for those alone. A Team account carries
+    /// the tier `default_claude_max_5x`, so reading the tier first labelled it
+    /// "Max 5x".
     public var planName: String? {
-        let tier = (rateLimitTier ?? "").lowercased()
-        if tier.contains("max_20x") { return "Max 20x" }
-        if tier.contains("max_5x") { return "Max 5x" }
-        guard let plan = subscriptionType, !plan.isEmpty else { return nil }
+        let plan = (subscriptionType ?? "").lowercased()
+        if plan.isEmpty || plan == "max" {
+            let tier = (rateLimitTier ?? "").lowercased()
+            if tier.contains("max_20x") { return "Max 20x" }
+            if tier.contains("max_5x") { return "Max 5x" }
+        }
+        guard !plan.isEmpty else { return nil }
         return plan.prefix(1).uppercased() + plan.dropFirst()
+    }
+
+    /// Which account these numbers belong to. Unchanged by a token renewal,
+    /// so cached usage survives one and is only dropped on a real sign-in
+    /// change.
+    public var account: String? { organizationUuid }
+
+    /// The login itself, account plus the life of the current token. It moves
+    /// whenever Claude Code signs in again or renews, which is the moment a
+    /// wait earned by the previous login stops applying. Carries no part of
+    /// the token.
+    public var loginIdentity: String {
+        let expiry = expiresAt.map { String(Int($0.timeIntervalSince1970)) } ?? "none"
+        return "\(organizationUuid ?? "none")|\(expiry)"
     }
 
     /// Never prints the token.
@@ -50,7 +83,8 @@ public struct ClaudeCredentials: Equatable, Sendable, CustomStringConvertible {
             accessToken: token,
             expiresAt: expiresAt,
             subscriptionType: oauth["subscriptionType"] as? String,
-            rateLimitTier: oauth["rateLimitTier"] as? String
+            rateLimitTier: oauth["rateLimitTier"] as? String,
+            organizationUuid: root["organizationUuid"] as? String
         )
     }
 }
