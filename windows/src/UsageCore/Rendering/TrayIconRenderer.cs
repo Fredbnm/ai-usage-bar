@@ -5,12 +5,16 @@ namespace AIUsageBar.Core.Rendering;
 /// <summary>
 /// Draws one service's tray icon: a ring that fills with usage around either
 /// the service's glyph or the percentage. Monochrome in the taskbar's color
-/// (white on a dark taskbar, near-black on a light one); only the ring turns
-/// orange or red when a limit is close and alert colors are on. A problem on the service's status page
+/// (white on a dark taskbar, near-black on a light one); only the ring changes
+/// color with the percentage when alert colors are on: green up to 20%, yellow-green
+/// below 40%, yellow below 60%, orange below 90%, and red from 90%. A problem on the service's status page
 /// adds a small badge on the ring's top right.
 /// </summary>
 public static class TrayIconRenderer
 {
+    public static readonly SKColor Green = new(0x2E, 0xBE, 0x4F);
+    public static readonly SKColor YellowGreen = new(0xA8, 0xC4, 0x3C);
+    public static readonly SKColor Yellow = new(0xF0, 0xC4, 0x00);
     public static readonly SKColor Orange = new(0xFF, 0x8C, 0x00);
     public static readonly SKColor Red = new(0xE8, 0x11, 0x23);
 
@@ -43,7 +47,7 @@ public static class TrayIconRenderer
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = stroke,
                 StrokeCap = SKStrokeCap.Round,
-                Color = RingColor(segment.Severity, foreground, colorAlerts),
+                Color = RingColor(percent, foreground, colorAlerts),
             };
             canvas.DrawArc(ring, -90, (float)(360 * Math.Min(percent / 100, 1)), false, arc);
         }
@@ -99,12 +103,15 @@ public static class TrayIconRenderer
         canvas.DrawCircle(center.X, center.Y + radius * 0.48f, width * 0.6f, clear);
     }
 
-    private static SKColor RingColor(Severity severity, SKColor foreground, bool colorAlerts) =>
-        !colorAlerts ? foreground : severity switch
+    /// <summary>The progress stroke. Alert colors off keeps the taskbar color.</summary>
+    public static SKColor RingColor(double percent, SKColor foreground, bool colorAlerts) =>
+        !colorAlerts ? foreground : RingBands.For(percent) switch
         {
-            Severity.Warning => Orange,
-            Severity.Critical => Red,
-            _ => foreground,
+            RingBand.Green => Green,
+            RingBand.YellowGreen => YellowGreen,
+            RingBand.Yellow => Yellow,
+            RingBand.Orange => Orange,
+            _ => Red,
         };
 
     /// <summary>Centres the glyph on its visual centre, its farthest point touching the inner circle.</summary>

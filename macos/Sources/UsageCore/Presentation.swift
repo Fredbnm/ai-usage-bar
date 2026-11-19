@@ -19,6 +19,27 @@ public enum Severity: Equatable, Sendable {
     }
 }
 
+/// Color of the usage ring, from how full the limit is.
+/// Up to 20% green, above that and below 40% yellow-green, 40% up to 60% yellow,
+/// 60% up to 90% orange, and 90% and above red.
+public enum RingBand: Equatable, Sendable {
+    case green, yellowGreen, yellow, orange, red
+
+    public init(percent: Double) {
+        if percent <= 20 {
+            self = .green
+        } else if percent < 40 {
+            self = .yellowGreen
+        } else if percent < 60 {
+            self = .yellow
+        } else if percent < 90 {
+            self = .orange
+        } else {
+            self = .red
+        }
+    }
+}
+
 /// A limit ready to be displayed.
 public struct LimitItem: Identifiable, Equatable, Sendable {
     public enum Group: Equatable, Sendable { case session, weekly, other }

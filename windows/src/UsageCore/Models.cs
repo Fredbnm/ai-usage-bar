@@ -4,6 +4,25 @@ namespace AIUsageBar.Core;
 
 public enum Severity { Normal, Warning, Critical }
 
+/// <summary>
+/// Color of the usage ring, from how full the limit is.
+/// Up to 20% green, above that and below 40% yellow-green, 40% up to 60% yellow,
+/// 60% up to 90% orange, and 90% and above red.
+/// </summary>
+public enum RingBand { Green, YellowGreen, Yellow, Orange, Red }
+
+public static class RingBands
+{
+    public static RingBand For(double percent) => percent switch
+    {
+        <= 20 => RingBand.Green,
+        < 40 => RingBand.YellowGreen,
+        < 60 => RingBand.Yellow,
+        < 90 => RingBand.Orange,
+        _ => RingBand.Red,
+    };
+}
+
 public static class SeverityParser
 {
     /// <summary>

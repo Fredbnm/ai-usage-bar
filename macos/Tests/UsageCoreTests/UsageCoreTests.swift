@@ -91,6 +91,19 @@ final class UsageCoreTests: XCTestCase {
         XCTAssertEqual(sessionOnly.lines, ["95%"])
     }
 
+    func testRingBandFollowsThePercentage() {
+        XCTAssertEqual(RingBand(percent: 0), .green)
+        XCTAssertEqual(RingBand(percent: 20), .green)
+        XCTAssertEqual(RingBand(percent: 20.1), .yellowGreen)
+        XCTAssertEqual(RingBand(percent: 39), .yellowGreen)
+        XCTAssertEqual(RingBand(percent: 40), .yellow)
+        XCTAssertEqual(RingBand(percent: 59.9), .yellow)
+        XCTAssertEqual(RingBand(percent: 60), .orange)
+        XCTAssertEqual(RingBand(percent: 89.9), .orange)
+        XCTAssertEqual(RingBand(percent: 90), .red)
+        XCTAssertEqual(RingBand(percent: 100), .red)
+    }
+
     func testMenuBarStyles() {
         XCTAssertEqual(MenuBarStyle.default, .icon)
         XCTAssertEqual(MenuBarStyle.allCases, [.icon, .percent])

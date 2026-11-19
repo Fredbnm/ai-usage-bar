@@ -163,6 +163,20 @@ public class FormatTests
         Assert.Equal(Severity.Critical, SeverityParser.From(null, 95));
     }
 
+    [Theory]
+    [InlineData(0, RingBand.Green)]
+    [InlineData(20, RingBand.Green)]
+    [InlineData(20.1, RingBand.YellowGreen)]
+    [InlineData(39, RingBand.YellowGreen)]
+    [InlineData(40, RingBand.Yellow)]
+    [InlineData(59.9, RingBand.Yellow)]
+    [InlineData(60, RingBand.Orange)]
+    [InlineData(89.9, RingBand.Orange)]
+    [InlineData(90, RingBand.Red)]
+    [InlineData(100, RingBand.Red)]
+    public void RingColorFollowsThePercentage(double percent, RingBand band) =>
+        Assert.Equal(band, RingBands.For(percent));
+
     [Fact]
     public void ErrorMessagesNameTheRightApp()
     {

@@ -91,13 +91,13 @@ Só atualiza enquanto você usa o Claude Code no terminal (a aba Code do app Cla
 | Gemini | **Diário** (padrão, a cota do modelo Pro) · **Não mostrar** |
 | Grok Bot | **Semanal** (padrão) · **Não mostrar** |
 
-Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor: fica laranja quando o uso entra em alerta e vermelho quando está crítico.
+Tudo é desenhado na cor da barra, como os outros ícones: branco na barra escura e preto na clara. O anel (ou a pizza) acompanha o primeiro número (com "Sessão atual + semanal", ele mostra a sessão) e é o único elemento que muda de cor conforme o quanto aquele limite está cheio: verde até 20%, verde-amarelado até 39%, amarelo até 59%, laranja até 89% e vermelho a partir de 90%.
 
 **Pop-up** (⚙ → **Pop-up**): **Uma aba por agente** (padrão) ou **Todas as IAs juntas**, todos os agentes um embaixo do outro numa tela só.
 
 **Na aba** (⚙ → a IA → **Na aba**, ou clique com o botão direito na aba): o número em cada aba. **Maior uso** (padrão) mostra o limite que estiver mais cheio. Você pode fixar qualquer limite daquela IA: o semanal de todos os modelos do Claude ou o de um modelo, a sessão do Codex, as requisições do mês no Copilot, o total do mês ou o grupo API do Cursor, a cota diária de um modelo do Gemini.
 
-**Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra, sem o laranja e o vermelho. O pop-up continua mostrando as cores.
+**Cores de alerta na barra** (ligado por padrão): desligue para o anel ou a pizza ficarem sempre na cor da barra. O pop-up continua mostrando as cores.
 
 **Status do serviço**: quando a página de status pública de uma IA informa um problema (Claude em status.claude.com, Codex em status.openai.com, Copilot em githubstatus.com, Gemini na página de status do Google Cloud), o ícone dela ganha um pequeno selo **!**, laranja enquanto o serviço está instável e vermelho quando está fora do ar, e a aba dela ganha um ⚠. O pop-up mostra o que a página diz (os incidentes abertos e as partes afetadas) com o link **Ver página de status**. Manutenção programada aparece só no pop-up. Cursor e Grok Bot não são verificados (veja [Limitações](#limitações)).
 
@@ -177,7 +177,7 @@ Ao abrir, o app cria `~/.local/share/applications/ai-usage-bar.desktop` e o íco
 
 ### Widget na barra de tarefas (Windows, opcional)
 
-Para ver um resumo sem abrir nada, ligue em **⚙ → Widget na barra de tarefas → Mostrar na barra de tarefas**. Uma pílula pequena aparece na barra de tarefas com um chip por agente: o ícone oficial dele dentro de um anel que acompanha o uso, mais o percentual, em laranja ou vermelho quando um limite está perto.
+Para ver um resumo sem abrir nada, ligue em **⚙ → Widget na barra de tarefas → Mostrar na barra de tarefas**. Uma pílula pequena aparece na barra de tarefas com um chip por agente: o ícone oficial dele dentro de um anel que acompanha o uso (verde até 20%, depois verde-amarelado, amarelo, laranja e vermelho a partir de 90%), mais o percentual, em laranja ou vermelho quando um limite está perto.
 
 - **Passe o mouse** sobre um chip para ver um cartão com o plano do agente, cada limite e quando ele reinicia. **Clicar** abre o pop-up completo na aba daquele agente, **arrastar** move o widget e **clicar com o botão direito** tem atualizar, posição, estilo e ocultar.
 - **Posição:** *À esquerda da bandeja do sistema* (padrão) ou *Na borda esquerda, junto do Iniciar e da Pesquisa*, que usa o primeiro espaço livre a partir da esquerda (depois de Widgets numa barra centralizada, para não ficar sobre o Iniciar nem sobre os seus apps). Arraste para ajustar; **Restaurar posição** desfaz.

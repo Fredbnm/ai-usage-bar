@@ -7,9 +7,10 @@ import UsageCore
 ///
 /// Everything is drawn in the menu bar's own foreground color (white on a
 /// dark menu bar, black on a light one), like template icons. The ring
-/// alone turns orange or red when a limit is close, which a template image
-/// could not do, so colors are resolved when AppKit draws the image in the
-/// menu bar's appearance.
+/// alone changes color with the percentage (green up to 20%, yellow-green
+/// below 40%, yellow below 60%, orange below 90%, red from 90%), which a
+/// template image could not do, so colors are resolved when AppKit draws
+/// the image in the menu bar's appearance.
 enum MenuBarIcon {
     private enum Metrics {
         /// The menu bar is 22 pt tall; leave a point above and below.
@@ -149,7 +150,7 @@ enum MenuBarIcon {
         )
         arc.lineWidth = Metrics.ringWidth
         arc.lineCapStyle = .round
-        ringColor(for: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts).setStroke()
+        ringColor(percent: percent, foreground: foreground, colorAlerts: colorAlerts).setStroke()
         arc.stroke()
     }
 
@@ -169,7 +170,7 @@ enum MenuBarIcon {
         pie.move(to: center)
         pie.appendArc(withCenter: center, radius: inner.width / 2, startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true)
         pie.close()
-        ringColor(for: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts).setFill()
+        ringColor(percent: percent, foreground: foreground, colorAlerts: colorAlerts).setFill()
         pie.fill()
     }
 
@@ -246,12 +247,16 @@ enum MenuBarIcon {
         NSBezierPath(roundedRect: rect, xRadius: 0.5, yRadius: 0.5).fill()
     }
 
-    private static func ringColor(for severity: Severity, foreground: NSColor, colorAlerts: Bool) -> NSColor {
+    /// The progress stroke. Alert colors off keeps the menu bar color.
+    /// Same sRGB values as the Windows and Linux tray icon.
+    private static func ringColor(percent: Double, foreground: NSColor, colorAlerts: Bool) -> NSColor {
         guard colorAlerts else { return foreground }
-        switch severity {
-        case .normal: return foreground
-        case .warning: return .systemOrange
-        case .critical: return .systemRed
+        switch RingBand(percent: percent) {
+        case .green: return NSColor(srgbRed: 0x2E / 255, green: 0xBE / 255, blue: 0x4F / 255, alpha: 1)
+        case .yellowGreen: return NSColor(srgbRed: 0xA8 / 255, green: 0xC4 / 255, blue: 0x3C / 255, alpha: 1)
+        case .yellow: return NSColor(srgbRed: 0xF0 / 255, green: 0xC4 / 255, blue: 0, alpha: 1)
+        case .orange: return NSColor(srgbRed: 1, green: 0x8C / 255, blue: 0, alpha: 1)
+        case .red: return NSColor(srgbRed: 0xE8 / 255, green: 0x11 / 255, blue: 0x23 / 255, alpha: 1)
         }
     }
 

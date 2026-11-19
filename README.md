@@ -80,13 +80,13 @@ Under ⚙︎ in the popover:
 | Gemini | **Daily** (default, the Pro model's quota) · **Hide** |
 | Grok Bot | **Weekly** (default) · **Hide** |
 
-Everything is drawn in the menu bar's own color, like other menu bar icons: white on a dark menu bar, black on a light one. The ring (or pie) follows the first number (with "Session + weekly" it shows the session) and is the only element that changes color: orange when usage reaches a warning level and red when it is critical.
+Everything is drawn in the menu bar's own color, like other menu bar icons: white on a dark menu bar, black on a light one. The ring (or pie) follows the first number (with "Session + weekly" it shows the session) and is the only element that changes color with how full that limit is: green up to 20%, yellow-green up to 39%, yellow up to 59%, orange up to 89%, and red from 90%.
 
 **Popup** (⚙ → **Popup**): **One tab per agent** (default) or **All AIs together**, every agent one below the other on a single screen.
 
 **In its tab** (⚙ → the AI → **In its tab**, or right-click the tab): the number on each agent's tab. **Highest usage** (default) shows whichever limit is fullest. You can pin any one of that AI's limits instead: Claude's weekly limit for all models or for one model, Codex's session, Copilot's monthly requests, Cursor's monthly total or API pool, a Gemini model's daily quota.
 
-**Alert colors in menu bar** (on by default): turn it off to keep the ring or pie in the menu bar color, without orange or red. The popover keeps its colors.
+**Alert colors in menu bar** (on by default): turn it off to keep the ring or pie in the menu bar color. The popover keeps its colors.
 
 **Service status**: when an AI's public status page reports a problem (Claude on status.claude.com, Codex on status.openai.com, Copilot on githubstatus.com, Gemini on Google Cloud's status page), its icon gets a small **!** badge, orange while the service is degraded and red when it is down, and its tab gets a ⚠. The popup says what the page reports (the open incidents and which parts are affected) with a **View status page** link. Planned maintenance shows only in the popup. Cursor and Grok Bot are not checked (see [Limitations](#limitations)).
 
@@ -166,7 +166,7 @@ Starting the app adds `~/.local/share/applications/ai-usage-bar.desktop` and its
 
 ### Taskbar widget (Windows, optional)
 
-For a summary you can see without opening anything, turn on **⚙ → Taskbar widget → Show on the taskbar**. A small pill appears on the taskbar with one chip per agent: its official icon inside a progress ring that follows usage, plus the percentage, coloured orange or red when a limit is close.
+For a summary you can see without opening anything, turn on **⚙ → Taskbar widget → Show on the taskbar**. A small pill appears on the taskbar with one chip per agent: its official icon inside a progress ring that follows usage (green up to 20%, then yellow-green, yellow, orange, and red from 90%), plus the percentage, coloured orange or red when a limit is close.
 
 - **Hover** a chip for a card with that agent's plan, every limit and when it resets. **Click** opens the full popup on that agent's tab, **drag** moves it, **right-click** has refresh, position, style and hide.
 - **Position:** *left of the system tray* (default) or *left edge*, which uses the first free gap from the left (after Widgets on a centred taskbar, so it does not sit on Start or your apps). Drag to fine-tune; "Reset position" undoes it.
