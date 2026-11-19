@@ -201,6 +201,9 @@ public partial class PopupWindow : Window
         {
             style.Items.Add(Check(option.Label(), settings.Style == option, () => store.SetStyle(option)));
         }
+        style.Items.Add(new Separator());
+        style.Items.Add(Check(T("Cores indicativas", "Indicative colors"), settings.UsageColors,
+            () => store.SetUsageColors(!settings.UsageColors)));
         menu.Items.Add(style);
 
         var color = Submenu(T("Cor dos ícones na bandeja", "Tray icon color"));

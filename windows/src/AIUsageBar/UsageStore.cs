@@ -233,6 +233,8 @@ internal sealed class UsageStore
 
     public void SetColorAlerts(bool enabled) => UpdateSettings(() => Settings.ColorAlerts = enabled);
 
+    public void SetUsageColors(bool enabled) => UpdateSettings(() => Settings.UsageColors = enabled);
+
     public void SetLanguage(AppLanguage language) => UpdateSettings(() =>
     {
         Settings.LanguageValue = language;

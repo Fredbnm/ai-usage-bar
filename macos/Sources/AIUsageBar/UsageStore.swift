@@ -66,6 +66,10 @@ final class UsageStore: ObservableObject {
     @Published var colorAlerts: Bool {
         didSet { defaults.set(colorAlerts, forKey: Keys.colorAlerts) }
     }
+    /// Ring colored by how full the limit is. Off by default, so the ring stays as it was.
+    @Published var usageColors: Bool {
+        didSet { defaults.set(usageColors, forKey: Keys.usageColors) }
+    }
     @Published var language: AppLanguage {
         didSet {
             AppLanguage.current = language
@@ -121,6 +125,7 @@ final class UsageStore: ObservableObject {
         static let menuBarStyle = "menuBar.style"
         static let popupLayout = "popup.layout"
         static let colorAlerts = "menuBar.colorAlerts"
+        static let usageColors = "menuBar.usageColors"
         static let language = "language"
         static let onboardingDismissed = "onboardingDismissed"
         static let selectedProvider = "selectedProvider"
@@ -150,6 +155,7 @@ final class UsageStore: ObservableObject {
         menuBarStyle = defaults.string(forKey: Keys.menuBarStyle).flatMap(MenuBarStyle.init(rawValue:)) ?? .default
         popupLayout = defaults.string(forKey: Keys.popupLayout).flatMap(PopupLayout.init(rawValue:)) ?? .default
         colorAlerts = defaults.object(forKey: Keys.colorAlerts) as? Bool ?? true
+        usageColors = defaults.object(forKey: Keys.usageColors) as? Bool ?? false
         if let saved = defaults.string(forKey: Keys.language).flatMap(AppLanguage.init(rawValue:)) {
             language = saved
         } else {
@@ -186,6 +192,7 @@ final class UsageStore: ObservableObject {
         menuBarStyle = .default
         popupLayout = .default
         colorAlerts = true
+        usageColors = false
         language = AppLanguage.current
         isPreview = true
         visibleProviders = snapshots.map(\.provider)

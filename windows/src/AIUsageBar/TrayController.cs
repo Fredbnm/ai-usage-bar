@@ -52,7 +52,7 @@ internal sealed class TrayController : IDisposable
                 icons[id] = icon;
             }
             var glyph = store.Settings.Style == TrayStyle.Icon ? InstalledApps.Glyph(id) : null;
-            using var bitmap = TrayIconRenderer.Render(segment, id, store.Settings.Style, glyph, store.Settings.ColorAlerts, darkTaskbar, size);
+            using var bitmap = TrayIconRenderer.Render(segment, id, store.Settings.Style, glyph, store.Settings.ColorAlerts, darkTaskbar, size, store.Settings.UsageColors);
             var image = new TrayIconImage(bitmap);
             icon.Icon = image.Icon;
             icon.Text = segment!.Tooltip;

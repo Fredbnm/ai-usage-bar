@@ -274,6 +274,15 @@ public class RenderingTests
         Assert.True(ring.Red > 200 && ring.Blue > 200, $"alert colors off should keep the ring white, got {ring}");
     }
 
+    [Fact]
+    public void KeepsTheSeverityColorUnlessIndicativeColorsAreOn()
+    {
+        var segment = new TraySegment(ProviderId.Claude, 10, Severity.Critical, "10", "Claude");
+        using var severity = TrayIconRenderer.Render(segment, ProviderId.Claude, TrayStyle.Icon, null, colorAlerts: true, darkTaskbar: true, 32);
+        var top = severity.GetPixel(16, 1);
+        Assert.True(top.Red > 180 && top.Green < 80, $"10% critical stays red without indicative colors, got {top}");
+    }
+
     [Theory]
     [InlineData(10, 0x2E, 0xBE, 0x4F)]
     [InlineData(30, 0xA8, 0xC4, 0x3C)]
@@ -284,7 +293,7 @@ public class RenderingTests
     {
         // Critical at 10% is still green: the border follows the percentage.
         var segment = new TraySegment(ProviderId.Claude, percent, Severity.Critical, "x", "Claude");
-        using var bitmap = TrayIconRenderer.Render(segment, ProviderId.Claude, TrayStyle.Icon, null, colorAlerts: true, darkTaskbar: true, 32);
+        using var bitmap = TrayIconRenderer.Render(segment, ProviderId.Claude, TrayStyle.Icon, null, colorAlerts: true, darkTaskbar: true, 32, usageColors: true);
         var top = bitmap.GetPixel(16, 1);
         Assert.InRange((int)top.Red, red - 30, red + 30);
         Assert.InRange((int)top.Green, green - 30, green + 30);

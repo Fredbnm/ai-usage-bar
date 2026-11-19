@@ -71,10 +71,10 @@ internal sealed class TrayController : IDisposable
             }
             var glyph = store.Settings.Style == TrayStyle.Icon ? InstalledApps.Glyph(id) : null;
             // Redraw only what changed: each new picture is sent to the panel.
-            var key = $"{segment!.RingPercent}|{segment.Severity}|{segment.Number}|{segment.Alert}|{store.Settings.Style}|{store.Settings.ColorAlerts}|{darkPanel}|{glyph is null}";
+            var key = $"{segment!.RingPercent}|{segment.Severity}|{segment.Number}|{segment.Alert}|{store.Settings.Style}|{store.Settings.ColorAlerts}|{store.Settings.UsageColors}|{darkPanel}|{glyph is null}";
             if (!drawn.TryGetValue(id, out var previous) || previous != key)
             {
-                using var bitmap = TrayIconRenderer.Render(segment, id, store.Settings.Style, glyph, store.Settings.ColorAlerts, darkPanel, IconPixels);
+                using var bitmap = TrayIconRenderer.Render(segment, id, store.Settings.Style, glyph, store.Settings.ColorAlerts, darkPanel, IconPixels, store.Settings.UsageColors);
                 icon.Icon = new WindowIcon(new MemoryStream(Images.Png(bitmap)));
                 drawn[id] = key;
             }

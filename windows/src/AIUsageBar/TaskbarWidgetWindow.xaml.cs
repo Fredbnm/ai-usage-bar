@@ -139,7 +139,7 @@ public partial class TaskbarWidgetWindow : Window
             if (segment is null) continue;
 
             using var ring = TrayIconRenderer.Render(
-                segment, id, TrayStyle.Icon, InstalledApps.Glyph(id), settings.ColorAlerts, dark, (int)Math.Round(IconDips * scale));
+                segment, id, TrayStyle.Icon, InstalledApps.Glyph(id), settings.ColorAlerts, dark, (int)Math.Round(IconDips * scale), settings.UsageColors);
             var withPercent = settings.TaskbarStyle == TaskbarStyle.RingAndPercent;
             var percent = TaskbarLayout.PercentText(segment);
             chips.Add(new WidgetChip(

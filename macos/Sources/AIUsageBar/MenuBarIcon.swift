@@ -7,10 +7,11 @@ import UsageCore
 ///
 /// Everything is drawn in the menu bar's own foreground color (white on a
 /// dark menu bar, black on a light one), like template icons. The ring
-/// alone changes color with the percentage (green up to 20%, yellow-green
-/// below 40%, yellow below 60%, orange below 90%, red from 90%), which a
-/// template image could not do, so colors are resolved when AppKit draws
-/// the image in the menu bar's appearance.
+/// alone turns orange or red when a limit is close. Indicative colors, off
+/// unless the user asks, paint that ring from the percentage instead (green
+/// up to 20%, yellow-green below 40%, yellow below 60%, orange below 90%,
+/// red from 90%). A template image could not do this, so colors are resolved
+/// when AppKit draws the image in the menu bar's appearance.
 enum MenuBarIcon {
     private enum Metrics {
         /// The menu bar is 22 pt tall; leave a point above and below.
@@ -57,6 +58,7 @@ enum MenuBarIcon {
         segments: [MenuBarSegment],
         style: MenuBarStyle,
         colorAlerts: Bool = true,
+        usageColors: Bool = false,
         height: CGFloat = NSStatusBar.system.thickness
     ) -> NSImage {
         guard !segments.isEmpty else { return emptyImage(height: height) }
@@ -83,7 +85,7 @@ enum MenuBarIcon {
                     drawSeparator(at: x + Metrics.separatorPadding, height: height, color: foreground)
                     x += separatorWidth
                 }
-                draw(layout, at: x, height: height, foreground: foreground, colorAlerts: colorAlerts)
+                draw(layout, at: x, height: height, foreground: foreground, colorAlerts: colorAlerts, usageColors: usageColors)
                 x += layout.width
             }
             return true
@@ -100,17 +102,17 @@ enum MenuBarIcon {
 
     // MARK: Drawing
 
-    private static func draw(_ layout: Layout, at x: CGFloat, height: CGFloat, foreground: NSColor, colorAlerts: Bool) {
+    private static func draw(_ layout: Layout, at x: CGFloat, height: CGFloat, foreground: NSColor, colorAlerts: Bool, usageColors: Bool) {
         let segment = layout.segment
         let frame = NSRect(x: x, y: (height - layout.gauge) / 2, width: layout.gauge, height: layout.gauge)
 
         switch layout.style {
         case .icon:
-            drawRing(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts)
+            drawRing(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts, usageColors: usageColors)
             let inner = frame.insetBy(dx: Metrics.ringWidth + Metrics.glyphGap, dy: Metrics.ringWidth + Metrics.glyphGap)
             drawGlyph(layout.glyph, provider: segment.provider, in: inner, color: foreground)
         case .percent:
-            drawPie(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts)
+            drawPie(segment, in: frame, foreground: foreground, colorAlerts: colorAlerts, usageColors: usageColors)
         }
         if let alert = segment.alert {
             drawBadge(alert, on: frame, foreground: foreground, colorAlerts: colorAlerts)
@@ -133,7 +135,7 @@ enum MenuBarIcon {
     }
 
     /// Icon style: a track plus an arc that fills clockwise from the top.
-    private static func drawRing(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool) {
+    private static func drawRing(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool, usageColors: Bool) {
         let ringRect = frame.insetBy(dx: Metrics.ringWidth / 2, dy: Metrics.ringWidth / 2)
 
         let track = NSBezierPath(ovalIn: ringRect)
@@ -150,12 +152,12 @@ enum MenuBarIcon {
         )
         arc.lineWidth = Metrics.ringWidth
         arc.lineCapStyle = .round
-        ringColor(percent: percent, foreground: foreground, colorAlerts: colorAlerts).setStroke()
+        ringColor(percent: percent, severity: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts, usageColors: usageColors).setStroke()
         arc.stroke()
     }
 
     /// Percent style (version 0.1): an outlined circle with a pie wedge.
-    private static func drawPie(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool) {
+    private static func drawPie(_ segment: MenuBarSegment, in frame: NSRect, foreground: NSColor, colorAlerts: Bool, usageColors: Bool) {
         let outlineRect = frame.insetBy(dx: Metrics.pieOutline / 2, dy: Metrics.pieOutline / 2)
         let outline = NSBezierPath(ovalIn: outlineRect)
         outline.lineWidth = Metrics.pieOutline
@@ -170,7 +172,7 @@ enum MenuBarIcon {
         pie.move(to: center)
         pie.appendArc(withCenter: center, radius: inner.width / 2, startAngle: 90, endAngle: 90 - 360 * fraction, clockwise: true)
         pie.close()
-        ringColor(percent: percent, foreground: foreground, colorAlerts: colorAlerts).setFill()
+        ringColor(percent: percent, severity: segment.ringSeverity, foreground: foreground, colorAlerts: colorAlerts, usageColors: usageColors).setFill()
         pie.fill()
     }
 
@@ -247,16 +249,24 @@ enum MenuBarIcon {
         NSBezierPath(roundedRect: rect, xRadius: 0.5, yRadius: 0.5).fill()
     }
 
-    /// The progress stroke. Alert colors off keeps the menu bar color.
-    /// Same sRGB values as the Windows and Linux tray icon.
-    private static func ringColor(percent: Double, foreground: NSColor, colorAlerts: Bool) -> NSColor {
+    /// The progress stroke. Indicative colors follow the percentage. Otherwise alert colors
+    /// turn a warning orange and a critical limit red, and everything else stays the menu bar color.
+    /// The percentage colors use the same sRGB values as the Windows and Linux tray icon.
+    private static func ringColor(percent: Double, severity: Severity, foreground: NSColor, colorAlerts: Bool, usageColors: Bool) -> NSColor {
+        if usageColors {
+            switch RingBand(percent: percent) {
+            case .green: return NSColor(srgbRed: 0x2E / 255, green: 0xBE / 255, blue: 0x4F / 255, alpha: 1)
+            case .yellowGreen: return NSColor(srgbRed: 0xA8 / 255, green: 0xC4 / 255, blue: 0x3C / 255, alpha: 1)
+            case .yellow: return NSColor(srgbRed: 0xF0 / 255, green: 0xC4 / 255, blue: 0, alpha: 1)
+            case .orange: return NSColor(srgbRed: 1, green: 0x8C / 255, blue: 0, alpha: 1)
+            case .red: return NSColor(srgbRed: 0xE8 / 255, green: 0x11 / 255, blue: 0x23 / 255, alpha: 1)
+            }
+        }
         guard colorAlerts else { return foreground }
-        switch RingBand(percent: percent) {
-        case .green: return NSColor(srgbRed: 0x2E / 255, green: 0xBE / 255, blue: 0x4F / 255, alpha: 1)
-        case .yellowGreen: return NSColor(srgbRed: 0xA8 / 255, green: 0xC4 / 255, blue: 0x3C / 255, alpha: 1)
-        case .yellow: return NSColor(srgbRed: 0xF0 / 255, green: 0xC4 / 255, blue: 0, alpha: 1)
-        case .orange: return NSColor(srgbRed: 1, green: 0x8C / 255, blue: 0, alpha: 1)
-        case .red: return NSColor(srgbRed: 0xE8 / 255, green: 0x11 / 255, blue: 0x23 / 255, alpha: 1)
+        switch severity {
+        case .normal: return foreground
+        case .warning: return .systemOrange
+        case .critical: return .systemRed
         }
     }
 

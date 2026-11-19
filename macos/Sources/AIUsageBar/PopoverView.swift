@@ -95,10 +95,16 @@ struct PopoverView: View {
         HStack {
             Spacer()
             Menu {
-                Picker(tr("Estilo na barra", "Menu bar style"), selection: $store.menuBarStyle) {
-                    ForEach(MenuBarStyle.allCases) { style in
-                        Text(style.label).tag(style)
+                Menu(tr("Estilo na barra", "Menu bar style")) {
+                    Picker(tr("Estilo na barra", "Menu bar style"), selection: $store.menuBarStyle) {
+                        ForEach(MenuBarStyle.allCases) { style in
+                            Text(style.label).tag(style)
+                        }
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                    Divider()
+                    Toggle(tr("Cores indicativas", "Indicative colors"), isOn: $store.usageColors)
                 }
                 Picker(tr("Pop-up", "Popup"), selection: $store.popupLayout) {
                     ForEach(PopupLayout.allCases) { layout in

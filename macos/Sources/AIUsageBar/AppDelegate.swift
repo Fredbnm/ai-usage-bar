@@ -96,7 +96,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         button.image = MenuBarIcon.image(
             segments: store.menuBarSegments,
             style: store.menuBarStyle,
-            colorAlerts: store.colorAlerts
+            colorAlerts: store.colorAlerts,
+            usageColors: store.usageColors
         )
         button.toolTip = store.tooltip
     }

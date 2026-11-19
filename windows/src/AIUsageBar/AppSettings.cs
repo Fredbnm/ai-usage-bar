@@ -10,6 +10,9 @@ internal sealed class AppSettings
     public string Language { get; set; } = Localization.SystemDefault().Code();
     public TrayStyle Style { get; set; } = TrayStyle.Icon;
     public bool ColorAlerts { get; set; } = true;
+
+    /// <summary>Ring colored by percentage. Off keeps the previous orange and red alerts.</summary>
+    public bool UsageColors { get; set; }
     public Dictionary<string, TrayDisplay> Displays { get; set; } = [];
 
     /// <summary>The limit each agent's tab shows (<see cref="TabLimit"/> keys); missing means the fullest one.</summary>

@@ -5,10 +5,11 @@ namespace AIUsageBar.Core.Rendering;
 /// <summary>
 /// Draws one service's tray icon: a ring that fills with usage around either
 /// the service's glyph or the percentage. Monochrome in the taskbar's color
-/// (white on a dark taskbar, near-black on a light one); only the ring changes
-/// color with the percentage when alert colors are on: green up to 20%, yellow-green
-/// below 40%, yellow below 60%, orange below 90%, and red from 90%. A problem on the service's status page
-/// adds a small badge on the ring's top right.
+/// (white on a dark taskbar, near-black on a light one); only the ring turns
+/// orange or red when a limit is close and alert colors are on. Indicative colors,
+/// off unless the user asks, paint that ring from the percentage instead: green up to 20%,
+/// yellow-green below 40%, yellow below 60%, orange below 90%, and red from 90%.
+/// A problem on the service's status page adds a small badge on the ring's top right.
 /// </summary>
 public static class TrayIconRenderer
 {
@@ -25,7 +26,8 @@ public static class TrayIconRenderer
         Glyph? glyph,
         bool colorAlerts,
         bool darkTaskbar,
-        int size)
+        int size,
+        bool usageColors = false)
     {
         var bitmap = new SKBitmap(new SKImageInfo(size, size, SKColorType.Rgba8888, SKAlphaType.Premul));
         using var canvas = new SKCanvas(bitmap);
@@ -47,7 +49,7 @@ public static class TrayIconRenderer
                 Style = SKPaintStyle.Stroke,
                 StrokeWidth = stroke,
                 StrokeCap = SKStrokeCap.Round,
-                Color = RingColor(percent, foreground, colorAlerts),
+                Color = RingColor(percent, segment.Severity, foreground, colorAlerts, usageColors),
             };
             canvas.DrawArc(ring, -90, (float)(360 * Math.Min(percent / 100, 1)), false, arc);
         }
@@ -103,16 +105,31 @@ public static class TrayIconRenderer
         canvas.DrawCircle(center.X, center.Y + radius * 0.48f, width * 0.6f, clear);
     }
 
-    /// <summary>The progress stroke. Alert colors off keeps the taskbar color.</summary>
-    public static SKColor RingColor(double percent, SKColor foreground, bool colorAlerts) =>
-        !colorAlerts ? foreground : RingBands.For(percent) switch
+    /// <summary>
+    /// The progress stroke. Indicative colors follow the percentage. Otherwise alert colors
+    /// turn a warning orange and a critical limit red, and everything else stays the taskbar color.
+    /// </summary>
+    public static SKColor RingColor(double percent, Severity severity, SKColor foreground, bool colorAlerts, bool usageColors = false)
+    {
+        if (usageColors)
         {
-            RingBand.Green => Green,
-            RingBand.YellowGreen => YellowGreen,
-            RingBand.Yellow => Yellow,
-            RingBand.Orange => Orange,
-            _ => Red,
+            return RingBands.For(percent) switch
+            {
+                RingBand.Green => Green,
+                RingBand.YellowGreen => YellowGreen,
+                RingBand.Yellow => Yellow,
+                RingBand.Orange => Orange,
+                _ => Red,
+            };
+        }
+        if (!colorAlerts) return foreground;
+        return severity switch
+        {
+            Severity.Warning => Orange,
+            Severity.Critical => Red,
+            _ => foreground,
         };
+    }
 
     /// <summary>Centres the glyph on its visual centre, its farthest point touching the inner circle.</summary>
     internal static void DrawGlyph(SKCanvas canvas, Glyph glyph, SKRect inner, SKColor color)
