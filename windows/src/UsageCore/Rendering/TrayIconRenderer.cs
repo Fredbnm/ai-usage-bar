@@ -13,7 +13,7 @@ namespace AIUsageBar.Core.Rendering;
 /// </summary>
 public static class TrayIconRenderer
 {
-    public static readonly SKColor Green = new(0x2E, 0xBE, 0x4F);
+    public static readonly SKColor Green = new(0x00, 0xE8, 0x5C);
     public static readonly SKColor YellowGreen = new(0xA8, 0xC4, 0x3C);
     public static readonly SKColor Yellow = new(0xF0, 0xC4, 0x00);
     public static readonly SKColor Orange = new(0xFF, 0x8C, 0x00);

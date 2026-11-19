@@ -255,7 +255,7 @@ enum MenuBarIcon {
     private static func ringColor(percent: Double, severity: Severity, foreground: NSColor, colorAlerts: Bool, usageColors: Bool) -> NSColor {
         if usageColors {
             switch RingBand(percent: percent) {
-            case .green: return NSColor(srgbRed: 0x2E / 255, green: 0xBE / 255, blue: 0x4F / 255, alpha: 1)
+            case .green: return NSColor(srgbRed: 0x00 / 255, green: 0xE8 / 255, blue: 0x5C / 255, alpha: 1)
             case .yellowGreen: return NSColor(srgbRed: 0xA8 / 255, green: 0xC4 / 255, blue: 0x3C / 255, alpha: 1)
             case .yellow: return NSColor(srgbRed: 0xF0 / 255, green: 0xC4 / 255, blue: 0, alpha: 1)
             case .orange: return NSColor(srgbRed: 1, green: 0x8C / 255, blue: 0, alpha: 1)
