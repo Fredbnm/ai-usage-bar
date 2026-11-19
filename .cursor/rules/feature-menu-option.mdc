@@ -1,0 +1,18 @@
+---
+description: Ask the contributor before adding a menu switch for a new feature
+alwaysApply: true
+---
+
+# Menu option for a new feature
+
+When a contributor implements a user-facing feature or a change in behavior, ask before adding a control for it. Skip the question for a bugfix that only restores existing behavior, and for an internal change the user cannot see.
+
+Ask, in the contributor's language, whether they want a menu option to turn the feature on. Do not add the menu item, the setting, or a new default until they answer.
+
+If they want the option:
+
+- Put it in the existing settings menu that matches the feature (menu bar style, tray style, or the gear menu).
+- Ask whether it starts on or off. Leave the previous behavior as the default unless they choose otherwise.
+- Use the same option on macOS, Windows, and Linux when the feature exists on more than one.
+
+Example: indicative ring colors live under **Estilo na barra** / **Tray style**, off by default, so the ring stays orange or red from severity until the user turns the option on.
